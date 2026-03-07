@@ -1,0 +1,5 @@
+{
+    "buildCommand": "cd frontend/ai-bi-frontend && npm install && npm run build",
+    "outputDirectory": "frontend/ai-bi-frontend/.next",
+    "framework": "nextjs"
+}
