@@ -46,11 +46,14 @@ def run_pipeline(df):
         recommendations = [f"Recommendation engine error: {e}"]
 
     # --- ADVANCED AI INJECTION ---
+    anomalies_data = []
+    clusters_data = {}
     try:
         from app.models.advanced_ai_models import detect_anomalies, run_clustering
         from app.models.time_series_forecaster import forecast_revenue
         
         anomalies = detect_anomalies(df)
+        anomalies_data = anomalies
         if anomalies:
             insights.extend(["🚨 WARNING - " + a for a in anomalies])
             
@@ -63,6 +66,7 @@ def run_pipeline(df):
                     
             if target_col:
                 clusters = run_clustering(df, target_col, "revenue")
+                clusters_data = clusters
                 if clusters:
                     insights.append(f"🧠 AI identified {len(clusters)} optimal performance tiers for {target_col}s.")
                     for k, v in clusters.items():
@@ -123,4 +127,6 @@ def run_pipeline(df):
         "explanations": explanations,
         "recommendations": recommendations,
         "analyst_report": analyst_report,
+        "clustering": clusters_data,
+        "anomalies": anomalies_data,
     }
