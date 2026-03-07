@@ -1,0 +1,56 @@
+﻿============================================================
+TESTING FULL AI PIPELINE
+============================================================
+
+Γ£à Created test dataset: 200 rows, ['date', 'product', 'region', 'revenue', 'quantity', 'cost']
+
+--- Running Pipeline ---
+Γ£à Pipeline completed successfully!
+   Dataset type: sales_dataset
+   Analytics keys: ['total_revenue', 'average_revenue', 'top_products', 'region_sales', 'total_profit']
+   ML predictions: ['mode', 'prediction_results', 'automl_results']
+   Simulations: 6 scenarios
+   Strategy items: 2
+   Insights: 2
+   Explanations: 3
+   Recommendations: 4
+   Analyst report keys: ['profile', 'simulations', 'insights', 'report']
+
+   Total Revenue: $500,846.53
+   Top Products: ['Laptop', 'Headphones', 'Tablet']
+   Regions: ['East', 'North', 'South', 'West']
+
+--- Testing Copilot ---
+Γ£à Q: 'What are the top products?' -> Top products by revenue:
+  ΓÇó Laptop: $123,303.91
+  ΓÇó Headphones: $120,745.45
+  ΓÇó...
+Γ£à Q: 'Show revenue trends' -> Total revenue: $500,846.53
+Average revenue per transaction: $2,504.23...
+Γ£à Q: 'Which region performs best?' -> The best performing region is West with $149,687.38 in revenue....
+Γ£à Q: 'Summarize the data' -> Dataset Overview:
+  ΓÇó Rows: 200
+  ΓÇó Columns: 6
+  ΓÇó Total Revenue: $500,846.53
+  ...
+
+--- Testing NLBI Charts ---
+Γ£à Q: 'Show revenue by region' -> bar chart, 4 data points
+Γ£à Q: 'Top 5 products by revenue' -> bar chart, 5 data points
+Γ£à Q: 'Revenue distribution by product' -> pie chart, 5 data points
+
+--- Validating Response Shape ---
+   Γ£à rows: int = 200
+   Γ£à analytics: dict (5 keys)
+   Γ£à ml_predictions: dict (3 keys)
+   Γ£à simulation_results: list (6 items)
+   Γ£à recommendations: list (4 items)
+   Γ£à strategy: list (2 items)
+   Γ£à insights: list (2 items)
+   Γ£à explanations: list (3 items)
+   Γ£à analyst_report: dict (4 keys)
+
+≡ƒÄë ALL TESTS PASSED! Backend is fully functional.
+
+--- Testing JSON Serialization ---
+   Γ£à Response is JSON serializable (7030 chars)

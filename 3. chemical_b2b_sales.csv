@@ -1,0 +1,801 @@
+dispatch_date,batch_id,compound_name,purity_grade,volume_liters,price_per_l,invoice_total,client_lab,hazmat_class
+2022-01-01,BATCH-920-C,Sulfuric Acid,Analytical,264.2,13.32,21018.78,Acme Labs,Safe
+2022-01-02,BATCH-123-C,Acetone,Reagent,193.0,3.57,25862.24,Acme Labs,Class 3
+2022-01-03,BATCH-113-B,Sulfuric Acid,Reagent,3559.1,12.51,41101.28,ChemCorp,Class 8
+2022-01-04,BATCH-996-B,Sodium Hydroxide,Reagent,3116.6,14.87,49448.8,Acme Labs,Class 8
+2022-01-05,BATCH-567-B,Sodium Hydroxide,Analytical,1051.9,0.57,6727.21,Acme Labs,Class 8
+2022-01-06,BATCH-229-C,Sodium Hydroxide,Analytical,2298.8,6.97,39636.15,ChemCorp,Class 8
+2022-01-07,BATCH-817-A,Sulfuric Acid,Industrial,1228.8,13.19,11577.24,ChemCorp,Class 8
+2022-01-08,BATCH-706-B,Benzene,Industrial,859.8,8.4,821.3,ChemCorp,Class 8
+2022-01-09,BATCH-324-A,Acetone,Reagent,2668.0,13.89,43573.17,ChemCorp,Class 3
+2022-01-10,BATCH-653-C,Sodium Hydroxide,Analytical,1819.8,13.17,15935.25,BioSynthetics,Safe
+2022-01-11,BATCH-556-B,Sodium Hydroxide,Food Grade,2520.5,9.33,4604.26,Acme Labs,Class 3
+2022-01-12,BATCH-356-A,Benzene,Industrial,224.8,4.88,630.19,ChemCorp,Safe
+2022-01-13,BATCH-656-C,Sulfuric Acid,Analytical,2503.4,0.86,48911.27,Acme Labs,Class 8
+2022-01-14,BATCH-160-A,Ethanol,Food Grade,1902.5,11.53,26365.78,Acme Labs,Safe
+2022-01-15,BATCH-436-C,Sulfuric Acid,Industrial,972.3,1.06,41013.38,Global Pharma,Class 8
+2022-01-16,BATCH-697-C,Acetone,Food Grade,4934.6,8.53,9197.78,ChemCorp,Safe
+2022-01-17,BATCH-214-B,Acetone,Reagent,563.0,9.81,46607.52,BioSynthetics,Class 8
+2022-01-18,BATCH-510-C,Sodium Hydroxide,Reagent,1932.6,11.99,5325.04,BioSynthetics,Safe
+2022-01-19,BATCH-262-A,Benzene,Industrial,3480.4,5.01,12998.43,Acme Labs,Class 8
+2022-01-20,BATCH-937-A,Acetone,Food Grade,4706.3,3.68,34993.16,Acme Labs,Class 8
+2022-01-21,BATCH-563-C,Benzene,Reagent,3803.6,3.94,32203.12,BioSynthetics,Class 3
+2022-01-22,BATCH-891-B,Benzene,Industrial,963.2,12.29,47490.58,BioSynthetics,Class 8
+2022-01-23,BATCH-219-C,Sulfuric Acid,Food Grade,3348.7,4.67,15089.67,BioSynthetics,Class 3
+2022-01-24,BATCH-456-C,Benzene,Analytical,1330.0,2.68,33551.46,Acme Labs,Class 8
+2022-01-25,BATCH-175-B,Sodium Hydroxide,Industrial,1018.8,10.86,35224.83,ChemCorp,Class 8
+2022-01-26,BATCH-686-B,Ethanol,Reagent,655.4,12.03,42719.68,ChemCorp,Class 3
+2022-01-27,BATCH-731-A,Sulfuric Acid,Food Grade,1272.0,7.17,15927.0,Global Pharma,Class 8
+2022-01-28,BATCH-471-B,Benzene,Analytical,1035.1,7.05,15139.05,BioSynthetics,Safe
+2022-01-29,BATCH-307-C,Ethanol,Food Grade,350.9,13.52,36661.34,Global Pharma,Safe
+2022-01-30,BATCH-601-A,Acetone,Industrial,4080.9,4.52,932.26,ChemCorp,Safe
+2022-01-31,BATCH-337-C,Sodium Hydroxide,Industrial,997.7,14.5,47010.98,BioSynthetics,Safe
+2022-02-01,BATCH-734-A,Ethanol,Reagent,3018.6,5.82,29036.6,Global Pharma,Safe
+2022-02-02,BATCH-134-C,Sulfuric Acid,Analytical,4900.2,10.72,40872.03,ChemCorp,Class 3
+2022-02-03,BATCH-677-B,Ethanol,Industrial,1987.0,6.08,6357.03,BioSynthetics,Safe
+2022-02-04,BATCH-648-A,Sulfuric Acid,Reagent,1025.8,2.68,33344.74,Acme Labs,Class 8
+2022-02-05,BATCH-121-B,Benzene,Analytical,3176.5,11.73,18766.47,Global Pharma,Class 8
+2022-02-06,BATCH-180-C,Benzene,Analytical,3537.5,13.92,8998.44,ChemCorp,Class 8
+2022-02-07,BATCH-342-A,Sodium Hydroxide,Reagent,3702.4,1.87,37432.98,ChemCorp,Safe
+2022-02-08,BATCH-613-A,Acetone,Reagent,2675.6,3.57,4057.92,BioSynthetics,Class 3
+2022-02-09,BATCH-619-B,Sulfuric Acid,Analytical,1282.4,2.71,2882.66,ChemCorp,Class 8
+2022-02-10,BATCH-762-C,Acetone,Industrial,4282.8,7.99,18845.98,ChemCorp,Safe
+2022-02-11,BATCH-797-A,Benzene,Food Grade,2957.4,5.98,12733.21,ChemCorp,Class 8
+2022-02-12,BATCH-649-A,Sulfuric Acid,Reagent,4895.7,12.63,4928.27,ChemCorp,Safe
+2022-02-13,BATCH-953-A,Sodium Hydroxide,Reagent,4216.6,5.3,25036.39,BioSynthetics,Class 3
+2022-02-14,BATCH-491-C,Ethanol,Analytical,1657.6,10.03,15549.02,BioSynthetics,Class 3
+2022-02-15,BATCH-250-C,Sulfuric Acid,Analytical,2694.7,3.59,27001.41,Global Pharma,Safe
+2022-02-16,BATCH-468-B,Sulfuric Acid,Food Grade,2496.4,11.13,13702.83,Acme Labs,Class 3
+2022-02-17,BATCH-582-C,Acetone,Analytical,588.9,9.81,21874.04,Acme Labs,Safe
+2022-02-18,BATCH-982-B,Benzene,Analytical,2194.3,1.68,15368.36,Global Pharma,Class 3
+2022-02-19,BATCH-123-C,Sodium Hydroxide,Food Grade,437.6,2.26,472.61,Acme Labs,Class 3
+2022-02-20,BATCH-631-B,Ethanol,Food Grade,2405.5,7.7,30894.9,Acme Labs,Class 8
+2022-02-21,BATCH-475-B,Acetone,Analytical,1040.7,6.53,8667.05,Global Pharma,Safe
+2022-02-22,BATCH-747-C,Sulfuric Acid,Food Grade,509.8,1.1,18170.56,Global Pharma,Class 3
+2022-02-23,BATCH-614-B,Sodium Hydroxide,Reagent,4410.3,11.37,37582.55,Global Pharma,Class 8
+2022-02-24,BATCH-937-C,Ethanol,Analytical,3513.4,12.18,44614.58,BioSynthetics,Safe
+2022-02-25,BATCH-488-C,Ethanol,Industrial,4215.8,10.03,14510.73,ChemCorp,Class 3
+2022-02-26,BATCH-688-B,Ethanol,Industrial,172.6,3.81,12232.99,Global Pharma,Class 8
+2022-02-27,BATCH-491-B,Benzene,Reagent,760.9,1.3,12762.4,ChemCorp,Safe
+2022-02-28,BATCH-113-A,Sulfuric Acid,Food Grade,999.4,13.07,14450.53,Acme Labs,Class 8
+2022-03-01,BATCH-373-A,Sulfuric Acid,Food Grade,110.4,0.77,11472.77,BioSynthetics,Safe
+2022-03-02,BATCH-949-C,Ethanol,Reagent,4281.0,9.39,21489.77,Acme Labs,Class 3
+2022-03-03,BATCH-484-B,Sodium Hydroxide,Reagent,1574.5,4.5,44949.27,Global Pharma,Class 8
+2022-03-04,BATCH-158-C,Benzene,Analytical,263.6,9.91,21843.33,Acme Labs,Safe
+2022-03-05,BATCH-598-A,Sulfuric Acid,Analytical,3483.1,6.38,19208.28,Global Pharma,Class 3
+2022-03-06,BATCH-910-B,Sodium Hydroxide,Food Grade,2727.0,8.89,38460.88,Global Pharma,Class 3
+2022-03-07,BATCH-962-C,Sodium Hydroxide,Food Grade,1189.7,2.64,23607.17,Acme Labs,Class 3
+2022-03-08,BATCH-286-A,Benzene,Food Grade,1212.2,1.16,36843.19,BioSynthetics,Class 8
+2022-03-09,BATCH-927-C,Acetone,Analytical,1711.0,11.69,27993.76,BioSynthetics,Class 8
+2022-03-10,BATCH-777-B,Sodium Hydroxide,Food Grade,825.8,7.28,28529.86,BioSynthetics,Class 8
+2022-03-11,BATCH-465-A,Sulfuric Acid,Food Grade,1883.3,11.67,31714.89,ChemCorp,Class 8
+2022-03-12,BATCH-962-C,Benzene,Food Grade,2188.8,12.3,21876.75,Global Pharma,Class 8
+2022-03-13,BATCH-737-C,Sulfuric Acid,Food Grade,3545.1,2.53,10360.9,Acme Labs,Class 8
+2022-03-14,BATCH-437-C,Sodium Hydroxide,Analytical,2202.7,3.54,6364.31,ChemCorp,Safe
+2022-03-15,BATCH-987-B,Ethanol,Reagent,3247.6,12.43,33174.24,Global Pharma,Safe
+2022-03-16,BATCH-305-A,Benzene,Reagent,1142.2,2.87,44404.6,BioSynthetics,Safe
+2022-03-17,BATCH-670-C,Acetone,Analytical,3061.4,0.77,36814.32,Global Pharma,Class 3
+2022-03-18,BATCH-381-C,Ethanol,Analytical,2687.5,9.36,49201.5,BioSynthetics,Safe
+2022-03-19,BATCH-270-C,Sodium Hydroxide,Reagent,2468.1,1.26,24464.5,Global Pharma,Class 3
+2022-03-20,BATCH-811-B,Acetone,Food Grade,1432.1,12.72,33817.06,Acme Labs,Safe
+2022-03-21,BATCH-300-A,Ethanol,Industrial,515.7,1.22,14137.15,ChemCorp,Class 3
+2022-03-22,BATCH-332-C,Sulfuric Acid,Industrial,2068.3,1.8,13885.08,Acme Labs,Safe
+2022-03-23,BATCH-787-C,Sodium Hydroxide,Industrial,878.1,0.57,22762.36,BioSynthetics,Safe
+2022-03-24,BATCH-961-A,Acetone,Analytical,4183.1,14.03,16680.9,Acme Labs,Safe
+2022-03-25,BATCH-316-B,Benzene,Reagent,4709.9,8.9,41279.14,ChemCorp,Class 8
+2022-03-26,BATCH-247-A,Acetone,Reagent,4026.9,13.56,726.51,ChemCorp,Safe
+2022-03-27,BATCH-970-B,Ethanol,Food Grade,4907.7,4.79,35830.48,Acme Labs,Safe
+2022-03-28,BATCH-743-B,Sodium Hydroxide,Analytical,3528.3,8.91,3060.89,Global Pharma,Class 8
+2022-03-29,BATCH-448-A,Ethanol,Food Grade,1785.0,1.89,48032.99,BioSynthetics,Class 8
+2022-03-30,BATCH-925-B,Ethanol,Reagent,3253.7,4.28,5095.87,ChemCorp,Class 8
+2022-03-31,BATCH-565-B,Acetone,Industrial,3732.8,1.88,42661.87,ChemCorp,Class 8
+2022-04-01,BATCH-261-A,Sulfuric Acid,Industrial,53.8,3.97,46549.0,Acme Labs,Class 8
+2022-04-02,BATCH-863-A,Acetone,Food Grade,155.6,9.47,7052.04,BioSynthetics,Class 8
+2022-04-03,BATCH-663-A,Acetone,Reagent,4275.9,5.98,32449.63,ChemCorp,Class 8
+2022-04-04,BATCH-424-A,Acetone,Food Grade,2508.2,10.52,37740.61,BioSynthetics,Safe
+2022-04-05,BATCH-817-B,Sulfuric Acid,Industrial,4911.5,4.32,42234.44,Acme Labs,Class 3
+2022-04-06,BATCH-614-B,Benzene,Analytical,276.6,3.18,3119.66,Acme Labs,Class 8
+2022-04-07,BATCH-994-B,Benzene,Analytical,4307.5,4.59,48767.33,Acme Labs,Class 3
+2022-04-08,BATCH-365-B,Sodium Hydroxide,Industrial,100.8,6.82,29782.51,Acme Labs,Safe
+2022-04-09,BATCH-287-B,Acetone,Food Grade,1945.6,2.78,23415.4,BioSynthetics,Safe
+2022-04-10,BATCH-337-A,Sulfuric Acid,Industrial,1396.3,4.54,47792.57,Global Pharma,Class 3
+2022-04-11,BATCH-627-B,Benzene,Food Grade,652.8,10.75,46202.31,Global Pharma,Class 8
+2022-04-12,BATCH-547-C,Benzene,Industrial,4295.5,8.63,46372.91,Global Pharma,Safe
+2022-04-13,BATCH-244-C,Sodium Hydroxide,Analytical,3598.5,6.62,7068.05,ChemCorp,Class 3
+2022-04-14,BATCH-325-A,Ethanol,Industrial,143.7,13.6,33569.27,Global Pharma,Class 8
+2022-04-15,BATCH-950-C,Acetone,Reagent,4758.4,12.4,46380.28,BioSynthetics,Class 3
+2022-04-16,BATCH-587-B,Ethanol,Analytical,4604.4,12.62,49455.8,BioSynthetics,Class 3
+2022-04-17,BATCH-180-B,Sodium Hydroxide,Analytical,250.2,0.54,22433.75,ChemCorp,Class 3
+2022-04-18,BATCH-160-B,Benzene,Analytical,398.7,11.4,49693.95,Acme Labs,Class 3
+2022-04-19,BATCH-738-B,Acetone,Industrial,1609.2,10.24,22185.65,ChemCorp,Class 8
+2022-04-20,BATCH-367-B,Acetone,Industrial,3666.2,12.12,16109.74,BioSynthetics,Class 3
+2022-04-21,BATCH-665-A,Sodium Hydroxide,Analytical,2151.3,2.01,19700.34,Global Pharma,Safe
+2022-04-22,BATCH-662-B,Acetone,Food Grade,2703.7,11.69,33272.57,Acme Labs,Class 8
+2022-04-23,BATCH-670-B,Sulfuric Acid,Reagent,1187.9,9.74,38968.18,BioSynthetics,Safe
+2022-04-24,BATCH-319-A,Sodium Hydroxide,Analytical,4365.2,6.61,30883.22,Global Pharma,Class 3
+2022-04-25,BATCH-416-C,Benzene,Reagent,2037.5,0.8,155.71,ChemCorp,Class 8
+2022-04-26,BATCH-172-A,Sodium Hydroxide,Food Grade,165.5,3.38,17631.44,ChemCorp,Safe
+2022-04-27,BATCH-174-C,Sulfuric Acid,Analytical,4790.2,11.93,28209.96,ChemCorp,Class 3
+2022-04-28,BATCH-601-C,Benzene,Analytical,1006.5,6.75,25569.24,BioSynthetics,Class 3
+2022-04-29,BATCH-995-A,Acetone,Food Grade,4187.6,14.6,48511.28,Acme Labs,Class 8
+2022-04-30,BATCH-756-B,Ethanol,Analytical,1819.5,5.77,23001.92,Acme Labs,Class 3
+2022-05-01,BATCH-956-B,Benzene,Industrial,1235.5,1.69,15819.49,BioSynthetics,Class 8
+2022-05-02,BATCH-589-C,Benzene,Reagent,2655.1,1.48,18083.59,Global Pharma,Safe
+2022-05-03,BATCH-678-B,Sodium Hydroxide,Industrial,911.2,7.81,1439.41,BioSynthetics,Class 8
+2022-05-04,BATCH-254-C,Sodium Hydroxide,Food Grade,2010.2,13.51,20850.65,Acme Labs,Class 8
+2022-05-05,BATCH-785-A,Sodium Hydroxide,Reagent,2193.2,7.35,45169.8,ChemCorp,Safe
+2022-05-06,BATCH-100-A,Sulfuric Acid,Reagent,4036.2,1.0,219.18,Acme Labs,Safe
+2022-05-07,BATCH-150-B,Acetone,Reagent,3768.5,4.49,35015.28,ChemCorp,Class 8
+2022-05-08,BATCH-857-B,Sodium Hydroxide,Food Grade,91.8,3.02,24754.64,ChemCorp,Safe
+2022-05-09,BATCH-212-A,Acetone,Industrial,445.7,7.54,43793.63,BioSynthetics,Class 8
+2022-05-10,BATCH-792-A,Sodium Hydroxide,Analytical,4139.6,9.87,30603.62,Global Pharma,Safe
+2022-05-11,BATCH-798-C,Sulfuric Acid,Analytical,2141.1,14.53,48600.77,Acme Labs,Safe
+2022-05-12,BATCH-394-C,Sulfuric Acid,Industrial,131.4,2.28,27908.53,Acme Labs,Safe
+2022-05-13,BATCH-943-B,Ethanol,Reagent,4534.4,6.07,9251.4,BioSynthetics,Class 3
+2022-05-14,BATCH-935-A,Benzene,Analytical,189.1,7.19,42185.83,BioSynthetics,Safe
+2022-05-15,BATCH-217-C,Ethanol,Analytical,3054.6,12.11,14914.59,ChemCorp,Safe
+2022-05-16,BATCH-242-A,Sodium Hydroxide,Reagent,4174.4,8.88,17062.62,BioSynthetics,Class 3
+2022-05-17,BATCH-630-C,Benzene,Reagent,4976.2,4.03,13700.85,Global Pharma,Class 8
+2022-05-18,BATCH-833-B,Sodium Hydroxide,Reagent,1923.1,9.33,8312.19,ChemCorp,Class 8
+2022-05-19,BATCH-496-A,Acetone,Food Grade,4624.5,3.14,28459.88,BioSynthetics,Class 8
+2022-05-20,BATCH-205-A,Ethanol,Industrial,3950.0,8.94,44547.48,BioSynthetics,Class 3
+2022-05-21,BATCH-509-A,Benzene,Reagent,4779.1,10.15,30934.67,Global Pharma,Safe
+2022-05-22,BATCH-982-C,Ethanol,Industrial,483.9,9.37,44013.05,BioSynthetics,Class 8
+2022-05-23,BATCH-156-C,Ethanol,Industrial,621.9,3.42,22317.95,Global Pharma,Class 8
+2022-05-24,BATCH-281-C,Acetone,Food Grade,955.5,12.76,44982.43,ChemCorp,Class 3
+2022-05-25,BATCH-522-A,Sulfuric Acid,Industrial,646.5,12.16,41921.51,Acme Labs,Safe
+2022-05-26,BATCH-861-C,Sodium Hydroxide,Reagent,147.1,4.96,18687.07,Global Pharma,Safe
+2022-05-27,BATCH-796-A,Sodium Hydroxide,Food Grade,3318.1,10.36,36260.83,BioSynthetics,Class 3
+2022-05-28,BATCH-920-C,Ethanol,Industrial,4284.3,1.18,16824.13,BioSynthetics,Safe
+2022-05-29,BATCH-809-B,Acetone,Analytical,1492.2,3.51,15933.26,Acme Labs,Class 3
+2022-05-30,BATCH-330-B,Benzene,Analytical,3195.4,11.96,34230.01,Acme Labs,Class 3
+2022-05-31,BATCH-241-C,Sodium Hydroxide,Industrial,360.3,10.85,45537.18,ChemCorp,Class 8
+2022-06-01,BATCH-520-A,Benzene,Industrial,1993.4,4.32,39133.41,BioSynthetics,Safe
+2022-06-02,BATCH-320-C,Ethanol,Food Grade,2007.5,10.87,36936.12,Global Pharma,Safe
+2022-06-03,BATCH-926-A,Acetone,Analytical,1747.7,11.93,49914.88,Global Pharma,Class 3
+2022-06-04,BATCH-806-B,Ethanol,Analytical,529.4,5.31,13719.45,Global Pharma,Class 8
+2022-06-05,BATCH-657-A,Acetone,Reagent,3893.0,8.79,10694.25,ChemCorp,Class 3
+2022-06-06,BATCH-227-B,Sodium Hydroxide,Food Grade,1302.2,7.05,22117.21,ChemCorp,Class 8
+2022-06-07,BATCH-382-C,Ethanol,Analytical,2775.6,4.71,30586.54,BioSynthetics,Class 3
+2022-06-08,BATCH-694-C,Sodium Hydroxide,Industrial,3260.8,0.64,38200.67,BioSynthetics,Class 3
+2022-06-09,BATCH-187-B,Acetone,Reagent,811.9,4.7,32482.55,Global Pharma,Class 3
+2022-06-10,BATCH-138-C,Ethanol,Industrial,4387.7,11.29,16270.52,Global Pharma,Class 3
+2022-06-11,BATCH-625-C,Sulfuric Acid,Food Grade,221.5,0.7,43608.13,BioSynthetics,Class 3
+2022-06-12,BATCH-841-A,Sulfuric Acid,Industrial,3325.1,9.79,48305.92,BioSynthetics,Class 3
+2022-06-13,BATCH-106-C,Benzene,Industrial,3268.3,10.29,32373.57,BioSynthetics,Safe
+2022-06-14,BATCH-337-B,Sodium Hydroxide,Reagent,1883.5,9.74,33323.06,BioSynthetics,Class 3
+2022-06-15,BATCH-676-B,Ethanol,Industrial,2680.4,3.77,19243.35,BioSynthetics,Safe
+2022-06-16,BATCH-406-C,Sodium Hydroxide,Food Grade,4412.8,0.71,19594.49,BioSynthetics,Class 8
+2022-06-17,BATCH-738-A,Sulfuric Acid,Industrial,1622.8,9.64,32101.68,BioSynthetics,Safe
+2022-06-18,BATCH-200-C,Sulfuric Acid,Analytical,555.6,8.05,23165.53,BioSynthetics,Safe
+2022-06-19,BATCH-867-A,Benzene,Analytical,2064.7,8.28,37996.18,Acme Labs,Class 8
+2022-06-20,BATCH-891-B,Ethanol,Industrial,3385.4,12.16,46603.95,BioSynthetics,Class 8
+2022-06-21,BATCH-679-A,Ethanol,Analytical,3311.8,1.88,26184.27,ChemCorp,Class 3
+2022-06-22,BATCH-731-A,Ethanol,Reagent,2587.4,3.52,12642.45,ChemCorp,Class 3
+2022-06-23,BATCH-179-B,Sulfuric Acid,Analytical,1011.5,12.99,32406.53,Acme Labs,Class 3
+2022-06-24,BATCH-588-A,Sodium Hydroxide,Reagent,237.2,9.09,31936.27,ChemCorp,Class 3
+2022-06-25,BATCH-994-C,Sulfuric Acid,Industrial,4074.7,0.55,19787.24,Global Pharma,Class 8
+2022-06-26,BATCH-834-B,Sulfuric Acid,Analytical,1844.5,6.9,7021.48,Acme Labs,Class 3
+2022-06-27,BATCH-162-A,Ethanol,Reagent,857.8,6.5,39477.67,ChemCorp,Class 3
+2022-06-28,BATCH-946-C,Acetone,Analytical,4271.8,11.94,36548.52,Acme Labs,Safe
+2022-06-29,BATCH-417-A,Sulfuric Acid,Analytical,4814.1,14.17,8004.8,ChemCorp,Class 3
+2022-06-30,BATCH-909-B,Benzene,Reagent,3099.5,10.16,19989.89,ChemCorp,Safe
+2022-07-01,BATCH-729-A,Benzene,Food Grade,974.7,11.28,15898.64,ChemCorp,Safe
+2022-07-02,BATCH-738-A,Benzene,Reagent,2725.0,1.28,25029.45,BioSynthetics,Class 8
+2022-07-03,BATCH-190-C,Sodium Hydroxide,Industrial,3574.5,8.83,40647.07,Global Pharma,Class 8
+2022-07-04,BATCH-184-B,Sulfuric Acid,Reagent,2490.7,11.16,20157.14,ChemCorp,Class 3
+2022-07-05,BATCH-268-B,Ethanol,Reagent,724.2,7.01,37011.9,Global Pharma,Safe
+2022-07-06,BATCH-537-B,Sodium Hydroxide,Analytical,1566.1,7.5,23557.08,BioSynthetics,Safe
+2022-07-07,BATCH-189-C,Benzene,Reagent,2782.3,7.64,26471.45,BioSynthetics,Class 8
+2022-07-08,BATCH-475-A,Sodium Hydroxide,Food Grade,2509.3,12.56,13883.74,ChemCorp,Class 3
+2022-07-09,BATCH-604-B,Benzene,Industrial,1906.9,7.77,13373.24,BioSynthetics,Class 8
+2022-07-10,BATCH-750-A,Sulfuric Acid,Analytical,2086.7,8.96,25724.79,Global Pharma,Safe
+2022-07-11,BATCH-817-B,Ethanol,Food Grade,4800.8,11.48,32152.64,BioSynthetics,Class 8
+2022-07-12,BATCH-674-A,Acetone,Industrial,3579.6,7.52,33003.35,ChemCorp,Class 8
+2022-07-13,BATCH-893-C,Acetone,Reagent,2634.2,8.08,48369.27,Global Pharma,Class 8
+2022-07-14,BATCH-945-A,Benzene,Industrial,2669.1,3.01,42461.55,Acme Labs,Class 8
+2022-07-15,BATCH-990-B,Benzene,Industrial,4776.9,9.36,32382.94,Global Pharma,Class 8
+2022-07-16,BATCH-337-B,Benzene,Food Grade,3986.3,3.87,48304.94,Acme Labs,Class 3
+2022-07-17,BATCH-417-C,Acetone,Industrial,3992.8,6.53,22545.84,Acme Labs,Class 8
+2022-07-18,BATCH-210-B,Benzene,Analytical,4623.3,3.59,15998.51,Acme Labs,Safe
+2022-07-19,BATCH-258-B,Acetone,Industrial,4771.9,2.45,15807.04,Global Pharma,Class 8
+2022-07-20,BATCH-169-B,Sodium Hydroxide,Reagent,1930.2,13.38,33320.24,ChemCorp,Safe
+2022-07-21,BATCH-923-C,Sulfuric Acid,Reagent,4880.8,13.51,10049.37,Acme Labs,Class 8
+2022-07-22,BATCH-677-A,Sulfuric Acid,Industrial,2980.9,7.5,17162.83,ChemCorp,Class 3
+2022-07-23,BATCH-437-C,Sulfuric Acid,Analytical,1755.5,8.35,11777.53,BioSynthetics,Class 8
+2022-07-24,BATCH-518-A,Sulfuric Acid,Reagent,4414.1,5.02,37014.81,Global Pharma,Class 8
+2022-07-25,BATCH-212-B,Benzene,Analytical,4368.9,11.39,26240.52,Acme Labs,Class 8
+2022-07-26,BATCH-996-B,Benzene,Reagent,3229.8,3.1,47728.87,Acme Labs,Safe
+2022-07-27,BATCH-207-A,Ethanol,Reagent,2114.6,0.78,37359.22,BioSynthetics,Safe
+2022-07-28,BATCH-849-B,Sodium Hydroxide,Industrial,4950.4,6.18,21009.25,Acme Labs,Class 3
+2022-07-29,BATCH-182-A,Sodium Hydroxide,Industrial,4326.0,12.05,8500.29,ChemCorp,Safe
+2022-07-30,BATCH-238-A,Sodium Hydroxide,Analytical,3569.0,5.25,34308.44,Global Pharma,Class 3
+2022-07-31,BATCH-181-C,Ethanol,Industrial,2036.3,4.55,46075.56,Global Pharma,Class 3
+2022-08-01,BATCH-105-A,Sodium Hydroxide,Analytical,4793.1,4.95,33882.36,BioSynthetics,Safe
+2022-08-02,BATCH-779-C,Ethanol,Analytical,1658.3,3.2,37685.87,BioSynthetics,Class 3
+2022-08-03,BATCH-807-A,Sodium Hydroxide,Food Grade,2135.0,4.54,9803.78,ChemCorp,Class 8
+2022-08-04,BATCH-594-A,Sulfuric Acid,Analytical,2607.5,14.82,39303.43,BioSynthetics,Safe
+2022-08-05,BATCH-214-B,Sodium Hydroxide,Food Grade,593.9,3.41,24331.43,ChemCorp,Class 8
+2022-08-06,BATCH-210-C,Ethanol,Food Grade,4169.5,3.43,231.47,Global Pharma,Safe
+2022-08-07,BATCH-975-B,Sodium Hydroxide,Reagent,3685.0,0.72,7310.3,Global Pharma,Class 8
+2022-08-08,BATCH-859-C,Sodium Hydroxide,Food Grade,2679.5,7.76,9412.72,Global Pharma,Class 3
+2022-08-09,BATCH-467-B,Sodium Hydroxide,Reagent,2831.6,10.37,9294.54,Acme Labs,Safe
+2022-08-10,BATCH-213-B,Acetone,Industrial,3215.2,5.58,16041.16,Global Pharma,Class 8
+2022-08-11,BATCH-250-B,Sodium Hydroxide,Reagent,4736.3,7.32,13789.97,Global Pharma,Safe
+2022-08-12,BATCH-386-A,Sodium Hydroxide,Reagent,1073.0,10.78,45318.65,BioSynthetics,Class 3
+2022-08-13,BATCH-733-B,Acetone,Food Grade,2270.3,10.15,35544.82,BioSynthetics,Safe
+2022-08-14,BATCH-305-A,Ethanol,Industrial,744.9,11.89,47891.83,Acme Labs,Class 3
+2022-08-15,BATCH-903-B,Sulfuric Acid,Reagent,3641.3,10.8,34101.86,Acme Labs,Class 8
+2022-08-16,BATCH-888-C,Sulfuric Acid,Industrial,1906.0,7.44,27978.2,Global Pharma,Class 3
+2022-08-17,BATCH-901-B,Sulfuric Acid,Reagent,4608.6,11.34,22153.25,Global Pharma,Safe
+2022-08-18,BATCH-377-C,Ethanol,Industrial,3439.8,3.66,39635.17,BioSynthetics,Class 8
+2022-08-19,BATCH-287-B,Benzene,Reagent,4034.0,3.5,43268.84,Acme Labs,Class 8
+2022-08-20,BATCH-847-B,Acetone,Analytical,2927.0,5.44,46241.42,BioSynthetics,Class 3
+2022-08-21,BATCH-402-C,Ethanol,Analytical,3818.1,2.68,6209.67,ChemCorp,Class 3
+2022-08-22,BATCH-461-C,Sodium Hydroxide,Industrial,2849.1,5.33,34887.73,Global Pharma,Safe
+2022-08-23,BATCH-261-C,Acetone,Reagent,4554.8,0.71,15788.49,Global Pharma,Safe
+2022-08-24,BATCH-263-B,Ethanol,Industrial,4371.3,4.25,30969.69,Acme Labs,Class 3
+2022-08-25,BATCH-504-A,Acetone,Analytical,3049.6,10.19,17140.51,Acme Labs,Safe
+2022-08-26,BATCH-755-C,Ethanol,Reagent,1377.3,12.18,42708.22,BioSynthetics,Class 8
+2022-08-27,BATCH-727-C,Benzene,Reagent,3209.6,7.47,47103.24,Acme Labs,Class 8
+2022-08-28,BATCH-570-A,Sulfuric Acid,Analytical,810.0,8.14,31075.3,Global Pharma,Safe
+2022-08-29,BATCH-805-C,Acetone,Food Grade,4159.7,1.19,27957.93,ChemCorp,Safe
+2022-08-30,BATCH-743-C,Sodium Hydroxide,Reagent,4939.1,4.16,8964.54,BioSynthetics,Safe
+2022-08-31,BATCH-494-C,Sulfuric Acid,Industrial,2674.6,5.83,6976.1,ChemCorp,Safe
+2022-09-01,BATCH-972-B,Sulfuric Acid,Industrial,1759.6,9.63,40759.62,BioSynthetics,Class 3
+2022-09-02,BATCH-908-C,Ethanol,Reagent,3035.7,5.34,32130.95,Acme Labs,Class 3
+2022-09-03,BATCH-822-C,Ethanol,Industrial,1896.5,3.04,32920.53,Global Pharma,Class 8
+2022-09-04,BATCH-571-B,Benzene,Reagent,1954.1,12.84,45603.04,Global Pharma,Class 8
+2022-09-05,BATCH-959-C,Acetone,Reagent,729.4,14.59,37141.57,ChemCorp,Class 3
+2022-09-06,BATCH-520-B,Sodium Hydroxide,Reagent,3912.9,1.37,18185.11,Acme Labs,Class 3
+2022-09-07,BATCH-779-B,Sodium Hydroxide,Industrial,4078.7,1.49,25015.01,ChemCorp,Safe
+2022-09-08,BATCH-966-B,Sulfuric Acid,Reagent,4608.2,8.86,40331.96,ChemCorp,Class 3
+2022-09-09,BATCH-799-C,Ethanol,Analytical,1504.6,2.84,27743.47,BioSynthetics,Class 8
+2022-09-10,BATCH-241-A,Sodium Hydroxide,Industrial,143.2,0.91,36425.98,Global Pharma,Class 8
+2022-09-11,BATCH-703-C,Ethanol,Analytical,426.7,6.19,22204.36,BioSynthetics,Safe
+2022-09-12,BATCH-642-C,Ethanol,Reagent,4891.2,13.53,22121.86,BioSynthetics,Class 3
+2022-09-13,BATCH-947-C,Sodium Hydroxide,Industrial,75.0,5.27,9500.48,ChemCorp,Class 3
+2022-09-14,BATCH-894-C,Acetone,Analytical,4926.9,9.71,17555.69,Global Pharma,Class 8
+2022-09-15,BATCH-343-C,Sodium Hydroxide,Analytical,1666.6,10.15,16806.89,Acme Labs,Safe
+2022-09-16,BATCH-937-B,Ethanol,Food Grade,3213.0,12.75,28588.16,Global Pharma,Safe
+2022-09-17,BATCH-670-C,Acetone,Food Grade,109.6,11.36,37687.79,BioSynthetics,Class 8
+2022-09-18,BATCH-293-A,Benzene,Food Grade,4358.5,2.11,37407.0,Global Pharma,Class 3
+2022-09-19,BATCH-820-A,Sodium Hydroxide,Analytical,3463.1,10.33,35762.69,BioSynthetics,Class 3
+2022-09-20,BATCH-310-C,Benzene,Food Grade,4366.6,2.32,23488.93,Global Pharma,Safe
+2022-09-21,BATCH-931-B,Sodium Hydroxide,Industrial,3879.7,7.77,3680.54,ChemCorp,Class 8
+2022-09-22,BATCH-416-B,Ethanol,Industrial,4407.7,4.53,32850.76,ChemCorp,Class 3
+2022-09-23,BATCH-469-C,Acetone,Reagent,1276.2,6.01,23805.92,Global Pharma,Safe
+2022-09-24,BATCH-490-B,Sodium Hydroxide,Industrial,3543.8,3.64,20363.39,Global Pharma,Class 3
+2022-09-25,BATCH-371-C,Sodium Hydroxide,Reagent,2524.9,14.98,6777.96,Global Pharma,Class 8
+2022-09-26,BATCH-419-C,Benzene,Industrial,3506.6,14.8,10578.53,Global Pharma,Safe
+2022-09-27,BATCH-672-C,Sulfuric Acid,Food Grade,2140.7,8.86,46618.92,Acme Labs,Safe
+2022-09-28,BATCH-624-B,Benzene,Industrial,2300.4,8.25,27295.0,Global Pharma,Class 3
+2022-09-29,BATCH-529-B,Benzene,Analytical,2069.3,1.67,27841.36,BioSynthetics,Class 8
+2022-09-30,BATCH-600-C,Sulfuric Acid,Analytical,3261.5,5.78,35968.04,BioSynthetics,Safe
+2022-10-01,BATCH-852-C,Ethanol,Reagent,232.7,10.57,5127.67,Global Pharma,Class 8
+2022-10-02,BATCH-895-A,Benzene,Reagent,212.3,7.08,25490.17,Acme Labs,Class 8
+2022-10-03,BATCH-545-C,Acetone,Food Grade,3970.5,12.14,18112.58,ChemCorp,Safe
+2022-10-04,BATCH-309-A,Sulfuric Acid,Reagent,3602.1,4.48,17095.59,Global Pharma,Class 8
+2022-10-05,BATCH-311-C,Sulfuric Acid,Reagent,4647.1,5.43,40881.31,Acme Labs,Safe
+2022-10-06,BATCH-188-B,Acetone,Analytical,4223.8,10.96,17466.03,ChemCorp,Class 8
+2022-10-07,BATCH-460-B,Sulfuric Acid,Analytical,1926.1,4.18,26600.12,BioSynthetics,Class 8
+2022-10-08,BATCH-863-C,Sulfuric Acid,Food Grade,2745.6,9.52,22887.81,ChemCorp,Class 8
+2022-10-09,BATCH-224-B,Benzene,Industrial,3802.2,8.28,298.66,BioSynthetics,Class 3
+2022-10-10,BATCH-967-A,Sulfuric Acid,Analytical,61.7,4.56,23549.5,Global Pharma,Safe
+2022-10-11,BATCH-436-A,Sodium Hydroxide,Industrial,1773.2,6.75,24538.91,Global Pharma,Class 8
+2022-10-12,BATCH-634-C,Sodium Hydroxide,Analytical,1862.7,6.13,45800.97,ChemCorp,Safe
+2022-10-13,BATCH-947-C,Ethanol,Reagent,3804.3,2.67,46675.32,BioSynthetics,Safe
+2022-10-14,BATCH-613-A,Acetone,Food Grade,3875.2,10.33,34519.8,ChemCorp,Safe
+2022-10-15,BATCH-723-B,Ethanol,Analytical,3948.2,5.82,12964.17,Global Pharma,Class 3
+2022-10-16,BATCH-606-B,Acetone,Industrial,1239.6,8.31,18452.98,ChemCorp,Class 3
+2022-10-17,BATCH-940-B,Sodium Hydroxide,Analytical,3513.9,14.5,25071.12,Global Pharma,Safe
+2022-10-18,BATCH-158-C,Benzene,Food Grade,1543.4,0.66,30058.48,BioSynthetics,Class 8
+2022-10-19,BATCH-713-A,Sulfuric Acid,Food Grade,4147.6,1.86,41986.55,BioSynthetics,Class 3
+2022-10-20,BATCH-642-C,Acetone,Analytical,2189.7,8.77,31181.4,Acme Labs,Class 3
+2022-10-21,BATCH-507-A,Sodium Hydroxide,Analytical,4495.6,10.02,33551.13,Acme Labs,Class 3
+2022-10-22,BATCH-846-A,Benzene,Reagent,2678.4,4.37,44866.56,ChemCorp,Class 3
+2022-10-23,BATCH-426-C,Sulfuric Acid,Food Grade,4639.7,13.92,46821.07,Global Pharma,Safe
+2022-10-24,BATCH-893-C,Sodium Hydroxide,Food Grade,3239.5,0.58,22718.81,ChemCorp,Class 8
+2022-10-25,BATCH-358-C,Benzene,Reagent,3641.6,7.48,47830.72,BioSynthetics,Safe
+2022-10-26,BATCH-854-A,Ethanol,Reagent,532.9,3.2,30925.75,Acme Labs,Class 8
+2022-10-27,BATCH-548-C,Benzene,Reagent,4809.6,7.47,25420.84,Global Pharma,Class 8
+2022-10-28,BATCH-877-A,Sodium Hydroxide,Reagent,4824.0,9.68,18339.25,Global Pharma,Safe
+2022-10-29,BATCH-612-A,Sodium Hydroxide,Industrial,2707.7,13.99,36027.99,BioSynthetics,Class 3
+2022-10-30,BATCH-287-C,Sodium Hydroxide,Industrial,2704.4,3.95,14101.23,Global Pharma,Class 3
+2022-10-31,BATCH-378-A,Acetone,Reagent,3752.7,12.19,9972.73,BioSynthetics,Safe
+2022-11-01,BATCH-352-C,Acetone,Industrial,2420.5,13.81,17656.06,BioSynthetics,Class 3
+2022-11-02,BATCH-242-B,Acetone,Industrial,4003.9,5.91,10610.33,ChemCorp,Class 3
+2022-11-03,BATCH-583-A,Sodium Hydroxide,Reagent,3158.2,6.15,36541.08,Global Pharma,Safe
+2022-11-04,BATCH-159-A,Benzene,Food Grade,3534.2,3.27,4236.81,BioSynthetics,Safe
+2022-11-05,BATCH-559-C,Sodium Hydroxide,Reagent,2581.1,1.27,41030.17,ChemCorp,Class 8
+2022-11-06,BATCH-625-C,Ethanol,Reagent,933.0,9.57,7326.34,ChemCorp,Class 3
+2022-11-07,BATCH-976-A,Acetone,Analytical,1187.3,11.07,39202.44,BioSynthetics,Class 3
+2022-11-08,BATCH-171-B,Acetone,Industrial,2192.4,6.38,30678.71,ChemCorp,Safe
+2022-11-09,BATCH-505-A,Benzene,Food Grade,2906.2,13.57,24358.9,ChemCorp,Class 8
+2022-11-10,BATCH-520-A,Ethanol,Industrial,1409.3,8.69,2869.12,Global Pharma,Class 3
+2022-11-11,BATCH-220-B,Benzene,Reagent,3488.7,12.65,7700.59,ChemCorp,Class 8
+2022-11-12,BATCH-813-B,Benzene,Analytical,2050.4,9.47,13376.79,ChemCorp,Safe
+2022-11-13,BATCH-637-A,Sulfuric Acid,Reagent,1422.7,4.55,11770.03,BioSynthetics,Class 3
+2022-11-14,BATCH-284-C,Sodium Hydroxide,Food Grade,2306.1,10.32,39229.11,Global Pharma,Class 8
+2022-11-15,BATCH-351-A,Ethanol,Reagent,3716.4,5.32,41770.57,ChemCorp,Safe
+2022-11-16,BATCH-365-C,Sodium Hydroxide,Industrial,1566.7,1.0,1370.51,Global Pharma,Class 3
+2022-11-17,BATCH-113-C,Sodium Hydroxide,Reagent,97.7,2.07,5784.58,BioSynthetics,Class 3
+2022-11-18,BATCH-838-A,Sodium Hydroxide,Food Grade,2525.7,5.07,39820.01,BioSynthetics,Class 3
+2022-11-19,BATCH-778-B,Ethanol,Analytical,590.0,2.75,33358.62,Acme Labs,Class 3
+2022-11-20,BATCH-760-C,Sodium Hydroxide,Analytical,4486.3,9.94,4122.19,Acme Labs,Safe
+2022-11-21,BATCH-278-B,Sulfuric Acid,Industrial,1162.8,2.56,46591.61,ChemCorp,Safe
+2022-11-22,BATCH-948-A,Ethanol,Analytical,1867.4,8.55,25515.76,BioSynthetics,Class 3
+2022-11-23,BATCH-938-B,Acetone,Reagent,4597.2,12.84,47814.23,Global Pharma,Class 8
+2022-11-24,BATCH-703-C,Benzene,Food Grade,2556.8,6.97,23908.66,Acme Labs,Safe
+2022-11-25,BATCH-582-A,Sulfuric Acid,Food Grade,1950.5,9.6,16160.1,BioSynthetics,Class 8
+2022-11-26,BATCH-900-A,Benzene,Industrial,3593.8,6.41,49697.29,Acme Labs,Class 8
+2022-11-27,BATCH-724-A,Sulfuric Acid,Industrial,56.6,11.95,36960.71,Global Pharma,Class 3
+2022-11-28,BATCH-138-A,Sodium Hydroxide,Reagent,484.3,0.53,18300.65,Acme Labs,Safe
+2022-11-29,BATCH-408-A,Benzene,Analytical,1422.3,14.99,41685.96,Acme Labs,Class 3
+2022-11-30,BATCH-930-C,Benzene,Food Grade,3844.3,8.85,15018.43,ChemCorp,Class 3
+2022-12-01,BATCH-146-B,Benzene,Analytical,824.7,13.48,34452.41,Acme Labs,Class 8
+2022-12-02,BATCH-864-C,Ethanol,Analytical,3223.3,12.0,23935.82,Global Pharma,Safe
+2022-12-03,BATCH-722-A,Acetone,Food Grade,3135.4,12.28,12175.68,BioSynthetics,Class 8
+2022-12-04,BATCH-968-B,Sodium Hydroxide,Analytical,993.3,5.1,7118.54,Global Pharma,Safe
+2022-12-05,BATCH-882-A,Ethanol,Analytical,2421.9,0.77,31721.27,BioSynthetics,Class 3
+2022-12-06,BATCH-414-C,Acetone,Industrial,1234.6,11.61,42422.4,ChemCorp,Class 3
+2022-12-07,BATCH-648-C,Benzene,Industrial,343.1,4.78,20122.03,Global Pharma,Class 3
+2022-12-08,BATCH-342-A,Sodium Hydroxide,Industrial,3674.3,7.61,45583.91,Global Pharma,Safe
+2022-12-09,BATCH-706-B,Ethanol,Industrial,3588.8,7.39,47336.96,BioSynthetics,Class 8
+2022-12-10,BATCH-164-A,Benzene,Industrial,2429.8,7.48,37860.31,Acme Labs,Class 8
+2022-12-11,BATCH-345-C,Sulfuric Acid,Reagent,4284.8,2.32,37617.87,ChemCorp,Class 8
+2022-12-12,BATCH-456-C,Ethanol,Industrial,2672.8,7.63,31497.09,Acme Labs,Safe
+2022-12-13,BATCH-875-C,Acetone,Industrial,1338.3,5.72,2625.84,Global Pharma,Class 3
+2022-12-14,BATCH-207-B,Acetone,Reagent,2869.0,6.26,22692.55,BioSynthetics,Class 8
+2022-12-15,BATCH-478-B,Acetone,Industrial,2904.7,12.97,19649.66,Acme Labs,Safe
+2022-12-16,BATCH-863-C,Sodium Hydroxide,Industrial,4331.2,5.14,14637.83,BioSynthetics,Class 3
+2022-12-17,BATCH-884-C,Acetone,Food Grade,960.6,3.46,22075.61,ChemCorp,Class 8
+2022-12-18,BATCH-689-C,Benzene,Reagent,3614.2,13.23,20097.55,Acme Labs,Safe
+2022-12-19,BATCH-771-C,Sodium Hydroxide,Analytical,902.2,5.24,32282.2,Global Pharma,Safe
+2022-12-20,BATCH-437-B,Benzene,Food Grade,1514.2,6.74,28220.6,Acme Labs,Safe
+2022-12-21,BATCH-281-C,Sodium Hydroxide,Industrial,4006.9,9.38,45638.86,ChemCorp,Class 8
+2022-12-22,BATCH-516-A,Ethanol,Food Grade,1167.0,8.76,43348.79,ChemCorp,Class 3
+2022-12-23,BATCH-129-B,Sodium Hydroxide,Industrial,3226.7,11.38,6700.2,ChemCorp,Safe
+2022-12-24,BATCH-584-A,Acetone,Analytical,2682.8,4.56,29031.22,Global Pharma,Class 3
+2022-12-25,BATCH-711-C,Sodium Hydroxide,Reagent,770.6,5.29,21684.63,ChemCorp,Class 3
+2022-12-26,BATCH-691-C,Acetone,Industrial,470.3,7.98,32162.56,ChemCorp,Safe
+2022-12-27,BATCH-794-B,Sodium Hydroxide,Reagent,880.7,3.57,49055.55,BioSynthetics,Class 3
+2022-12-28,BATCH-826-A,Benzene,Reagent,1978.1,8.48,25661.26,BioSynthetics,Class 8
+2022-12-29,BATCH-327-C,Benzene,Industrial,2482.6,2.9,21033.86,BioSynthetics,Safe
+2022-12-30,BATCH-885-B,Acetone,Food Grade,3969.4,7.1,11411.92,ChemCorp,Class 3
+2022-12-31,BATCH-755-B,Sodium Hydroxide,Reagent,2658.9,12.08,12527.31,Global Pharma,Class 8
+2023-01-01,BATCH-754-C,Acetone,Analytical,789.4,2.42,24678.67,ChemCorp,Class 3
+2023-01-02,BATCH-853-B,Sodium Hydroxide,Reagent,2331.9,14.32,25978.18,Acme Labs,Class 8
+2023-01-03,BATCH-752-A,Sodium Hydroxide,Reagent,3611.0,5.96,44328.91,Global Pharma,Class 8
+2023-01-04,BATCH-311-B,Sulfuric Acid,Industrial,2875.3,9.13,11563.33,Global Pharma,Safe
+2023-01-05,BATCH-301-A,Sodium Hydroxide,Industrial,3578.5,0.66,27573.86,BioSynthetics,Safe
+2023-01-06,BATCH-124-B,Acetone,Analytical,3410.5,12.4,11936.89,Global Pharma,Class 8
+2023-01-07,BATCH-709-B,Ethanol,Analytical,4035.5,9.86,364.07,BioSynthetics,Class 8
+2023-01-08,BATCH-978-C,Acetone,Analytical,1853.6,1.49,37223.15,Global Pharma,Class 8
+2023-01-09,BATCH-411-A,Acetone,Analytical,2816.7,7.12,4659.94,Acme Labs,Safe
+2023-01-10,BATCH-444-A,Benzene,Industrial,2431.3,13.85,27652.78,ChemCorp,Class 3
+2023-01-11,BATCH-939-B,Benzene,Reagent,3055.0,4.31,38203.72,ChemCorp,Class 3
+2023-01-12,BATCH-155-B,Benzene,Reagent,3084.4,9.92,2224.2,Global Pharma,Class 3
+2023-01-13,BATCH-928-B,Benzene,Reagent,2181.4,11.26,47754.31,ChemCorp,Class 8
+2023-01-14,BATCH-701-C,Sulfuric Acid,Food Grade,1707.8,7.72,46336.35,Global Pharma,Safe
+2023-01-15,BATCH-475-A,Sodium Hydroxide,Reagent,847.4,0.52,3986.34,Acme Labs,Class 8
+2023-01-16,BATCH-407-C,Benzene,Food Grade,3806.0,9.9,15262.36,BioSynthetics,Class 8
+2023-01-17,BATCH-412-A,Ethanol,Reagent,370.0,13.18,30556.73,Acme Labs,Class 8
+2023-01-18,BATCH-220-A,Acetone,Industrial,3180.8,13.26,8254.23,Acme Labs,Safe
+2023-01-19,BATCH-971-B,Sulfuric Acid,Analytical,51.2,11.32,49188.7,BioSynthetics,Class 3
+2023-01-20,BATCH-879-C,Benzene,Food Grade,2736.7,10.18,27711.4,Global Pharma,Class 3
+2023-01-21,BATCH-966-C,Acetone,Industrial,2708.4,3.88,11875.44,ChemCorp,Safe
+2023-01-22,BATCH-590-B,Ethanol,Industrial,1283.4,8.6,8267.96,BioSynthetics,Class 8
+2023-01-23,BATCH-151-A,Ethanol,Analytical,430.4,6.01,931.96,ChemCorp,Class 3
+2023-01-24,BATCH-628-A,Sulfuric Acid,Food Grade,1034.3,11.93,15246.05,Global Pharma,Class 3
+2023-01-25,BATCH-912-A,Sulfuric Acid,Industrial,1469.9,9.09,11445.9,BioSynthetics,Safe
+2023-01-26,BATCH-398-A,Sodium Hydroxide,Food Grade,3620.3,13.39,14422.8,BioSynthetics,Class 3
+2023-01-27,BATCH-631-C,Sulfuric Acid,Food Grade,2263.2,10.4,34082.72,Acme Labs,Safe
+2023-01-28,BATCH-676-C,Sodium Hydroxide,Industrial,3193.0,1.04,40904.82,Global Pharma,Class 8
+2023-01-29,BATCH-190-C,Ethanol,Industrial,1924.7,0.9,37094.73,BioSynthetics,Class 3
+2023-01-30,BATCH-940-C,Sodium Hydroxide,Analytical,3611.9,3.63,6596.82,Acme Labs,Class 8
+2023-01-31,BATCH-786-C,Benzene,Industrial,2702.5,0.58,47478.78,Global Pharma,Safe
+2023-02-01,BATCH-845-B,Acetone,Industrial,4240.3,1.68,40483.52,Global Pharma,Class 8
+2023-02-02,BATCH-869-C,Sulfuric Acid,Food Grade,1695.8,10.4,2480.86,Acme Labs,Class 8
+2023-02-03,BATCH-294-B,Acetone,Food Grade,1222.1,5.15,35221.84,Acme Labs,Class 3
+2023-02-04,BATCH-363-B,Sodium Hydroxide,Analytical,1618.9,11.7,10982.66,Global Pharma,Safe
+2023-02-05,BATCH-676-C,Sodium Hydroxide,Industrial,4583.8,1.35,37054.92,Global Pharma,Class 8
+2023-02-06,BATCH-894-A,Sodium Hydroxide,Industrial,202.2,5.64,46556.02,ChemCorp,Class 8
+2023-02-07,BATCH-137-B,Acetone,Industrial,4522.1,7.5,49742.01,ChemCorp,Safe
+2023-02-08,BATCH-180-A,Benzene,Reagent,2568.0,5.81,14091.61,Global Pharma,Class 3
+2023-02-09,BATCH-854-A,Sulfuric Acid,Food Grade,2907.7,2.47,47979.78,ChemCorp,Class 3
+2023-02-10,BATCH-234-C,Benzene,Industrial,2768.0,1.69,37678.65,ChemCorp,Class 8
+2023-02-11,BATCH-571-C,Sulfuric Acid,Reagent,2383.4,14.49,44557.06,Global Pharma,Class 8
+2023-02-12,BATCH-466-A,Sulfuric Acid,Analytical,635.2,11.07,24048.58,ChemCorp,Safe
+2023-02-13,BATCH-627-A,Acetone,Food Grade,745.5,7.54,40643.86,Acme Labs,Safe
+2023-02-14,BATCH-616-C,Ethanol,Reagent,1192.1,9.19,29871.72,BioSynthetics,Class 8
+2023-02-15,BATCH-980-B,Sodium Hydroxide,Industrial,1564.2,1.03,35766.9,ChemCorp,Class 3
+2023-02-16,BATCH-264-A,Sodium Hydroxide,Reagent,2120.4,8.25,45310.73,Global Pharma,Class 3
+2023-02-17,BATCH-340-C,Acetone,Food Grade,3502.6,7.59,29088.57,BioSynthetics,Class 3
+2023-02-18,BATCH-536-C,Acetone,Food Grade,945.4,14.93,13060.27,ChemCorp,Class 3
+2023-02-19,BATCH-327-C,Sulfuric Acid,Industrial,196.8,4.0,48282.87,Global Pharma,Class 8
+2023-02-20,BATCH-588-C,Ethanol,Industrial,4159.1,11.21,12093.85,Acme Labs,Safe
+2023-02-21,BATCH-474-A,Sodium Hydroxide,Reagent,4781.1,12.32,26659.59,BioSynthetics,Class 8
+2023-02-22,BATCH-105-C,Acetone,Analytical,4665.2,6.4,6337.06,Global Pharma,Class 8
+2023-02-23,BATCH-362-A,Sodium Hydroxide,Reagent,3118.5,12.77,27559.92,ChemCorp,Safe
+2023-02-24,BATCH-209-B,Acetone,Industrial,4399.4,10.44,27000.55,BioSynthetics,Class 3
+2023-02-25,BATCH-463-A,Ethanol,Analytical,2744.8,7.51,18670.8,ChemCorp,Safe
+2023-02-26,BATCH-204-C,Sulfuric Acid,Reagent,688.4,8.91,32392.66,BioSynthetics,Class 8
+2023-02-27,BATCH-186-B,Sodium Hydroxide,Industrial,2739.4,3.28,22852.88,BioSynthetics,Class 3
+2023-02-28,BATCH-104-B,Sodium Hydroxide,Industrial,1372.3,1.35,16849.05,BioSynthetics,Class 3
+2023-03-01,BATCH-380-A,Acetone,Food Grade,4446.1,9.31,43981.49,ChemCorp,Class 3
+2023-03-02,BATCH-148-A,Ethanol,Analytical,345.1,2.89,8114.55,ChemCorp,Class 3
+2023-03-03,BATCH-959-B,Acetone,Food Grade,3237.8,6.82,24437.93,ChemCorp,Class 8
+2023-03-04,BATCH-606-A,Benzene,Reagent,2276.4,2.34,41717.06,Acme Labs,Safe
+2023-03-05,BATCH-837-C,Sulfuric Acid,Industrial,1254.4,14.21,8710.63,BioSynthetics,Safe
+2023-03-06,BATCH-256-A,Benzene,Industrial,2846.7,13.38,44990.48,BioSynthetics,Safe
+2023-03-07,BATCH-678-B,Sodium Hydroxide,Analytical,3074.1,6.13,10994.1,BioSynthetics,Safe
+2023-03-08,BATCH-223-B,Benzene,Industrial,1130.4,8.55,26341.01,Global Pharma,Safe
+2023-03-09,BATCH-167-C,Acetone,Industrial,4358.5,10.33,23248.66,BioSynthetics,Class 3
+2023-03-10,BATCH-209-B,Benzene,Reagent,2129.6,6.04,1364.28,Global Pharma,Class 8
+2023-03-11,BATCH-113-A,Benzene,Reagent,1921.5,7.22,3163.66,Acme Labs,Safe
+2023-03-12,BATCH-836-B,Benzene,Analytical,2792.9,6.07,36204.23,Global Pharma,Class 8
+2023-03-13,BATCH-683-B,Sodium Hydroxide,Industrial,3417.4,14.3,49136.85,BioSynthetics,Class 3
+2023-03-14,BATCH-789-C,Benzene,Food Grade,3146.7,4.23,18753.63,Acme Labs,Class 3
+2023-03-15,BATCH-127-A,Ethanol,Industrial,4380.7,12.72,42892.3,ChemCorp,Class 3
+2023-03-16,BATCH-155-C,Benzene,Reagent,3532.6,12.12,26800.94,Global Pharma,Class 8
+2023-03-17,BATCH-441-C,Sulfuric Acid,Analytical,3931.2,0.91,40073.1,ChemCorp,Safe
+2023-03-18,BATCH-607-B,Acetone,Industrial,4222.9,1.3,29656.86,Global Pharma,Class 3
+2023-03-19,BATCH-363-C,Ethanol,Analytical,4869.1,11.87,9762.09,Acme Labs,Class 8
+2023-03-20,BATCH-603-C,Sulfuric Acid,Food Grade,1194.3,7.96,41101.77,ChemCorp,Class 8
+2023-03-21,BATCH-321-A,Ethanol,Analytical,3315.1,12.09,8325.33,BioSynthetics,Safe
+2023-03-22,BATCH-808-B,Sodium Hydroxide,Food Grade,187.3,1.79,14387.16,Acme Labs,Class 3
+2023-03-23,BATCH-716-A,Sulfuric Acid,Food Grade,2474.2,1.68,24284.22,Acme Labs,Class 8
+2023-03-24,BATCH-963-A,Benzene,Food Grade,4014.1,8.8,14337.15,ChemCorp,Class 8
+2023-03-25,BATCH-798-B,Sodium Hydroxide,Industrial,2981.3,7.08,11267.93,Acme Labs,Class 8
+2023-03-26,BATCH-317-B,Acetone,Industrial,4273.9,5.82,34728.63,ChemCorp,Class 8
+2023-03-27,BATCH-633-B,Sulfuric Acid,Reagent,1800.5,14.21,48221.02,Acme Labs,Class 8
+2023-03-28,BATCH-332-C,Sulfuric Acid,Reagent,4350.9,1.27,26772.5,BioSynthetics,Class 3
+2023-03-29,BATCH-908-A,Sulfuric Acid,Industrial,456.0,6.32,17868.28,BioSynthetics,Class 8
+2023-03-30,BATCH-921-B,Acetone,Food Grade,2147.4,6.64,48651.85,ChemCorp,Class 3
+2023-03-31,BATCH-178-B,Ethanol,Reagent,839.8,2.77,3226.64,Acme Labs,Class 3
+2023-04-01,BATCH-629-B,Benzene,Food Grade,1285.0,8.38,28508.19,Acme Labs,Class 8
+2023-04-02,BATCH-666-A,Acetone,Industrial,4850.2,10.16,8815.2,ChemCorp,Safe
+2023-04-03,BATCH-920-A,Sulfuric Acid,Analytical,2932.8,8.03,44763.09,ChemCorp,Class 3
+2023-04-04,BATCH-464-A,Ethanol,Industrial,3968.2,13.68,15692.7,ChemCorp,Class 3
+2023-04-05,BATCH-330-B,Acetone,Food Grade,1300.7,9.11,4602.29,ChemCorp,Class 3
+2023-04-06,BATCH-180-C,Benzene,Reagent,665.0,5.97,22013.84,Global Pharma,Class 3
+2023-04-07,BATCH-495-A,Sulfuric Acid,Reagent,3813.2,13.98,25632.54,BioSynthetics,Safe
+2023-04-08,BATCH-566-B,Sulfuric Acid,Food Grade,3481.9,1.27,20654.27,Acme Labs,Class 8
+2023-04-09,BATCH-777-A,Acetone,Analytical,2102.7,13.35,29030.45,Acme Labs,Class 8
+2023-04-10,BATCH-454-A,Ethanol,Reagent,3351.5,6.0,38428.93,Global Pharma,Class 8
+2023-04-11,BATCH-140-B,Benzene,Industrial,1695.7,5.13,12401.41,Acme Labs,Safe
+2023-04-12,BATCH-270-C,Benzene,Analytical,4917.1,8.89,40985.62,ChemCorp,Class 8
+2023-04-13,BATCH-446-A,Sulfuric Acid,Reagent,1374.6,1.76,8257.9,ChemCorp,Class 8
+2023-04-14,BATCH-487-B,Benzene,Food Grade,537.9,4.23,28513.26,Acme Labs,Class 8
+2023-04-15,BATCH-944-C,Benzene,Reagent,2663.1,8.13,31643.92,Acme Labs,Class 3
+2023-04-16,BATCH-925-A,Ethanol,Reagent,920.4,14.7,41228.74,BioSynthetics,Safe
+2023-04-17,BATCH-372-A,Sulfuric Acid,Industrial,3995.9,1.29,37055.35,ChemCorp,Class 3
+2023-04-18,BATCH-213-A,Sulfuric Acid,Food Grade,4852.1,9.93,32508.36,ChemCorp,Class 3
+2023-04-19,BATCH-479-B,Acetone,Industrial,2968.6,10.63,31777.78,Acme Labs,Class 3
+2023-04-20,BATCH-662-C,Acetone,Reagent,3158.3,6.02,43998.34,Acme Labs,Safe
+2023-04-21,BATCH-339-B,Sodium Hydroxide,Analytical,4093.3,9.66,41094.42,BioSynthetics,Safe
+2023-04-22,BATCH-417-B,Benzene,Industrial,2688.8,5.39,30437.49,Acme Labs,Class 8
+2023-04-23,BATCH-419-C,Benzene,Food Grade,3361.0,10.85,48282.9,Global Pharma,Class 8
+2023-04-24,BATCH-314-A,Sulfuric Acid,Reagent,1419.8,4.72,33765.05,BioSynthetics,Class 8
+2023-04-25,BATCH-530-B,Benzene,Analytical,4522.7,3.75,27218.21,ChemCorp,Class 8
+2023-04-26,BATCH-319-B,Ethanol,Food Grade,3729.8,13.34,6209.7,BioSynthetics,Class 3
+2023-04-27,BATCH-450-A,Benzene,Reagent,1925.5,8.64,25920.59,ChemCorp,Class 3
+2023-04-28,BATCH-676-C,Ethanol,Analytical,1954.8,0.79,12544.17,ChemCorp,Class 8
+2023-04-29,BATCH-611-C,Sodium Hydroxide,Industrial,2356.3,10.78,43550.95,Acme Labs,Class 8
+2023-04-30,BATCH-331-B,Benzene,Industrial,3014.8,8.53,45884.17,ChemCorp,Class 8
+2023-05-01,BATCH-825-B,Ethanol,Food Grade,3210.0,6.67,34316.54,BioSynthetics,Class 8
+2023-05-02,BATCH-993-B,Ethanol,Analytical,3029.9,8.28,10235.1,ChemCorp,Class 3
+2023-05-03,BATCH-860-C,Sulfuric Acid,Industrial,4334.5,12.53,132.63,Global Pharma,Safe
+2023-05-04,BATCH-886-B,Benzene,Food Grade,3116.7,1.07,27157.11,ChemCorp,Class 3
+2023-05-05,BATCH-496-B,Ethanol,Analytical,756.1,1.29,30653.94,ChemCorp,Class 3
+2023-05-06,BATCH-691-B,Acetone,Industrial,4488.8,9.37,14491.12,Acme Labs,Class 8
+2023-05-07,BATCH-733-A,Sodium Hydroxide,Industrial,1459.5,3.25,33734.34,Global Pharma,Safe
+2023-05-08,BATCH-459-C,Acetone,Industrial,2998.6,5.42,213.89,ChemCorp,Class 3
+2023-05-09,BATCH-969-C,Sodium Hydroxide,Reagent,1581.3,4.99,36131.73,BioSynthetics,Class 3
+2023-05-10,BATCH-907-B,Benzene,Food Grade,3555.4,7.49,23288.66,ChemCorp,Class 3
+2023-05-11,BATCH-851-B,Benzene,Industrial,4090.7,5.34,22642.17,Global Pharma,Class 3
+2023-05-12,BATCH-233-C,Sodium Hydroxide,Analytical,3528.0,7.29,40607.21,BioSynthetics,Class 3
+2023-05-13,BATCH-799-C,Acetone,Reagent,4965.9,5.43,34173.33,ChemCorp,Class 8
+2023-05-14,BATCH-583-A,Acetone,Food Grade,4934.3,2.14,33753.77,ChemCorp,Class 3
+2023-05-15,BATCH-144-A,Acetone,Analytical,3406.0,3.28,4930.08,BioSynthetics,Class 8
+2023-05-16,BATCH-902-A,Acetone,Food Grade,3310.7,9.69,20734.17,BioSynthetics,Class 3
+2023-05-17,BATCH-656-C,Sulfuric Acid,Food Grade,925.3,1.46,26074.37,Global Pharma,Class 3
+2023-05-18,BATCH-610-C,Ethanol,Food Grade,4069.4,4.12,35799.53,ChemCorp,Safe
+2023-05-19,BATCH-899-C,Sulfuric Acid,Food Grade,1880.7,9.26,18798.27,BioSynthetics,Safe
+2023-05-20,BATCH-497-A,Benzene,Food Grade,4095.5,0.67,2994.07,BioSynthetics,Class 8
+2023-05-21,BATCH-103-C,Sodium Hydroxide,Industrial,2223.8,14.62,4433.82,Acme Labs,Safe
+2023-05-22,BATCH-463-C,Acetone,Industrial,2065.3,7.33,46938.98,Acme Labs,Safe
+2023-05-23,BATCH-605-B,Ethanol,Industrial,1033.8,5.1,48756.59,BioSynthetics,Class 8
+2023-05-24,BATCH-686-A,Sodium Hydroxide,Analytical,3408.7,14.25,30218.13,BioSynthetics,Class 3
+2023-05-25,BATCH-370-C,Ethanol,Industrial,3889.6,14.55,25296.53,Global Pharma,Class 8
+2023-05-26,BATCH-352-A,Sodium Hydroxide,Reagent,4493.1,2.3,46192.02,BioSynthetics,Class 3
+2023-05-27,BATCH-713-B,Ethanol,Reagent,612.3,8.79,32741.16,Global Pharma,Class 3
+2023-05-28,BATCH-141-A,Acetone,Industrial,2110.3,14.65,7921.66,Global Pharma,Class 3
+2023-05-29,BATCH-132-C,Benzene,Reagent,4903.2,12.14,47955.48,Acme Labs,Safe
+2023-05-30,BATCH-171-C,Sulfuric Acid,Analytical,343.1,1.23,13754.05,BioSynthetics,Safe
+2023-05-31,BATCH-572-B,Sulfuric Acid,Industrial,3435.6,1.71,34965.36,Acme Labs,Class 3
+2023-06-01,BATCH-885-B,Ethanol,Reagent,1236.6,8.67,30627.83,Acme Labs,Class 8
+2023-06-02,BATCH-713-C,Sodium Hydroxide,Reagent,138.4,9.26,48063.74,BioSynthetics,Safe
+2023-06-03,BATCH-254-C,Ethanol,Industrial,4898.3,5.36,36570.7,Acme Labs,Class 8
+2023-06-04,BATCH-734-C,Sodium Hydroxide,Reagent,4909.3,3.83,24239.38,Global Pharma,Safe
+2023-06-05,BATCH-111-C,Benzene,Analytical,1429.3,5.48,20747.52,Global Pharma,Class 3
+2023-06-06,BATCH-734-A,Sulfuric Acid,Analytical,3966.1,11.07,20934.27,BioSynthetics,Class 8
+2023-06-07,BATCH-278-B,Sulfuric Acid,Analytical,373.7,11.1,34537.05,Global Pharma,Class 8
+2023-06-08,BATCH-670-A,Sodium Hydroxide,Industrial,373.6,6.07,28379.22,Global Pharma,Safe
+2023-06-09,BATCH-412-A,Sodium Hydroxide,Analytical,4094.1,4.36,36131.76,Acme Labs,Safe
+2023-06-10,BATCH-789-A,Sulfuric Acid,Industrial,948.5,6.45,6037.62,BioSynthetics,Class 3
+2023-06-11,BATCH-266-B,Benzene,Food Grade,1939.3,13.78,37353.8,BioSynthetics,Class 8
+2023-06-12,BATCH-284-C,Sulfuric Acid,Industrial,2393.7,2.48,6772.87,BioSynthetics,Class 3
+2023-06-13,BATCH-296-A,Acetone,Industrial,4387.9,11.46,23845.52,ChemCorp,Class 8
+2023-06-14,BATCH-699-B,Benzene,Food Grade,1765.8,4.32,16555.43,Acme Labs,Class 3
+2023-06-15,BATCH-584-A,Sulfuric Acid,Industrial,3015.2,11.0,8829.84,Global Pharma,Class 8
+2023-06-16,BATCH-903-B,Acetone,Industrial,4535.1,13.6,16445.74,ChemCorp,Safe
+2023-06-17,BATCH-410-B,Sulfuric Acid,Reagent,2487.7,2.65,9648.87,Global Pharma,Class 3
+2023-06-18,BATCH-523-C,Sulfuric Acid,Industrial,565.4,13.5,40611.48,BioSynthetics,Class 8
+2023-06-19,BATCH-328-C,Ethanol,Food Grade,1985.6,5.72,14020.31,Acme Labs,Class 3
+2023-06-20,BATCH-922-A,Benzene,Reagent,4441.9,6.87,20410.55,ChemCorp,Class 8
+2023-06-21,BATCH-619-C,Acetone,Analytical,1608.9,11.21,44195.72,ChemCorp,Class 8
+2023-06-22,BATCH-442-C,Benzene,Industrial,2795.6,3.77,29161.28,Global Pharma,Class 8
+2023-06-23,BATCH-714-C,Sodium Hydroxide,Industrial,2953.5,14.4,6335.02,Global Pharma,Safe
+2023-06-24,BATCH-628-C,Sulfuric Acid,Food Grade,736.6,3.7,49507.47,ChemCorp,Class 8
+2023-06-25,BATCH-644-B,Sulfuric Acid,Analytical,407.5,3.68,26368.95,ChemCorp,Class 8
+2023-06-26,BATCH-345-A,Ethanol,Analytical,1349.8,12.18,30542.29,Acme Labs,Class 3
+2023-06-27,BATCH-135-A,Sodium Hydroxide,Industrial,1660.4,9.8,3944.49,ChemCorp,Class 8
+2023-06-28,BATCH-185-C,Acetone,Reagent,276.1,1.51,30079.91,Acme Labs,Class 8
+2023-06-29,BATCH-941-B,Sodium Hydroxide,Industrial,1610.2,8.42,617.69,Global Pharma,Class 8
+2023-06-30,BATCH-340-B,Ethanol,Industrial,3995.3,13.75,5580.91,ChemCorp,Class 8
+2023-07-01,BATCH-131-B,Benzene,Food Grade,1302.2,14.94,3709.6,Global Pharma,Class 8
+2023-07-02,BATCH-335-A,Sulfuric Acid,Industrial,1995.2,12.76,4701.91,Global Pharma,Class 3
+2023-07-03,BATCH-548-A,Acetone,Food Grade,4954.9,3.9,4754.09,Acme Labs,Class 3
+2023-07-04,BATCH-873-B,Ethanol,Industrial,833.0,0.95,5929.79,Global Pharma,Class 3
+2023-07-05,BATCH-176-A,Acetone,Industrial,4049.9,13.52,48247.72,BioSynthetics,Class 8
+2023-07-06,BATCH-750-C,Sodium Hydroxide,Analytical,660.0,9.54,2522.29,ChemCorp,Class 8
+2023-07-07,BATCH-678-C,Ethanol,Reagent,3138.8,12.06,12617.2,ChemCorp,Safe
+2023-07-08,BATCH-895-A,Acetone,Food Grade,1986.3,3.1,18395.36,ChemCorp,Safe
+2023-07-09,BATCH-409-A,Benzene,Industrial,4745.3,13.59,18442.17,Global Pharma,Safe
+2023-07-10,BATCH-470-B,Acetone,Industrial,1694.7,6.25,14585.66,BioSynthetics,Class 3
+2023-07-11,BATCH-401-A,Ethanol,Industrial,1624.3,14.94,9708.6,BioSynthetics,Class 3
+2023-07-12,BATCH-326-C,Ethanol,Food Grade,215.6,7.46,17908.34,BioSynthetics,Class 3
+2023-07-13,BATCH-709-C,Sulfuric Acid,Food Grade,4720.4,8.48,23343.2,Acme Labs,Class 8
+2023-07-14,BATCH-703-B,Benzene,Analytical,2481.1,3.73,20291.71,ChemCorp,Safe
+2023-07-15,BATCH-509-C,Sodium Hydroxide,Reagent,4436.7,13.97,27440.49,Global Pharma,Class 3
+2023-07-16,BATCH-340-C,Acetone,Industrial,1950.3,11.51,12479.61,Acme Labs,Class 3
+2023-07-17,BATCH-841-C,Acetone,Industrial,3179.9,11.55,25151.5,Acme Labs,Class 8
+2023-07-18,BATCH-914-A,Acetone,Food Grade,4618.0,14.09,36085.35,Acme Labs,Safe
+2023-07-19,BATCH-341-A,Acetone,Reagent,2490.0,9.85,20611.71,Acme Labs,Safe
+2023-07-20,BATCH-959-B,Sulfuric Acid,Food Grade,1344.2,8.0,29284.88,Acme Labs,Class 8
+2023-07-21,BATCH-923-B,Sodium Hydroxide,Analytical,144.8,12.84,29212.69,BioSynthetics,Class 8
+2023-07-22,BATCH-876-B,Acetone,Industrial,3154.5,3.15,26483.71,Global Pharma,Class 3
+2023-07-23,BATCH-343-A,Sodium Hydroxide,Reagent,4334.2,12.77,11572.75,Global Pharma,Class 8
+2023-07-24,BATCH-452-C,Sodium Hydroxide,Analytical,2682.2,0.72,18398.06,Global Pharma,Class 8
+2023-07-25,BATCH-110-C,Sodium Hydroxide,Food Grade,2507.2,9.86,7363.68,Global Pharma,Safe
+2023-07-26,BATCH-979-A,Sodium Hydroxide,Industrial,2666.0,7.27,30941.21,BioSynthetics,Class 3
+2023-07-27,BATCH-232-A,Ethanol,Food Grade,2858.7,8.07,23978.18,BioSynthetics,Safe
+2023-07-28,BATCH-537-C,Sodium Hydroxide,Reagent,3822.6,7.43,25557.08,Global Pharma,Class 8
+2023-07-29,BATCH-756-C,Sulfuric Acid,Reagent,4834.1,1.18,2362.71,ChemCorp,Class 8
+2023-07-30,BATCH-699-C,Acetone,Food Grade,3821.6,2.33,3165.71,ChemCorp,Safe
+2023-07-31,BATCH-872-B,Benzene,Reagent,1029.3,12.13,23602.31,Acme Labs,Safe
+2023-08-01,BATCH-503-B,Sodium Hydroxide,Industrial,4260.1,9.84,12930.02,Global Pharma,Class 3
+2023-08-02,BATCH-981-C,Acetone,Industrial,4015.6,3.66,49612.45,ChemCorp,Class 8
+2023-08-03,BATCH-538-C,Sodium Hydroxide,Reagent,1067.9,4.06,39006.03,Global Pharma,Class 3
+2023-08-04,BATCH-186-A,Ethanol,Analytical,4229.3,1.31,15295.19,ChemCorp,Class 8
+2023-08-05,BATCH-841-B,Sodium Hydroxide,Industrial,3912.6,2.61,23026.16,BioSynthetics,Safe
+2023-08-06,BATCH-125-A,Benzene,Reagent,3898.7,8.65,28055.47,ChemCorp,Class 3
+2023-08-07,BATCH-454-C,Ethanol,Reagent,943.0,11.41,25064.79,BioSynthetics,Safe
+2023-08-08,BATCH-562-B,Acetone,Analytical,2792.9,1.92,19005.23,ChemCorp,Safe
+2023-08-09,BATCH-513-C,Acetone,Analytical,1527.7,7.83,39398.71,Acme Labs,Class 3
+2023-08-10,BATCH-567-A,Sodium Hydroxide,Analytical,3809.3,13.27,3738.81,BioSynthetics,Class 8
+2023-08-11,BATCH-539-A,Sulfuric Acid,Reagent,1125.1,2.7,48965.54,Global Pharma,Class 8
+2023-08-12,BATCH-592-A,Acetone,Food Grade,4704.3,9.77,49782.23,BioSynthetics,Safe
+2023-08-13,BATCH-870-C,Sodium Hydroxide,Analytical,4603.4,10.87,26789.99,ChemCorp,Safe
+2023-08-14,BATCH-865-C,Sulfuric Acid,Analytical,872.9,13.59,41481.49,BioSynthetics,Class 8
+2023-08-15,BATCH-719-A,Ethanol,Food Grade,4187.1,3.41,41803.07,BioSynthetics,Class 8
+2023-08-16,BATCH-405-C,Acetone,Reagent,822.1,11.83,46246.47,Acme Labs,Class 3
+2023-08-17,BATCH-205-A,Acetone,Industrial,2063.8,8.6,36567.55,ChemCorp,Safe
+2023-08-18,BATCH-189-C,Sulfuric Acid,Reagent,4603.4,10.0,7265.17,Acme Labs,Class 8
+2023-08-19,BATCH-813-B,Sulfuric Acid,Food Grade,2913.9,11.86,23989.41,BioSynthetics,Class 3
+2023-08-20,BATCH-413-C,Acetone,Industrial,4803.8,4.33,38644.45,ChemCorp,Class 8
+2023-08-21,BATCH-662-A,Sulfuric Acid,Analytical,508.5,14.67,41859.68,ChemCorp,Class 8
+2023-08-22,BATCH-184-A,Acetone,Industrial,1085.8,1.36,36914.65,Global Pharma,Class 3
+2023-08-23,BATCH-691-B,Acetone,Food Grade,530.8,1.45,6689.07,ChemCorp,Safe
+2023-08-24,BATCH-207-A,Sodium Hydroxide,Industrial,4447.5,0.72,18179.81,ChemCorp,Class 8
+2023-08-25,BATCH-612-A,Ethanol,Reagent,213.7,10.37,6286.86,ChemCorp,Safe
+2023-08-26,BATCH-359-C,Ethanol,Analytical,1973.5,10.82,3352.85,BioSynthetics,Class 3
+2023-08-27,BATCH-838-A,Sodium Hydroxide,Industrial,4576.6,9.93,18021.04,Global Pharma,Class 8
+2023-08-28,BATCH-396-B,Sulfuric Acid,Industrial,3680.9,2.9,1360.72,Global Pharma,Class 8
+2023-08-29,BATCH-291-A,Sulfuric Acid,Industrial,4978.6,6.93,5034.35,Global Pharma,Class 8
+2023-08-30,BATCH-952-B,Benzene,Food Grade,199.7,1.97,761.87,BioSynthetics,Safe
+2023-08-31,BATCH-385-A,Sodium Hydroxide,Food Grade,2523.0,10.55,12878.13,Global Pharma,Safe
+2023-09-01,BATCH-589-B,Acetone,Industrial,2293.1,8.06,5080.21,Acme Labs,Class 8
+2023-09-02,BATCH-440-C,Benzene,Industrial,3428.6,6.63,10135.76,BioSynthetics,Class 3
+2023-09-03,BATCH-221-A,Sodium Hydroxide,Analytical,1702.6,1.69,24826.72,ChemCorp,Safe
+2023-09-04,BATCH-474-B,Sodium Hydroxide,Industrial,4416.2,14.68,40860.46,Acme Labs,Class 8
+2023-09-05,BATCH-956-C,Sulfuric Acid,Analytical,4368.5,11.15,27634.65,BioSynthetics,Class 8
+2023-09-06,BATCH-781-C,Acetone,Industrial,1714.3,12.6,7882.63,ChemCorp,Safe
+2023-09-07,BATCH-258-C,Sulfuric Acid,Food Grade,3677.4,11.58,445.5,ChemCorp,Safe
+2023-09-08,BATCH-411-A,Sulfuric Acid,Analytical,2407.1,14.54,35534.26,Acme Labs,Class 3
+2023-09-09,BATCH-902-B,Ethanol,Reagent,2567.7,2.34,33556.5,Global Pharma,Class 8
+2023-09-10,BATCH-226-B,Benzene,Analytical,2846.6,14.87,40587.15,BioSynthetics,Class 8
+2023-09-11,BATCH-681-B,Sodium Hydroxide,Analytical,4986.2,4.47,13616.61,Global Pharma,Safe
+2023-09-12,BATCH-152-B,Sodium Hydroxide,Industrial,1840.5,10.46,12315.95,Global Pharma,Safe
+2023-09-13,BATCH-276-B,Ethanol,Reagent,1334.4,7.6,5775.87,ChemCorp,Safe
+2023-09-14,BATCH-501-A,Sulfuric Acid,Reagent,3802.5,1.58,20096.76,ChemCorp,Safe
+2023-09-15,BATCH-917-C,Ethanol,Industrial,3113.7,8.06,44403.14,Acme Labs,Class 8
+2023-09-16,BATCH-721-A,Sodium Hydroxide,Food Grade,3732.6,7.09,48942.7,ChemCorp,Safe
+2023-09-17,BATCH-832-C,Sodium Hydroxide,Industrial,4309.2,13.05,3326.68,Global Pharma,Class 8
+2023-09-18,BATCH-106-B,Benzene,Analytical,2031.6,2.99,43388.13,Global Pharma,Class 3
+2023-09-19,BATCH-562-B,Ethanol,Food Grade,829.7,3.77,6160.38,Acme Labs,Safe
+2023-09-20,BATCH-952-A,Benzene,Industrial,475.4,1.7,44581.64,Global Pharma,Safe
+2023-09-21,BATCH-422-A,Ethanol,Analytical,3466.1,6.67,10100.08,Global Pharma,Safe
+2023-09-22,BATCH-401-B,Ethanol,Analytical,1841.5,7.21,36128.97,Acme Labs,Class 3
+2023-09-23,BATCH-394-C,Ethanol,Analytical,2588.8,5.34,4660.68,BioSynthetics,Safe
+2023-09-24,BATCH-453-C,Acetone,Food Grade,4883.8,10.93,20255.3,Global Pharma,Class 8
+2023-09-25,BATCH-326-A,Ethanol,Analytical,3334.2,3.39,20972.38,BioSynthetics,Class 3
+2023-09-26,BATCH-497-A,Sodium Hydroxide,Food Grade,474.0,1.68,14996.38,BioSynthetics,Class 8
+2023-09-27,BATCH-138-C,Acetone,Food Grade,4587.3,1.56,32729.73,ChemCorp,Safe
+2023-09-28,BATCH-484-C,Benzene,Analytical,3772.4,12.39,28995.62,Acme Labs,Class 3
+2023-09-29,BATCH-398-A,Sulfuric Acid,Industrial,4456.3,11.01,22129.77,Global Pharma,Safe
+2023-09-30,BATCH-303-A,Sodium Hydroxide,Analytical,3638.4,7.02,21181.97,Global Pharma,Safe
+2023-10-01,BATCH-523-A,Ethanol,Reagent,2999.0,13.14,29464.24,ChemCorp,Class 8
+2023-10-02,BATCH-455-A,Acetone,Reagent,3960.3,8.04,38962.75,ChemCorp,Class 8
+2023-10-03,BATCH-627-C,Sulfuric Acid,Industrial,988.9,12.66,5518.12,Global Pharma,Class 3
+2023-10-04,BATCH-499-A,Ethanol,Industrial,816.5,12.15,44847.03,Acme Labs,Safe
+2023-10-05,BATCH-421-A,Ethanol,Analytical,196.4,12.84,28035.15,ChemCorp,Safe
+2023-10-06,BATCH-429-C,Benzene,Food Grade,2857.0,4.09,26302.24,Acme Labs,Class 3
+2023-10-07,BATCH-249-C,Acetone,Analytical,885.6,14.65,38255.21,Acme Labs,Class 3
+2023-10-08,BATCH-222-C,Acetone,Analytical,3546.5,2.11,454.62,Acme Labs,Class 8
+2023-10-09,BATCH-827-A,Ethanol,Analytical,2765.1,7.5,7298.77,BioSynthetics,Class 8
+2023-10-10,BATCH-805-B,Sodium Hydroxide,Analytical,1920.3,2.59,40509.75,Global Pharma,Class 3
+2023-10-11,BATCH-142-C,Ethanol,Industrial,2537.4,3.48,37969.65,Global Pharma,Class 3
+2023-10-12,BATCH-245-C,Sulfuric Acid,Industrial,4388.0,13.42,14577.08,Acme Labs,Safe
+2023-10-13,BATCH-108-B,Acetone,Food Grade,3388.1,0.63,40972.6,Acme Labs,Safe
+2023-10-14,BATCH-464-C,Sodium Hydroxide,Industrial,3980.7,11.72,32052.15,Acme Labs,Class 8
+2023-10-15,BATCH-972-A,Acetone,Food Grade,1333.2,3.25,36109.44,Global Pharma,Class 8
+2023-10-16,BATCH-824-A,Sulfuric Acid,Food Grade,1650.1,13.9,45964.97,ChemCorp,Safe
+2023-10-17,BATCH-136-B,Sodium Hydroxide,Reagent,1813.2,9.55,43847.48,Acme Labs,Safe
+2023-10-18,BATCH-362-A,Sulfuric Acid,Reagent,2244.6,5.06,28670.5,Acme Labs,Class 3
+2023-10-19,BATCH-469-B,Benzene,Analytical,1751.9,11.7,8487.42,BioSynthetics,Class 8
+2023-10-20,BATCH-480-C,Sodium Hydroxide,Analytical,676.1,8.49,659.66,BioSynthetics,Safe
+2023-10-21,BATCH-712-A,Benzene,Reagent,1992.8,0.83,40784.9,BioSynthetics,Class 8
+2023-10-22,BATCH-709-B,Acetone,Food Grade,2937.8,10.0,42102.77,ChemCorp,Class 3
+2023-10-23,BATCH-632-C,Ethanol,Analytical,72.5,12.2,30694.24,ChemCorp,Class 3
+2023-10-24,BATCH-876-C,Sodium Hydroxide,Analytical,4624.9,9.22,40594.69,Global Pharma,Class 3
+2023-10-25,BATCH-945-B,Benzene,Analytical,380.1,11.19,42265.13,Acme Labs,Safe
+2023-10-26,BATCH-996-B,Sulfuric Acid,Industrial,3896.7,1.72,42357.13,ChemCorp,Safe
+2023-10-27,BATCH-127-A,Ethanol,Analytical,4746.2,14.89,3537.3,ChemCorp,Safe
+2023-10-28,BATCH-968-A,Sodium Hydroxide,Food Grade,2643.1,8.19,46469.15,BioSynthetics,Class 3
+2023-10-29,BATCH-402-C,Ethanol,Analytical,2053.0,13.4,37886.5,Acme Labs,Class 3
+2023-10-30,BATCH-421-A,Benzene,Reagent,1416.1,14.19,47256.77,ChemCorp,Class 8
+2023-10-31,BATCH-553-B,Ethanol,Industrial,1876.1,8.06,15966.11,ChemCorp,Safe
+2023-11-01,BATCH-862-B,Ethanol,Reagent,2092.8,2.76,45957.87,Acme Labs,Class 3
+2023-11-02,BATCH-880-B,Ethanol,Reagent,3165.5,7.21,35684.38,BioSynthetics,Safe
+2023-11-03,BATCH-979-C,Benzene,Food Grade,97.5,11.08,573.65,Global Pharma,Safe
+2023-11-04,BATCH-213-B,Sulfuric Acid,Industrial,1131.8,12.4,385.13,BioSynthetics,Class 8
+2023-11-05,BATCH-809-B,Ethanol,Analytical,4163.2,11.18,21266.19,Global Pharma,Class 3
+2023-11-06,BATCH-833-A,Acetone,Analytical,924.0,9.55,7491.38,Global Pharma,Class 3
+2023-11-07,BATCH-312-C,Benzene,Reagent,3172.1,3.41,17752.01,BioSynthetics,Class 8
+2023-11-08,BATCH-550-A,Ethanol,Analytical,4745.7,11.53,16279.26,Acme Labs,Class 3
+2023-11-09,BATCH-968-A,Ethanol,Reagent,4214.9,10.13,27870.51,Acme Labs,Safe
+2023-11-10,BATCH-622-C,Sulfuric Acid,Industrial,4678.8,8.15,36498.99,Acme Labs,Class 3
+2023-11-11,BATCH-416-C,Acetone,Food Grade,3709.8,3.22,37421.63,Acme Labs,Class 8
+2023-11-12,BATCH-962-A,Sulfuric Acid,Food Grade,1663.5,1.15,3827.97,Global Pharma,Class 3
+2023-11-13,BATCH-646-A,Ethanol,Food Grade,2115.1,6.33,18154.46,BioSynthetics,Safe
+2023-11-14,BATCH-470-C,Ethanol,Reagent,841.6,9.91,24503.83,ChemCorp,Safe
+2023-11-15,BATCH-807-A,Sulfuric Acid,Analytical,1439.8,13.5,28335.82,Global Pharma,Safe
+2023-11-16,BATCH-212-A,Sodium Hydroxide,Food Grade,4052.9,1.37,29526.34,BioSynthetics,Class 8
+2023-11-17,BATCH-807-B,Benzene,Food Grade,4229.9,10.28,18422.81,BioSynthetics,Safe
+2023-11-18,BATCH-979-C,Ethanol,Food Grade,265.6,10.38,4220.7,Global Pharma,Class 8
+2023-11-19,BATCH-787-A,Benzene,Reagent,363.6,7.56,11520.03,Acme Labs,Class 3
+2023-11-20,BATCH-754-A,Benzene,Industrial,3051.6,5.95,1703.71,Global Pharma,Class 3
+2023-11-21,BATCH-839-C,Acetone,Analytical,2600.3,7.24,31602.5,Acme Labs,Safe
+2023-11-22,BATCH-312-B,Sodium Hydroxide,Reagent,1047.5,3.07,368.81,ChemCorp,Safe
+2023-11-23,BATCH-673-B,Sodium Hydroxide,Food Grade,95.1,9.83,2311.42,Acme Labs,Safe
+2023-11-24,BATCH-335-A,Sodium Hydroxide,Food Grade,1761.9,1.59,8394.7,Acme Labs,Class 3
+2023-11-25,BATCH-447-B,Benzene,Food Grade,2174.8,2.95,31422.95,ChemCorp,Class 8
+2023-11-26,BATCH-728-B,Ethanol,Food Grade,4844.3,14.82,33897.7,BioSynthetics,Class 8
+2023-11-27,BATCH-504-B,Ethanol,Reagent,3997.7,0.57,3651.49,BioSynthetics,Class 3
+2023-11-28,BATCH-828-C,Acetone,Food Grade,1438.9,5.85,49362.67,Acme Labs,Safe
+2023-11-29,BATCH-691-A,Sodium Hydroxide,Industrial,2591.0,14.06,26456.72,BioSynthetics,Safe
+2023-11-30,BATCH-598-A,Sulfuric Acid,Industrial,343.7,11.25,31724.45,BioSynthetics,Class 3
+2023-12-01,BATCH-774-B,Sulfuric Acid,Industrial,2569.4,9.38,33730.28,ChemCorp,Class 3
+2023-12-02,BATCH-114-A,Benzene,Analytical,2683.4,13.95,2391.11,Acme Labs,Safe
+2023-12-03,BATCH-650-B,Sulfuric Acid,Analytical,4883.3,11.37,21906.55,Acme Labs,Class 3
+2023-12-04,BATCH-652-A,Sodium Hydroxide,Analytical,4048.9,2.72,20881.21,BioSynthetics,Safe
+2023-12-05,BATCH-163-C,Acetone,Industrial,4314.3,0.73,25072.47,Global Pharma,Class 3
+2023-12-06,BATCH-780-C,Benzene,Food Grade,4458.1,3.43,17211.31,Acme Labs,Safe
+2023-12-07,BATCH-210-B,Benzene,Industrial,4937.4,11.4,48076.99,Global Pharma,Safe
+2023-12-08,BATCH-180-B,Sodium Hydroxide,Food Grade,2473.8,11.0,28203.49,Global Pharma,Safe
+2023-12-09,BATCH-971-A,Sodium Hydroxide,Analytical,3927.7,2.56,43047.32,ChemCorp,Class 8
+2023-12-10,BATCH-959-A,Sulfuric Acid,Reagent,2731.7,7.48,37560.03,BioSynthetics,Class 3
+2023-12-11,BATCH-325-A,Benzene,Food Grade,489.7,14.93,28368.5,ChemCorp,Class 3
+2023-12-12,BATCH-968-C,Ethanol,Analytical,881.1,11.82,30915.95,Global Pharma,Class 3
+2023-12-13,BATCH-807-A,Benzene,Reagent,2129.6,9.77,238.05,Global Pharma,Class 3
+2023-12-14,BATCH-119-A,Ethanol,Food Grade,2689.8,11.26,28052.8,Global Pharma,Class 8
+2023-12-15,BATCH-111-B,Sodium Hydroxide,Industrial,1034.0,0.62,3754.99,Acme Labs,Class 3
+2023-12-16,BATCH-435-C,Benzene,Industrial,1391.9,10.55,12839.07,ChemCorp,Class 3
+2023-12-17,BATCH-416-C,Sulfuric Acid,Industrial,4588.6,2.63,32262.35,Global Pharma,Class 8
+2023-12-18,BATCH-184-C,Ethanol,Analytical,145.8,8.01,28496.83,Global Pharma,Class 8
+2023-12-19,BATCH-811-C,Sodium Hydroxide,Food Grade,4415.3,4.25,31237.41,Global Pharma,Safe
+2023-12-20,BATCH-397-C,Sodium Hydroxide,Food Grade,1576.0,12.36,40362.73,Acme Labs,Class 3
+2023-12-21,BATCH-324-A,Ethanol,Reagent,2044.5,1.85,44821.03,Acme Labs,Class 8
+2023-12-22,BATCH-327-C,Sodium Hydroxide,Food Grade,3537.8,7.05,5205.94,Acme Labs,Safe
+2023-12-23,BATCH-916-C,Sodium Hydroxide,Reagent,1129.3,1.5,41017.69,Global Pharma,Safe
+2023-12-24,BATCH-936-A,Ethanol,Industrial,4938.2,9.0,43406.69,BioSynthetics,Class 8
+2023-12-25,BATCH-663-C,Sulfuric Acid,Food Grade,3001.6,8.62,40454.2,Global Pharma,Class 3
+2023-12-26,BATCH-743-B,Sulfuric Acid,Reagent,2718.1,5.66,47028.86,ChemCorp,Safe
+2023-12-27,BATCH-927-A,Benzene,Food Grade,4723.3,10.21,23154.94,ChemCorp,Safe
+2023-12-28,BATCH-297-B,Acetone,Reagent,423.6,13.05,45301.13,Acme Labs,Class 3
+2023-12-29,BATCH-992-A,Acetone,Analytical,3693.9,12.55,9050.04,Global Pharma,Safe
+2023-12-30,BATCH-335-A,Sulfuric Acid,Analytical,1548.4,4.67,38376.14,Global Pharma,Class 8
+2023-12-31,BATCH-874-A,Sulfuric Acid,Food Grade,411.1,2.78,45910.55,Acme Labs,Class 3
+2024-01-01,BATCH-202-C,Sulfuric Acid,Food Grade,445.7,4.82,48585.07,ChemCorp,Safe
+2024-01-02,BATCH-916-C,Ethanol,Food Grade,75.6,3.34,13131.69,Acme Labs,Class 8
+2024-01-03,BATCH-882-C,Ethanol,Analytical,2229.3,12.83,18531.97,Acme Labs,Class 8
+2024-01-04,BATCH-235-B,Ethanol,Analytical,2523.7,8.9,22824.72,Acme Labs,Safe
+2024-01-05,BATCH-549-A,Ethanol,Analytical,4084.7,1.64,48285.83,Global Pharma,Safe
+2024-01-06,BATCH-632-C,Benzene,Reagent,4427.0,6.84,1600.92,ChemCorp,Class 3
+2024-01-07,BATCH-901-B,Benzene,Reagent,2853.0,4.55,5479.32,Global Pharma,Class 8
+2024-01-08,BATCH-768-A,Ethanol,Food Grade,3016.0,5.46,20753.14,Global Pharma,Class 8
+2024-01-09,BATCH-587-C,Sulfuric Acid,Food Grade,2744.5,12.61,28502.07,Global Pharma,Class 3
+2024-01-10,BATCH-501-A,Sulfuric Acid,Analytical,1402.2,3.81,3314.57,Global Pharma,Class 8
+2024-01-11,BATCH-444-A,Sodium Hydroxide,Food Grade,1280.3,7.85,31182.36,BioSynthetics,Class 3
+2024-01-12,BATCH-922-A,Sodium Hydroxide,Reagent,2602.1,8.46,47267.18,Global Pharma,Safe
+2024-01-13,BATCH-944-B,Ethanol,Food Grade,1765.6,7.81,46956.49,Acme Labs,Class 8
+2024-01-14,BATCH-721-C,Benzene,Food Grade,2489.3,13.51,34356.24,BioSynthetics,Class 8
+2024-01-15,BATCH-238-B,Ethanol,Reagent,2199.0,1.41,12139.17,ChemCorp,Class 8
+2024-01-16,BATCH-790-B,Ethanol,Reagent,2676.1,5.21,49457.66,Global Pharma,Safe
+2024-01-17,BATCH-293-C,Ethanol,Reagent,2109.1,3.54,35664.3,BioSynthetics,Safe
+2024-01-18,BATCH-551-A,Ethanol,Food Grade,2917.0,2.56,8306.77,BioSynthetics,Safe
+2024-01-19,BATCH-209-A,Benzene,Analytical,1702.1,14.07,18716.48,BioSynthetics,Safe
+2024-01-20,BATCH-880-A,Ethanol,Industrial,2021.9,12.11,43621.42,BioSynthetics,Class 8
+2024-01-21,BATCH-717-B,Ethanol,Analytical,909.1,5.97,5675.13,ChemCorp,Safe
+2024-01-22,BATCH-647-C,Ethanol,Analytical,2938.4,8.72,5022.1,ChemCorp,Class 8
+2024-01-23,BATCH-791-A,Sodium Hydroxide,Reagent,1410.9,4.64,30970.09,BioSynthetics,Class 8
+2024-01-24,BATCH-337-C,Ethanol,Analytical,3574.6,1.56,20075.55,Acme Labs,Class 3
+2024-01-25,BATCH-821-B,Acetone,Reagent,4381.3,11.99,25089.32,Global Pharma,Safe
+2024-01-26,BATCH-904-B,Benzene,Analytical,3265.6,7.99,27178.0,ChemCorp,Safe
+2024-01-27,BATCH-357-A,Benzene,Food Grade,2510.4,4.16,21144.65,ChemCorp,Safe
+2024-01-28,BATCH-436-C,Sulfuric Acid,Food Grade,1151.0,5.44,26687.68,ChemCorp,Class 8
+2024-01-29,BATCH-919-B,Benzene,Food Grade,2623.1,0.76,44151.53,ChemCorp,Class 8
+2024-01-30,BATCH-458-B,Benzene,Analytical,740.1,8.05,22637.14,Global Pharma,Safe
+2024-01-31,BATCH-935-A,Acetone,Analytical,631.6,0.57,21770.32,Acme Labs,Class 3
+2024-02-01,BATCH-615-A,Ethanol,Industrial,1770.2,3.63,37303.71,BioSynthetics,Safe
+2024-02-02,BATCH-357-C,Sodium Hydroxide,Analytical,3618.7,2.24,22365.58,Global Pharma,Class 3
+2024-02-03,BATCH-432-C,Benzene,Analytical,4003.6,6.75,30908.95,Acme Labs,Safe
+2024-02-04,BATCH-517-B,Sulfuric Acid,Food Grade,2507.2,4.02,31464.0,Global Pharma,Class 3
+2024-02-05,BATCH-681-B,Sodium Hydroxide,Reagent,3830.8,6.32,40454.3,Global Pharma,Class 8
+2024-02-06,BATCH-233-A,Ethanol,Food Grade,3386.2,8.06,20796.01,Acme Labs,Class 8
+2024-02-07,BATCH-605-B,Sodium Hydroxide,Industrial,864.7,10.69,3977.13,BioSynthetics,Class 8
+2024-02-08,BATCH-560-A,Acetone,Food Grade,2517.8,12.49,29483.95,BioSynthetics,Safe
+2024-02-09,BATCH-304-C,Sulfuric Acid,Analytical,4548.7,5.63,44842.74,ChemCorp,Class 8
+2024-02-10,BATCH-937-C,Benzene,Industrial,755.9,1.33,9263.51,ChemCorp,Safe
+2024-02-11,BATCH-673-B,Acetone,Food Grade,175.4,4.19,30061.97,BioSynthetics,Class 3
+2024-02-12,BATCH-710-C,Sodium Hydroxide,Reagent,751.0,12.6,48473.95,Global Pharma,Class 8
+2024-02-13,BATCH-130-B,Sulfuric Acid,Food Grade,1243.4,10.28,49834.18,Acme Labs,Class 8
+2024-02-14,BATCH-725-C,Benzene,Reagent,653.8,13.47,34760.31,ChemCorp,Class 3
+2024-02-15,BATCH-766-A,Sodium Hydroxide,Analytical,4609.7,3.2,797.92,ChemCorp,Class 8
+2024-02-16,BATCH-949-B,Ethanol,Food Grade,1102.3,0.84,18897.27,Acme Labs,Class 8
+2024-02-17,BATCH-822-B,Acetone,Industrial,2691.5,2.4,5424.62,Global Pharma,Class 3
+2024-02-18,BATCH-961-A,Benzene,Reagent,1164.4,13.12,12757.48,ChemCorp,Safe
+2024-02-19,BATCH-137-B,Sulfuric Acid,Analytical,3111.4,8.02,32201.05,ChemCorp,Safe
+2024-02-20,BATCH-586-C,Ethanol,Analytical,3739.8,6.56,42589.81,Acme Labs,Class 3
+2024-02-21,BATCH-752-B,Sodium Hydroxide,Food Grade,353.5,1.24,24332.38,BioSynthetics,Safe
+2024-02-22,BATCH-642-B,Acetone,Industrial,3694.9,0.61,14822.19,BioSynthetics,Safe
+2024-02-23,BATCH-127-A,Acetone,Food Grade,3657.0,2.84,46262.65,Global Pharma,Class 3
+2024-02-24,BATCH-566-C,Acetone,Food Grade,1675.6,13.25,17274.5,BioSynthetics,Class 8
+2024-02-25,BATCH-705-C,Benzene,Reagent,1323.4,11.57,39395.25,ChemCorp,Class 3
+2024-02-26,BATCH-792-B,Acetone,Industrial,4609.6,13.3,1496.93,BioSynthetics,Class 3
+2024-02-27,BATCH-677-A,Sodium Hydroxide,Reagent,1805.6,7.87,10490.02,Acme Labs,Safe
+2024-02-28,BATCH-730-C,Sulfuric Acid,Industrial,1718.4,4.69,7802.66,BioSynthetics,Class 8
+2024-02-29,BATCH-981-B,Sodium Hydroxide,Food Grade,1221.3,5.22,8611.81,Acme Labs,Class 8
+2024-03-01,BATCH-870-C,Ethanol,Food Grade,4576.2,13.54,14339.48,ChemCorp,Class 8
+2024-03-02,BATCH-944-C,Sulfuric Acid,Industrial,4625.2,8.15,44555.17,Global Pharma,Class 8
+2024-03-03,BATCH-504-A,Sodium Hydroxide,Analytical,169.8,1.0,35665.54,Global Pharma,Class 8
+2024-03-04,BATCH-435-A,Benzene,Analytical,1676.6,10.01,22255.45,BioSynthetics,Safe
+2024-03-05,BATCH-387-C,Sulfuric Acid,Food Grade,2227.5,1.09,28453.78,BioSynthetics,Class 8
+2024-03-06,BATCH-803-A,Benzene,Food Grade,4082.4,14.42,19301.0,BioSynthetics,Class 8
+2024-03-07,BATCH-389-B,Ethanol,Analytical,2835.5,5.88,37987.5,Acme Labs,Safe
+2024-03-08,BATCH-182-A,Ethanol,Industrial,3672.7,7.05,25454.96,Global Pharma,Class 8
+2024-03-09,BATCH-698-B,Benzene,Analytical,2323.0,11.46,8880.07,ChemCorp,Class 8
+2024-03-10,BATCH-221-A,Acetone,Analytical,79.4,6.05,18758.89,ChemCorp,Class 3
