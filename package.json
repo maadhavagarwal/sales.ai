@@ -4,12 +4,12 @@
     "private": true,
     "scripts": {
         "dev": "cd frontend/ai-bi-frontend && npm run dev",
-        "build": "cd frontend/ai-bi-frontend && npm run build",
+        "build": "cd frontend/ai-bi-frontend && npm install && npm run build",
         "start": "cd frontend/ai-bi-frontend && npm run start",
         "install-all": "cd frontend/ai-bi-frontend && npm install",
         "vercel-build": "cd frontend/ai-bi-frontend && npm install && npm run build"
     },
     "dependencies": {
-        "next": "16.1.6"
+        "next": "15.1.0"
     }
 }
