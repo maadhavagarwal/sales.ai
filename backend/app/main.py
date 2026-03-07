@@ -14,6 +14,9 @@ from collections import defaultdict
 from app.services.pipeline_controller import run_pipeline
 from app.engines.nlbi_engine import generate_chart_from_question
 from app.engines.copilot_engine import handle_question
+from app.agents.supervisor_agent import run_supervisor
+from app.engines.deep_rl_engine import train_dqn
+from app.engines.dashboard_generator import generate_ai_dashboard
 from app.utils.dataset_intelligence import get_dataset_summary
 from app.core.database_manager import store_data, create_user_record, get_user_record, init_auth_db
 import bcrypt
@@ -256,3 +259,34 @@ async def nlbi(dataset_id: str, question: str = Body(...)):
         traceback.print_exc()
         error_msg = str(e) if DEBUG_MODE else "Internal AI error processing chart generation."
         return {"error": error_msg}
+@app.post("/copilot/agent/{dataset_id}")
+async def copilot_agent(dataset_id: str, question: str = Body(...)):
+    try:
+        if dataset_id not in _sessions:
+            return {"error": "Session expired."}
+        session = _sessions[dataset_id]
+        result = run_supervisor(question, session["df"], session["analytics"], session["ml_results"])
+        return result
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/pricing-optimization/{dataset_id}")
+async def pricing_optimization(dataset_id: str):
+    try:
+        if dataset_id not in _sessions:
+            return {"error": "Session expired."}
+        result = train_dqn(episodes=100)
+        return result
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/dashboard-config/{dataset_id}")
+async def dashboard_config(dataset_id: str):
+    try:
+        if dataset_id not in _sessions:
+            return {"error": "Session expired."}
+        df = _sessions[dataset_id]["df"]
+        result = generate_ai_dashboard(df)
+        return result
+    except Exception as e:
+        return {"error": str(e)}
