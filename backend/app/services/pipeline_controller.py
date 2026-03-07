@@ -116,6 +116,29 @@ def run_pipeline(df):
     if "revenue" in df.columns and "cost" in df.columns:
         analytics["total_profit"] = float((df["revenue"] - df["cost"]).sum())
 
+    # --- DATA QUALITY & CONFIDENCE SCORES (Hidden Features) ---
+    from app.utils.dataset_intelligence import get_dataset_summary
+    summary = get_dataset_summary(df)
+    
+    total_cells = df.size
+    missing_cells = df.isnull().sum().sum()
+    data_quality = 1.0 - (missing_cells / total_cells) if total_cells > 0 else 1.0
+    
+    # Calculate aggregate AI confidence
+    # Based on: data quality, AutoML score, and rule coverage
+    ml_confidence = ml_results.get("automl_results", {}).get("best_score", 0.7)
+    if isinstance(ml_confidence, (str, dict)): ml_confidence = 0.7 
+    
+    # Check for model drift (Hidden Alert System)
+    from app.models.model_monitor import check_model_drift
+    drift_detected = False
+    if "training_results" in ml_results:
+        mae = ml_results["training_results"].get("MAE", 0)
+        drift_detected = check_model_drift(mae)
+        ml_results["model_drift"] = drift_detected
+
+    confidence_score = (data_quality * 0.4) + (ml_confidence * 0.5) + (0.1 if not drift_detected else 0)
+
     return {
         "_df": df,  # for copilot & nlbi reuse
         "dataset_type": dataset_type,
@@ -129,4 +152,7 @@ def run_pipeline(df):
         "analyst_report": analyst_report,
         "clustering": clusters_data,
         "anomalies": anomalies_data,
+        "data_quality": data_quality,
+        "confidence_score": confidence_score,
+        "summary": summary,
     }
