@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# Data & Logs
+data/*.csv
+data/*.db
+*.log
+*.sqlite
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Frontend (if not already handled)
+frontend/ai-bi-frontend/.next/
+frontend/ai-bi-frontend/node_modules/
+frontend/ai-bi-frontend/build/
