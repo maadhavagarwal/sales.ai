@@ -4,16 +4,22 @@ import { useRef, useState } from "react"
 import { uploadCSV } from "@/services/api"
 import { useStore } from "@/store/useStore"
 import { motion, AnimatePresence } from "framer-motion"
+import { useToast } from "@/components/ui/Toast"
 
 export default function CSVUploader() {
     const fileRef = useRef<HTMLInputElement>(null)
     const [dragActive, setDragActive] = useState(false)
     const { setResults, setIsUploading, setUploadProgress, setFileName, isUploading, uploadProgress } = useStore()
     const [error, setError] = useState<string | null>(null)
+    const { showToast } = useToast()
 
     const handleFile = async (file: File) => {
-        if (!file.name.endsWith(".csv")) {
-            setError("Please upload a CSV file")
+        const isExcel = file.name.endsWith(".xlsx") || file.name.endsWith(".xls");
+        const isCSV = file.name.endsWith(".csv");
+        if (!isCSV && !isExcel) {
+            const msg = "Please upload a CSV or Excel file"
+            setError(msg)
+            showToast("warning", "Invalid File", msg)
             return
         }
         setError(null)
@@ -28,14 +34,18 @@ export default function CSVUploader() {
 
             if (data.error) {
                 setError(data.error)
+                showToast("error", "Upload Failed", data.error)
                 setIsUploading(false)
                 return
             }
 
             setResults(data)
             setUploadProgress(100)
+            showToast("success", "Dataset Loaded", `${file.name} · ${data.analytics?.rows ?? data.rows ?? "?"} rows processed`)
         } catch (err: any) {
-            setError(err?.response?.data?.detail || "Failed to process dataset. Please try again.")
+            const msg = err?.response?.data?.detail || "Failed to process dataset. Please try again."
+            setError(msg)
+            showToast("error", "Upload Error", msg)
         } finally {
             setIsUploading(false)
         }
@@ -71,7 +81,7 @@ export default function CSVUploader() {
                 <input
                     ref={fileRef}
                     type="file"
-                    accept=".csv"
+                    accept=".csv,.xlsx,.xls"
                     onChange={handleChange}
                     style={{ display: "none" }}
                     id="csv-file-input"
@@ -123,13 +133,13 @@ export default function CSVUploader() {
                                 📁
                             </div>
                             <p style={{ fontSize: "1rem", fontWeight: 600, color: "var(--text-primary)" }}>
-                                Drop your CSV dataset here
+                                Drop your dataset here
                             </p>
                             <p style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
                                 or <span style={{ color: "var(--primary-400)", fontWeight: 500 }}>browse files</span> to upload
                             </p>
                             <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem" }}>
-                                <span className="badge badge-primary">CSV format</span>
+                                <span className="badge badge-primary">CSV or Excel</span>
                                 <span className="badge badge-success">Up to 100MB</span>
                             </div>
                         </motion.div>

@@ -11,13 +11,16 @@ interface MetricItem {
     trend?: string
 }
 
-function formatNumber(num: number): string {
-    if (num >= 1_000_000) return `$${(num / 1_000_000).toFixed(2)}M`
-    if (num >= 1_000) return `$${(num / 1_000).toFixed(1)}K`
-    return `$${num.toFixed(2)}`
+import { useStore } from "@/store/useStore"
+
+function formatNumber(num: number, symbol: string): string {
+    if (num >= 1_000_000) return `${symbol}${(num / 1_000_000).toFixed(2)}M`
+    if (num >= 1_000) return `${symbol}${(num / 1_000).toFixed(1)}K`
+    return `${symbol}${num.toFixed(2)}`
 }
 
-export default function MetricsCards({ analytics }: { analytics: AnalyticsData }) {
+export default function MetricsCards({ analytics }: { analytics: AnalyticsData & { total_profit?: number; total_revenue?: number } }) {
+    const { currencySymbol } = useStore()
     if (!analytics) return null
 
     const metrics: MetricItem[] = []
@@ -25,30 +28,31 @@ export default function MetricsCards({ analytics }: { analytics: AnalyticsData }
     if (analytics.total_revenue != null) {
         metrics.push({
             label: "Total Revenue",
-            value: formatNumber(analytics.total_revenue),
+            value: formatNumber(analytics.total_revenue, currencySymbol),
             icon: "💰",
             color: "var(--accent-emerald)",
-            trend: "+12.5%",
         })
     }
 
     if (analytics.average_revenue != null) {
         metrics.push({
-            label: "Average Revenue",
-            value: formatNumber(analytics.average_revenue),
+            label: "Avg. Transaction",
+            value: formatNumber(analytics.average_revenue, currencySymbol),
             icon: "📊",
             color: "var(--primary-400)",
-            trend: "+8.2%",
         })
     }
 
     if (analytics.total_profit != null) {
+        const margin = analytics.total_revenue
+            ? ((analytics.total_profit / analytics.total_revenue) * 100).toFixed(1)
+            : null
         metrics.push({
             label: "Total Profit",
-            value: formatNumber(analytics.total_profit),
+            value: formatNumber(analytics.total_profit, currencySymbol),
             icon: "🏆",
             color: "var(--accent-amber)",
-            trend: "+15.3%",
+            trend: margin ? `${margin}% margin` : undefined,
         })
     }
 

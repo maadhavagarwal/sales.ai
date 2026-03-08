@@ -25,11 +25,17 @@ const navItems = [
             { href: "/simulations", label: "Simulations", icon: "🔬" },
         ],
     },
+    {
+        section: "Enterprise",
+        items: [
+            { href: "/workspace", label: "Workplace", icon: "🏢" },
+        ],
+    },
 ]
 
 export default function Sidebar() {
     const pathname = usePathname()
-    const { fileName, results } = useStore()
+    const { fileName, results, theme, toggleTheme } = useStore()
 
     return (
         <aside className="sidebar">
@@ -58,13 +64,36 @@ export default function Sidebar() {
                 ))}
             </nav>
 
-            {/* Status indicator at bottom */}
             <div
                 style={{
                     padding: "1rem 1.25rem",
                     borderTop: "1px solid var(--border-subtle)",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "1rem"
                 }}
             >
+                <button
+                    onClick={toggleTheme}
+                    style={{
+                        padding: "0.6rem 1rem",
+                        borderRadius: "10px",
+                        background: "var(--surface-3)",
+                        border: "1px solid var(--border-default)",
+                        color: "var(--text-primary)",
+                        fontSize: "0.85rem",
+                        fontWeight: 600,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.75rem",
+                        cursor: "pointer",
+                        transition: "all 0.2s"
+                    }}
+                >
+                    <span style={{ fontSize: "1.1rem" }}>{theme === 'dark' ? "🌙" : "☀️"}</span>
+                    <span>{theme === 'dark' ? "Dark Mode" : "Light Mode"}</span>
+                </button>
+
                 <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                     <div
                         className="pulse-dot"
@@ -84,6 +113,26 @@ export default function Sidebar() {
                         }}
                     >
                         {fileName ? fileName : "No dataset loaded"}
+                    </span>
+                </div>
+
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                    <div
+                        className="pulse-dot"
+                        style={{
+                            background: "var(--accent-indigo)",
+                        }}
+                    />
+                    <span
+                        style={{
+                            fontSize: "0.75rem",
+                            color: "var(--text-muted)",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.05em",
+                            fontWeight: 600
+                        }}
+                    >
+                        Telemetry: Live
                     </span>
                 </div>
             </div>

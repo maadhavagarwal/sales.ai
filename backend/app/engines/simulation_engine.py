@@ -5,29 +5,29 @@ import numpy as np
 
 
 def simulate_price_change(df, percentage):
-
     df_sim = df.copy()
+    
+    scenario_name = f"Price_Appreciation_{percentage}%" if percentage > 0 else f"Price_Markdown_{abs(percentage)}%"
 
     if "revenue" not in df_sim.columns:
-        return {"error": "Revenue column required", "scenario": f"price_change_{percentage}%"}
+        return {"error": "Revenue column required", "scenario": scenario_name}
 
     # Simulate price change
     df_sim["revenue"] = df_sim["revenue"] * (1 + percentage / 100)
-
     total_revenue = float(df_sim["revenue"].sum())
 
     return {
-        "scenario": f"price_change_{percentage}%",
+        "scenario": scenario_name,
         "estimated_revenue": total_revenue,
     }
 
-
 def simulate_demand_change(df, percentage):
-
     df_sim = df.copy()
+    
+    scenario_name = f"Volume_Expansion_{percentage}%" if percentage > 0 else f"Volume_Contraction_{abs(percentage)}%"
 
     if "quantity" not in df_sim.columns:
-        return {"error": "Quantity column required", "scenario": f"demand_change_{percentage}%"}
+        return {"error": "Quantity column required", "scenario": scenario_name}
 
     df_sim["quantity"] = df_sim["quantity"] * (1 + percentage / 100)
 
@@ -35,14 +35,11 @@ def simulate_demand_change(df, percentage):
         # Recalculate revenue if we have price_per_unit
         if "price_per_unit" in df_sim.columns:
             df_sim["revenue"] = df_sim["quantity"] * df_sim["price_per_unit"]
-        elif len(df_sim) > 0:
-            # Estimate from existing revenue/quantity ratio
-            pass
 
     total_revenue = float(df_sim["revenue"].sum()) if "revenue" in df_sim.columns else 0
 
     return {
-        "scenario": f"demand_change_{percentage}%",
+        "scenario": scenario_name,
         "estimated_revenue": total_revenue,
     }
 

@@ -1,5 +1,7 @@
 "use client"
 
+import CurrencySelector from "@/components/ui/CurrencySelector"
+
 interface PageHeaderProps {
     title: string
     subtitle?: string
@@ -17,7 +19,12 @@ export default function PageHeader({ title, subtitle, actions }: PageHeaderProps
                     </p>
                 )}
             </div>
-            {actions && <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>{actions}</div>}
+            <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+                {actions && <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>{actions}</div>}
+
+                <div style={{ width: "1px", height: "24px", background: "var(--border-subtle)" }} />
+                <CurrencySelector />
+            </div>
         </div>
     )
 }

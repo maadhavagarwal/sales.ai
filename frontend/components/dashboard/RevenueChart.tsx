@@ -3,7 +3,10 @@
 import { motion } from "framer-motion"
 import ReactECharts from "echarts-for-react"
 
+import { useStore } from "@/store/useStore"
+
 export default function RevenueChart({ data }: { data: Record<string, number> }) {
+    const { currencySymbol } = useStore()
     if (!data) return null
 
     const entries = Object.entries(data)
@@ -20,7 +23,7 @@ export default function RevenueChart({ data }: { data: Record<string, number> })
             formatter: (params: any) => {
                 const d = params[0]
                 return `<div style="font-weight:600;margin-bottom:4px">${d.name}</div>
-                <div style="color:#a5b4fc">Revenue: <b>$${Number(d.value).toLocaleString()}</b></div>`
+                <div style="color:#a5b4fc">Revenue: <b>${currencySymbol}${Number(d.value).toLocaleString()}</b></div>`
             },
         },
         grid: { left: "3%", right: "4%", bottom: "8%", top: "12%", containLabel: true },
@@ -39,9 +42,9 @@ export default function RevenueChart({ data }: { data: Record<string, number> })
                 fontSize: 11,
                 fontFamily: "Inter",
                 formatter: (v: number) => {
-                    if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`
-                    if (v >= 1_000) return `$${(v / 1_000).toFixed(0)}K`
-                    return `$${v}`
+                    if (v >= 1_000_000) return `${currencySymbol}${(v / 1_000_000).toFixed(1)}M`
+                    if (v >= 1_000) return `${currencySymbol}${(v / 1_000).toFixed(0)}K`
+                    return `${currencySymbol}${v}`
                 },
             },
         },

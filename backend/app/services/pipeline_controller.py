@@ -72,14 +72,14 @@ def run_pipeline(df):
                 if clusters:
                     insights.append(f"🧠 AI identified {len(clusters)} optimal performance tiers for {target_col}s.")
                     for k, v in clusters.items():
-                        insights.append(f"🎯 {k}: {v['count']} {target_col}s total ${v['total_value']:,.0f} revenue (Top earner: {v['top_example']})")
+                        insights.append(f"🎯 {k}: {v['count']} {target_col}s total ₹{v['total_value']:,.0f} revenue (Top earner: {v['top_example']})")
         
         # Run 30-Day Revenue Forecasting
         forecast = forecast_revenue(df, days_ahead=30)
         if forecast:
             ml_results["time_series_forecast"] = forecast
             last_pred = forecast[-1]['predicted_revenue']
-            insights.append(f"🔮 Revenue predicted to hit ${last_pred:,.2f}/day by next month based on historical ML trends.")
+            insights.append(f"🔮 Revenue predicted to hit ₹{last_pred:,.2f}/day by next month based on historical ML trends.")
             
     except Exception as e:
         print(f"Failed to run advanced AI models: {e}")

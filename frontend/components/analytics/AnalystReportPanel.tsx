@@ -6,6 +6,29 @@ import type { AnalystReport } from "@/store/useStore"
 export default function AnalystReportPanel({ report }: { report: AnalystReport }) {
     if (!report) return null
 
+    const renderMarkdown = (text: string) => {
+        return text.split('\n').map((line, i) => {
+            if (line.startsWith('### ')) {
+                return <h3 key={i} style={{ fontSize: '1.25rem', fontWeight: 800, marginTop: '1rem', marginBottom: '0.75rem', color: 'var(--text-primary)' }}>{line.replace('### ', '')}</h3>
+            }
+            if (line.trim() === '') return <br key={i} />
+
+            // Handle bolding
+            const parts = line.split(/(\*\*.*?\*\*)/g)
+
+            return (
+                <p key={i} style={{ fontSize: "0.875rem", color: "var(--text-secondary)", lineHeight: 1.8, marginBottom: "0.5rem" }}>
+                    {parts.map((part, index) => {
+                        if (part.startsWith('**') && part.endsWith('**')) {
+                            return <strong key={index} style={{ color: 'var(--text-primary)' }}>{part.slice(2, -2)}</strong>
+                        }
+                        return part
+                    })}
+                </p>
+            )
+        })
+    }
+
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -87,11 +110,11 @@ export default function AnalystReportPanel({ report }: { report: AnalystReport }
                     }}
                 >
                     <h4 style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--primary-400)", marginBottom: "0.5rem" }}>
-                        Executive Summary
+                        Executive Diagnostic Brief
                     </h4>
-                    <p style={{ fontSize: "0.875rem", color: "var(--text-secondary)", lineHeight: 1.8, whiteSpace: "pre-line" }}>
-                        {report.report}
-                    </p>
+                    <div>
+                        {renderMarkdown(report.report)}
+                    </div>
                 </div>
             )}
         </motion.div>

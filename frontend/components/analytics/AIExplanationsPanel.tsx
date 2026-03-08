@@ -22,22 +22,30 @@ export default function AIExplanationsPanel({ explanations }: { explanations: st
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                {explanations.map((text, i) => (
-                    <div
-                        key={i}
-                        style={{
-                            padding: "1.25rem",
-                            background: "rgba(245,158,11,0.02)",
-                            borderRadius: "12px",
-                            border: "1px solid rgba(245,158,11,0.1)",
-                            fontSize: "0.9rem",
-                            color: "var(--text-secondary)",
-                            lineHeight: 1.7
-                        }}
-                    >
-                        {text}
-                    </div>
-                ))}
+                {explanations.map((text, i) => {
+                    const parts = text.split(/(\*\*.*?\*\*)/g)
+                    return (
+                        <div
+                            key={i}
+                            style={{
+                                padding: "1.25rem",
+                                background: "rgba(245,158,11,0.02)",
+                                borderRadius: "12px",
+                                border: "1px solid rgba(245,158,11,0.1)",
+                                fontSize: "0.9rem",
+                                color: "var(--text-secondary)",
+                                lineHeight: 1.7
+                            }}
+                        >
+                            {parts.map((part, index) => {
+                                if (part.startsWith('**') && part.endsWith('**')) {
+                                    return <strong key={index} style={{ color: "var(--text-primary)" }}>{part.slice(2, -2)}</strong>
+                                }
+                                return part
+                            })}
+                        </div>
+                    )
+                })}
             </div>
 
             <div style={{ marginTop: "1.5rem", padding: "0.75rem", background: "rgba(245,158,11,0.05)", borderRadius: "8px", fontSize: "0.7rem", color: "#d97706", textAlign: "center", fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase" }}>

@@ -187,26 +187,64 @@ def _analyze_with_pandas(q, df, analytics, ml_results, pipeline):
 
 
 def _fallback_answer(q, df, analytics, ml_results):
-    """Fallback when no specific pattern matched."""
-    numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
-    cat_cols = df.select_dtypes(include=["object"]).columns.tolist()
+    """
+    Enterprise RAG Fallback System:
+    Uses Vector DB (ChromaDB) to recall past schemas, and LLM to synthesize complex, unstructured answers.
+    """
+    import os
+    try:
+        from app.engines.llm_engine import ask_llm
+        import chromadb
+        
+        # Init Vector Database
+        chroma_path = os.path.join(os.path.dirname(__file__), "..", "..", ".vector_db")
+        os.makedirs(chroma_path, exist_ok=True)
+        chroma_client = chromadb.PersistentClient(path=chroma_path)
+        collection = chroma_client.get_or_create_collection(name="enterprise_analytics_memory")
+        
+        # Document the current snippet to Vector DB for future memory
+        doc_id = str(pd.util.hash_pandas_object(df).sum())
+        collection.upsert(
+            documents=[f"Columns: {list(df.columns)}. Top product: {list(analytics.get('top_products', {}).keys())[:1]}"],
+            metadatas=[{"type": "schema"}],
+            ids=[doc_id]
+        )
+        
+        # Retrieve context
+        results = collection.query(query_texts=[q], n_results=2)
+        memory_context = results["documents"][0] if results and "documents" in results and results["documents"] else []
+        
+        prompt = f"""
+        You are an elite Enterprise Data Copilot.
+        Question: "{q}"
+        
+        Current Dataset Shape: {len(df)} rows, Columns: {list(df.columns)}
+        Summary metrics: Total Rev: {analytics.get("total_revenue", "N/A")}, Average: {analytics.get("average_revenue", "N/A")}
+        Vector DB Memory Context: {memory_context}
+        
+        Answer the user's question concisely and professionally. Focus on numerical evidence and exact precision. Do not apologize.
+        """
+        
+        return ask_llm(prompt)
+        
+    except Exception as e:
+        print(f"RAG Error: {e}")
+        # Absolute Final Hand-Coded Fallback if LLM/Chroma crashes
+        numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+        cat_cols = df.select_dtypes(include=["object"]).columns.tolist()
 
-    lines = ["Here's what I found in your data:"]
-    lines.append(f"  • {len(df):,} rows × {len(df.columns)} columns")
+        lines = ["🤖 **System Diagnostic Readout**"]
+        lines.append(f"  • Enterprise Volume: {len(df):,} vectors across {len(df.columns)} semantic dimensions")
 
-    for col in numeric_cols[:3]:
-        lines.append(f"  • {col}: Total={_fmt(df[col].sum())}, Avg={_fmt(df[col].mean())}")
+        for col in numeric_cols[:3]:
+            lines.append(f"  • {col} metrics: Cumulative={_fmt(df[col].sum())}, Mean Velocity={_fmt(df[col].mean())}")
 
-    if analytics.get("top_products"):
-        top_items = list(analytics["top_products"].items())[:3]
-        lines.append(f"  • Top products: {', '.join(f'{k} ({_fmt(v)})' for k, v in top_items)}")
+        if analytics.get("top_products"):
+            top_items = list(analytics["top_products"].items())[:3]
+            lines.append(f"  • Flagship assets: {', '.join(f'{k} ({_fmt(v)})' for k, v in top_items)}")
 
-    if analytics.get("region_sales"):
-        best = max(analytics["region_sales"], key=analytics["region_sales"].get)
-        lines.append(f"  • Best region: {best}")
-
-    lines.append(f"\nTry asking: 'top 5 products by revenue', 'average revenue by region', 'show trend', or 'summarize data'")
-    return "\n".join(lines)
+        lines.append(f"\n*Recommendation: Ensure Deep-Learning and Vectordb sub-systems are operative for advanced RAG querying.*")
+        return "\n".join(lines)
 
 
 def _find_column_in_question(q, columns):
@@ -222,22 +260,20 @@ def _find_column_in_question(q, columns):
             return col
     return None
 
-
 def _extract_number(q):
     """Extract a number from the question (e.g., 'top 10')."""
     import re
     match = re.search(r'\b(\d+)\b', q)
     return int(match.group(1)) if match else None
 
-
-def _fmt(val):
-    """Format a numeric value nicely."""
+def _fmt(val, currency="₹"):
+    """Format a numeric value nicely with currency symbol."""
     if val is None or (isinstance(val, float) and np.isnan(val)):
         return "N/A"
     if isinstance(val, float):
         if abs(val) >= 1_000_000:
-            return f"${val / 1_000_000:,.2f}M"
+            return f"{currency}{val / 1_000_000:,.2f}M"
         if abs(val) >= 1_000:
-            return f"${val / 1_000:,.1f}K"
-        return f"${val:,.2f}"
+            return f"{currency}{val / 1_000:,.1f}K"
+        return f"{currency}{val:,.2f}"
     return str(val)

@@ -74,3 +74,84 @@ export const reprocessDataset = async (datasetId: string, sheetName: string | nu
   })
   return res.data
 }
+
+// --- WORKSPACE API ---
+export const createInvoice = async (data: any) => {
+  const res = await api.post("/workspace/invoices", data)
+  return res.data
+}
+
+export const getInvoices = async () => {
+  const res = await api.get("/workspace/invoices")
+  return res.data
+}
+
+export const addCustomer = async (data: any) => {
+  const res = await api.post("/workspace/customers", data)
+  return res.data
+}
+
+export const getCustomers = async () => {
+  const res = await api.get("/workspace/customers")
+  return res.data
+}
+
+// --- INVENTORY API ---
+export const getInventory = async () => {
+  const res = await api.get("/workspace/inventory")
+  return res.data
+}
+
+export const addInventoryItem = async (data: any) => {
+  const res = await api.post("/workspace/inventory", data)
+  return res.data
+}
+
+export const addExpense = async (data: any) => {
+  const res = await api.post("/workspace/expenses", data)
+  return res.data
+}
+
+// --- ACCOUNTING LEDGER API ---
+export const getLedger = async () => {
+  const res = await api.get("/workspace/ledger")
+  return res.data
+}
+
+export const addLedgerEntry = async (data: any) => {
+  const res = await api.post("/workspace/ledger", data)
+  return res.data
+}
+
+// --- STATUTORY ACCOUNTING BOOKS API ---
+export const getAccountingNotes = async () => {
+  const res = await api.get("/workspace/accounting/notes")
+  return res.data
+}
+
+export const addAccountingNote = async (data: any) => {
+  const res = await api.post("/workspace/accounting/notes", data)
+  return res.data
+}
+
+export const getFinancialStatements = async () => {
+  const res = await api.get("/workspace/accounting/statements")
+  return res.data
+}
+
+export const getExpenses = async () => {
+  const res = await api.get("/workspace/expenses")
+  return res.data
+}
+
+// --- MARKETING API ---
+export const createMarketingCampaign = async (data: any) => {
+  const res = await api.post("/workspace/marketing/campaigns", data)
+  return res.data
+}
+
+export const getMarketingCampaigns = async () => {
+  const res = await api.get("/workspace/marketing/campaigns")
+  return res.data
+}
+

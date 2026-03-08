@@ -14,6 +14,7 @@ import type { DashboardWidget } from "@/store/useStore"
 import { getDashboardConfig, downloadReport, downloadCleanData, downloadStrategicPlanPDF, reprocessDataset } from "@/services/api"
 import { motion, AnimatePresence } from "framer-motion"
 import ReactECharts from "echarts-for-react"
+import MarkdownRenderer from "@/components/ai/MarkdownRenderer"
 
 /* ============================
    EDITABLE CHART WIDGET
@@ -29,6 +30,7 @@ function ChartWidget({
   onEdit: () => void
   onRemove: () => void
 }) {
+  const { currencySymbol } = useStore()
   // Aggregate data for both chart and AI reading
   const { categories, values } = useMemo(() => {
     if (!rawData || rawData.length === 0) return { categories: [], values: [] }
@@ -114,7 +116,7 @@ function ChartWidget({
       },
       yAxis: {
         type: "value",
-        axisLabel: { ...baseTextStyle, fontSize: 10, formatter: (v: number) => v >= 1000000 ? `${(v / 1000000).toFixed(1)}M` : v >= 1000 ? `${(v / 1000).toFixed(0)}K` : v.toString() },
+        axisLabel: { ...baseTextStyle, fontSize: 10, formatter: (v: number) => v >= 1000000 ? `${currencySymbol}${(v / 1000000).toFixed(1)}M` : v >= 1000 ? `${currencySymbol}${(v / 1000).toFixed(0)}K` : v.toString() },
         splitLine: { lineStyle: { color: "rgba(255,255,255,0.04)" } },
       },
       series: [{
@@ -832,10 +834,8 @@ export default function Dashboard() {
                     {/* Analyst Report */}
                     {results.analyst_report?.report && (
                       <div className="chart-card">
-                        <h3 style={{ fontSize: "0.9rem", fontWeight: 700, marginBottom: "1rem" }}>📝 AI Analyst Report</h3>
-                        <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)", lineHeight: 1.8, whiteSpace: "pre-wrap" }}>
-                          {results.analyst_report.report}
-                        </div>
+                        <h3 style={{ fontSize: "0.9rem", fontWeight: 700, marginBottom: "1.5rem" }}>🧠 AI Autonomous CDO Report</h3>
+                        <MarkdownRenderer text={results.analyst_report.report} />
                       </div>
                     )}
 
@@ -844,16 +844,25 @@ export default function Dashboard() {
                       <div className="chart-card" style={{ border: "1px solid var(--primary-500)", background: "rgba(99,102,241,0.03)" }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
                           <h3 style={{ fontSize: "1.1rem", fontWeight: 800, color: "var(--primary-400)" }}>🌟 Deep Strategic Analysis & Roadmap</h3>
-                          <button
-                            className="btn-primary"
-                            onClick={() => datasetId && downloadStrategicPlanPDF(datasetId)}
-                            style={{ padding: "0.5rem 1rem", fontSize: "0.8rem", background: "var(--gradient-primary)" }}
-                          >
-                            📥 Download Plan PDF
-                          </button>
+                          <div style={{ display: "flex", gap: "0.75rem" }}>
+                            <button
+                              className="btn-primary"
+                              onClick={() => alert("Strategic Posture Activated: Syncing Marketing Hub and Finance ledger.")}
+                              style={{ padding: "0.5rem 1rem", fontSize: "0.8rem", background: "#10b981", border: "none" }}
+                            >
+                              🚀 Activate Strategy
+                            </button>
+                            <button
+                              className="btn-primary"
+                              onClick={() => datasetId && downloadStrategicPlanPDF(datasetId as string)}
+                              style={{ padding: "0.5rem 1rem", fontSize: "0.8rem", background: "var(--gradient-primary)" }}
+                            >
+                              📥 Download PDF
+                            </button>
+                          </div>
                         </div>
-                        <div className="markdown-content" style={{ fontSize: "0.9rem", color: "var(--text-secondary)", lineHeight: 1.8, whiteSpace: "pre-wrap" }}>
-                          {results.strategic_plan}
+                        <div className="markdown-content" style={{ marginTop: "1rem" }}>
+                          <MarkdownRenderer text={results.strategic_plan} />
                         </div>
                       </div>
                     )}

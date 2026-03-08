@@ -56,8 +56,9 @@ def main():
         print(f"Data directory {DATA_DIR} not found.")
         return
 
-    files = [f for f in os.listdir(DATA_DIR) if f.endswith('.csv')]
-    print(f"Found {len(files)} CSV files in {DATA_DIR}.")
+    extensions = ('.csv', '.xlsx', '.xls')
+    files = [f for f in os.listdir(DATA_DIR) if f.lower().endswith(extensions)]
+    print(f"Found {len(files)} data files in {DATA_DIR}.")
     
     for f in sorted(files):
         test_file(os.path.join(DATA_DIR, f))

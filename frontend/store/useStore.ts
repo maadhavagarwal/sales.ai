@@ -85,6 +85,16 @@ export interface DashboardWidget {
     color: string
 }
 
+export const CURRENCIES = [
+    { code: "INR", symbol: "₹", label: "Indian Rupee (₹)" },
+    { code: "USD", symbol: "$", label: "US Dollar ($)" },
+    { code: "EUR", symbol: "€", label: "Euro (€)" },
+    { code: "GBP", symbol: "£", label: "British Pound (£)" },
+    { code: "JPY", symbol: "¥", label: "Japanese Yen (¥)" },
+    { code: "AED", symbol: "د.إ", label: "UAE Dirham (د.إ)" },
+    { code: "SGD", symbol: "S$", label: "Singapore Dollar (S$)" },
+]
+
 interface AppState {
     // Data state
     results: UploadResults | null
@@ -93,12 +103,17 @@ interface AppState {
     uploadProgress: number
     fileName: string | null
 
+    // Currency
+    currencySymbol: string
+    currencyCode: string
+
     // Dashboard state
     widgets: DashboardWidget[]
     editingWidget: string | null
 
     // UI state
     sidebarCollapsed: boolean
+    theme: "dark" | "light"
 
     // Actions
     setResults: (results: UploadResults) => void
@@ -106,7 +121,9 @@ interface AppState {
     setUploadProgress: (progress: number) => void
     setFileName: (name: string | null) => void
     toggleSidebar: () => void
+    toggleTheme: () => void
     clearResults: () => void
+    setCurrency: (code: string, symbol: string) => void
 
     // Dashboard actions
     addWidget: (widget: DashboardWidget) => void
@@ -127,7 +144,10 @@ export const useStore = create<AppState>((set) => ({
     isUploading: false,
     uploadProgress: 0,
     fileName: null,
+    currencySymbol: "₹",
+    currencyCode: "INR",
     sidebarCollapsed: false,
+    theme: (typeof window !== 'undefined' && localStorage.getItem('nb-enterprise-theme') as any) || "dark",
     widgets: [],
     editingWidget: null,
 
@@ -136,7 +156,16 @@ export const useStore = create<AppState>((set) => ({
     setUploadProgress: (uploadProgress) => set({ uploadProgress }),
     setFileName: (fileName) => set({ fileName }),
     toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
+    toggleTheme: () => set((state) => {
+        const next = state.theme === "dark" ? "light" : "dark"
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('nb-enterprise-theme', next)
+            document.documentElement.setAttribute('data-theme', next)
+        }
+        return { theme: next }
+    }),
     clearResults: () => set({ results: null, datasetId: null, fileName: null, uploadProgress: 0, widgets: [] }),
+    setCurrency: (code, symbol) => set({ currencyCode: code, currencySymbol: symbol }),
 
     addWidget: (widget) => set((state) => ({ widgets: [...state.widgets, widget] })),
     updateWidget: (id, updates) => set((state) => ({

@@ -106,8 +106,8 @@ export default function DataIntelligencePanel({ dataQuality, confidence, summary
 
                     <div style={{ padding: "1rem", background: "rgba(0,0,0,0.2)", borderRadius: "12px", border: "1px solid var(--border-subtle)" }}>
                         <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase" }}>Scan Depth</p>
-                        <p style={{ fontSize: "1.25rem", fontWeight: 700 }}>{summary.total_rows.toLocaleString()} Rows</p>
-                        <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: "0.25rem" }}>Processed in {(summary.total_rows / 10000).toFixed(2)}ms</p>
+                        <p style={{ fontSize: "1.25rem", fontWeight: 700 }}>{(summary.total_rows || 0).toLocaleString()} Rows</p>
+                        <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: "0.25rem" }}>Processed in {((summary.total_rows || 0) / 10000).toFixed(2)}ms</p>
                     </div>
                 </div>
             </motion.div>

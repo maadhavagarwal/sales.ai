@@ -8,7 +8,8 @@ try:
     from sentence_transformers import SentenceTransformer
     model = SentenceTransformer("all-MiniLM-L6-v2")
     HAS_RAG_DEPS = True
-except ImportError:
+except Exception as e:
+    print(f"⚠️ RAG Engine initialization failed: {e}. Falling back to simple text matching.")
     HAS_RAG_DEPS = False
     model = None
 

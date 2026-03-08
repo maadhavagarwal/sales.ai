@@ -4,7 +4,11 @@ import { motion } from "framer-motion"
 import ReactECharts from "echarts-for-react"
 import type { SimulationResult } from "@/store/useStore"
 
+import { useStore } from "@/store/useStore"
+
 export default function SimulationsPanel({ simulations }: { simulations: SimulationResult[] }) {
+    const { results, currencySymbol } = useStore()
+    const baselineRev = results?.analytics?.total_revenue || 0
     if (!simulations || simulations.length === 0) return null
 
     const validSims = simulations.filter((s) => !s.error)
@@ -34,9 +38,9 @@ export default function SimulationsPanel({ simulations }: { simulations: Simulat
                 fontSize: 11,
                 fontFamily: "Inter",
                 formatter: (v: number) => {
-                    if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`
-                    if (v >= 1_000) return `$${(v / 1_000).toFixed(0)}K`
-                    return `$${v}`
+                    if (v >= 1_000_000) return `${currencySymbol}${(v / 1_000_000).toFixed(1)}M`
+                    if (v >= 1_000) return `${currencySymbol}${(v / 1_000).toFixed(0)}K`
+                    return `${currencySymbol}${v}`
                 },
             },
         },
@@ -87,41 +91,47 @@ export default function SimulationsPanel({ simulations }: { simulations: Simulat
             {/* Cards grid */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "1rem" }}>
                 {validSims.map((sim, i) => {
-                    const isPositive = sim.scenario.includes("-") ? false : true
+                    const diff = ((sim.estimated_revenue - baselineRev) / (baselineRev || 1)) * 100
+                    const isPositive = diff >= 0
+
                     return (
                         <motion.div
                             key={i}
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.2 + i * 0.1 }}
-                            className="metric-card"
+                            className="chart-card"
+                            style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: "1rem",
+                                borderLeft: `4px solid ${isPositive ? "var(--accent-emerald)" : "var(--accent-rose)"}`,
+                                padding: "1.25rem"
+                            }}
                         >
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
-                                <span
-                                    style={{
-                                        fontSize: "0.7rem",
-                                        fontWeight: 600,
-                                        textTransform: "uppercase",
-                                        letterSpacing: "0.05em",
-                                        color: "var(--text-muted)",
-                                    }}
-                                >
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                                <h4 style={{ fontSize: "0.8rem", fontWeight: 800, color: "var(--text-primary)", textTransform: "uppercase" }}>
                                     {sim.scenario.replace(/_/g, " ")}
-                                </span>
-                                <span className={`badge ${isPositive ? "badge-success" : "badge-danger"}`}>
-                                    {isPositive ? "↑ Growth" : "↓ Decline"}
+                                </h4>
+                                <span style={{ fontSize: "0.7rem", fontWeight: 800, color: isPositive ? "var(--accent-emerald)" : "var(--accent-rose)" }}>
+                                    {isPositive ? "+" : ""}{diff.toFixed(1)}%
                                 </span>
                             </div>
-                            <p style={{ fontSize: "1.5rem", fontWeight: 700 }}>
-                                ${sim.estimated_revenue >= 1_000_000
-                                    ? `${(sim.estimated_revenue / 1_000_000).toFixed(2)}M`
-                                    : sim.estimated_revenue >= 1_000
-                                        ? `${(sim.estimated_revenue / 1_000).toFixed(1)}K`
-                                        : sim.estimated_revenue.toFixed(2)}
-                            </p>
-                            <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "0.25rem" }}>
-                                Estimated Revenue
-                            </p>
+
+                            <div>
+                                <p style={{ fontSize: "0.65rem", color: "var(--text-muted)", marginBottom: "0.25rem" }}>Projected Performance Yield</p>
+                                <p style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--text-primary)" }}>
+                                    {currencySymbol}{sim.estimated_revenue.toLocaleString()}
+                                </p>
+                            </div>
+
+                            <button
+                                className="btn-primary"
+                                style={{ width: "100%", fontSize: "0.75rem", padding: "0.5rem" }}
+                                onClick={() => alert(`Strategic posture for '${sim.scenario}' has been initialized in CRM.`)}
+                            >
+                                Apply Performance Strategy
+                            </button>
                         </motion.div>
                     )
                 })}

@@ -7,7 +7,8 @@ try:
     import torch.nn as nn
     import torch.optim as optim
     HAS_TORCH = True
-except ImportError:
+except Exception as e:
+    print(f"⚠️ Neural Toolkit initialization failed: {e}. Model training disabled.")
     HAS_TORCH = False
 
 

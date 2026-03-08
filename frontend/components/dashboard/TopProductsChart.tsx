@@ -3,7 +3,10 @@
 import { motion } from "framer-motion"
 import ReactECharts from "echarts-for-react"
 
+import { useStore } from "@/store/useStore"
+
 export default function TopProductsChart({ data }: { data: Record<string, number> }) {
+    const { currencySymbol } = useStore()
     if (!data || Object.keys(data).length === 0) return null
 
     const entries = Object.entries(data).sort((a, b) => b[1] - a[1])
@@ -28,9 +31,9 @@ export default function TopProductsChart({ data }: { data: Record<string, number
                 fontSize: 11,
                 fontFamily: "Inter",
                 formatter: (v: number) => {
-                    if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`
-                    if (v >= 1_000) return `$${(v / 1_000).toFixed(0)}K`
-                    return `$${v}`
+                    if (v >= 1_000_000) return `${currencySymbol}${(v / 1_000_000).toFixed(1)}M`
+                    if (v >= 1_000) return `${currencySymbol}${(v / 1_000).toFixed(0)}K`
+                    return `${currencySymbol}${v}`
                 },
             },
         },

@@ -1,9 +1,12 @@
 import "./globals.css"
+import { ToastProvider } from "@/components/ui/Toast"
 
 export const metadata = {
   title: "NeuralBI — AI Decision Intelligence Platform",
   description: "Advanced AI-powered business analytics, ML predictions, and strategic insights platform",
 }
+
+import ThemeInitializer from "@/components/ThemeInitializer"
 
 export default function RootLayout({
   children,
@@ -21,7 +24,10 @@ export default function RootLayout({
         />
       </head>
       <body>
-        {children}
+        <ThemeInitializer />
+        <ToastProvider>
+          {children}
+        </ToastProvider>
       </body>
     </html>
   )

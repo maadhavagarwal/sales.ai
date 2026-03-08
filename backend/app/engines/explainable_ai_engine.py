@@ -1,3 +1,5 @@
+from app.utils.currency import fmt as _fmt
+
 def explain_predictions(df, analytics, ml_results):
 
     explanations = []
@@ -10,7 +12,7 @@ def explain_predictions(df, analytics, ml_results):
 
             if isinstance(automl, dict) and "best_model" in automl:
                 explanations.append(
-                    f"The AutoML engine selected {automl['best_model']} as the best model."
+                    f"The AutoML hyper-parameter search routine converged on **{automl['best_model']}** as the optimal predictive architecture."
                 )
 
         if "results" in ml_results:
@@ -18,7 +20,7 @@ def explain_predictions(df, analytics, ml_results):
 
             if isinstance(model_info, dict) and "model" in model_info:
                 explanations.append(
-                    f"A {model_info['model']} model was used to generate predictions."
+                    f"Inference vectors were executed using a **{model_info['model']}** classification topology."
                 )
 
     # Explanation from analytics
@@ -26,18 +28,18 @@ def explain_predictions(df, analytics, ml_results):
 
         if "total_revenue" in analytics:
             explanations.append(
-                f"The dataset generated total revenue of {analytics['total_revenue']}."
+                f"Global aggregate top-line yield stabilized at **{_fmt(analytics['total_revenue'])}** across the dataset."
             )
 
         if "average_revenue" in analytics:
             explanations.append(
-                f"The average revenue per transaction is {analytics['average_revenue']}."
+                f"The Mean Transactional Velocity (MTV) is currently calculating at **{_fmt(analytics['average_revenue'])}**."
             )
 
     # fallback explanation
     if not explanations:
         explanations.append(
-            "Predictions were generated using the AI analytics pipeline."
+            "Predictive extrapolations were securely generated via the primary neural pipeline."
         )
 
     return explanations

@@ -4,7 +4,8 @@ try:
     import torch
     import torch.nn as nn
     HAS_TORCH = True
-except ImportError:
+except Exception as e:
+    print(f"⚠️ Neural Forecasting initialization failed: {e}. LSTM disabled.")
     HAS_TORCH = False
 
 

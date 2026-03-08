@@ -8,7 +8,8 @@ try:
     import torch.nn as nn
     import torch.optim as optim
     HAS_TORCH = True
-except ImportError:
+except Exception as e:
+    print(f"⚠️ Torch initialization failed: {e}. Falling back to simple RL.")
     HAS_TORCH = False
 
 class ReplayMemory:
