@@ -13,7 +13,7 @@ def detect_dataset_type(df):
 
     # Check for sales/revenue signals
     sales_signals = ["sales", "revenue", "amount", "total", "order", "invoice",
-                     "transaction", "purchase", "turnover", "gmv"]
+                     "transaction", "purchase", "turnover", "gmv", "qty", "price", "party", "inv_no"]
     if any(s in col_str for s in sales_signals):
         return "sales_dataset"
 

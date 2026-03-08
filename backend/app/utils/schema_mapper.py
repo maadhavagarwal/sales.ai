@@ -45,7 +45,7 @@ COLUMN_PATTERNS = {
     "customer": [
         "customer", "customer_id", "customer_name", "user_id", "client",
         "buyer", "account", "consumer", "shopper", "member_id",
-        "contact", "patron",
+        "contact", "patron", "party",
     ],
     "profit": [
         "profit", "net_profit", "gross_profit", "margin", "profit_margin",
@@ -106,13 +106,17 @@ def map_schema(df):
             if col in used_cols:
                 break
 
-    # If no revenue column found, try to find ANY numeric column that could be revenue
+    # If no revenue column found, try to find a sensible numeric column that could be revenue
+    # But only if it has a promising name
     if "revenue" not in used_targets:
-        numeric_cols = df.select_dtypes(include=["int64", "float64"]).columns
-        for nc in numeric_cols:
-            if nc not in used_cols:
-                mapping[nc] = "revenue"
+        revenue_fallback_patterns = ["total", "amount", "value", "net", "gross", "sum"]
+        for col in df.columns:
+            if col in used_cols: continue
+            c = str(col).lower()
+            if any(p in c for p in revenue_fallback_patterns) and pd.api.types.is_numeric_dtype(df[col]):
+                mapping[col] = "revenue"
                 used_targets.add("revenue")
+                used_cols.add(col)
                 break
 
     df = df.rename(columns=mapping)
