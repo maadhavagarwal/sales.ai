@@ -6,8 +6,8 @@
         "dev": "cd frontend && npm run dev",
         "build": "cd frontend && npm install && npm run build",
         "start": "cd frontend && npm run start",
-        "install-all": "cd frontend && npm install",
-        "vercel-build": "cd frontend && npm install && npm run build"
+        "install-all": "cd frontend && npm install"
+    
     },
     "dependencies": {
         "next": "15.5.12"
