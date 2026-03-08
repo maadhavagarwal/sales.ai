@@ -4,6 +4,7 @@ import { useState } from "react"
 import { motion } from "framer-motion"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { Button, Input, Card } from "@/components/ui"
 
 export default function Login() {
     const router = useRouter()
@@ -38,140 +39,131 @@ export default function Login() {
     }
 
     return (
-        <div style={{
-            minHeight: "100vh",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            background: "var(--surface-0)",
-            position: "relative",
-            padding: "2rem"
-        }}>
-            {/* Background Mesh */}
-            <div style={{
-                position: "absolute",
-                inset: 0,
-                background: "var(--gradient-mesh)",
-                opacity: 0.6,
-                pointerEvents: "none"
-            }} />
+        <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 sm:p-6 relative overflow-hidden">
+            {/* Background Gradients */}
+            <div className="fixed inset-0 z-0 pointer-events-none">
+                <div className="absolute top-[-20%] left-[-10%] w-[70vw] h-[70vw] bg-indigo-500/10 rounded-full blur-3xl" />
+                <div className="absolute bottom-[-20%] right-[-10%] w-[80vw] h-[80vw] bg-cyan-500/5 rounded-full blur-3xl" />
+            </div>
 
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="glass-card"
-                style={{
-                    width: "100%",
-                    maxWidth: "400px",
-                    padding: "3rem 2.5rem",
-                    position: "relative",
-                    zIndex: 10,
-                    boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
-                    border: "1px solid rgba(255,255,255,0.1)"
-                }}
+                transition={{ duration: 0.5 }}
+                className="w-full max-w-md relative z-10"
             >
-                <div style={{ textAlign: "center", marginBottom: "2.5rem" }}>
-                    <div style={{
-                        width: "48px",
-                        height: "48px",
-                        background: "var(--gradient-primary)",
-                        borderRadius: "12px",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontWeight: 800,
-                        fontSize: "1.2rem",
-                        margin: "0 auto 1.5rem",
-                        boxShadow: "var(--shadow-glow)"
-                    }}>
-                        AI
+                <Card variant="elevated" padding="lg" className="sm:p-8">
+                    {/* Header */}
+                    <div className="text-center mb-6 sm:mb-8">
+                        <Link href="/" className="inline-block mb-4">
+                            <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center font-black text-white shadow-lg shadow-indigo-500/30 mx-auto">
+                                N
+                            </div>
+                        </Link>
+                        <h1 className="text-2xl sm:text-3xl font-black text-slate-100 mb-2">
+                            Welcome back
+                        </h1>
+                        <p className="text-slate-400 text-sm">
+                            Sign in to your NeuralBI account
+                        </p>
                     </div>
-                    <h1 style={{ fontSize: "1.5rem", fontWeight: 800, marginBottom: "0.5rem" }}>Welcome back</h1>
-                    <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>Sign in to your NeuralBI workspace</p>
-                </div>
 
-                {error && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        style={{
-                            background: "rgba(239, 68, 68, 0.15)",
-                            border: "1px solid #ef4444",
-                            color: "#fca5a5",
-                            padding: "0.75rem",
-                            borderRadius: "8px",
-                            fontSize: "0.85rem",
-                            marginBottom: "1.5rem",
-                            textAlign: "center"
-                        }}>
-                        {error}
-                    </motion.div>
-                )}
+                    {/* Error Message */}
+                    {error && (
+                        <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="mb-4 p-3 sm:p-4 rounded-lg bg-red-500/10 border border-red-500/30 text-red-200 text-sm"
+                        >
+                            {error}
+                        </motion.div>
+                    )}
 
-                <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-                    <div>
-                        <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.5rem" }}>Email Address</label>
-                        <input
+                    {/* Form */}
+                    <form onSubmit={handleLogin} className="space-y-4 sm:space-y-5">
+                        <Input
+                            label="Email"
                             type="email"
-                            required
+                            placeholder="your@email.com"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            placeholder="name@company.com"
-                            style={{
-                                width: "100%",
-                                padding: "0.875rem 1rem",
-                                background: "rgba(0,0,0,0.2)",
-                                border: "1px solid var(--border-subtle)",
-                                borderRadius: "var(--radius-md)",
-                                color: "white",
-                                fontSize: "0.95rem",
-                                outline: "none"
-                            }}
-                        />
-                    </div>
-
-                    <div>
-                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
-                            <label style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text-secondary)" }}>Password</label>
-                            <a href="#" style={{ fontSize: "0.8rem", color: "var(--primary-400)", textDecoration: "none" }}>Forgot?</a>
-                        </div>
-                        <input
-                            type="password"
                             required
+                            disabled={loading}
+                            fullWidth
+                        />
+
+                        <Input
+                            label="Password"
+                            type="password"
+                            placeholder="••••••••"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            placeholder="••••••••"
-                            style={{
-                                width: "100%",
-                                padding: "0.875rem 1rem",
-                                background: "rgba(0,0,0,0.2)",
-                                border: "1px solid var(--border-subtle)",
-                                borderRadius: "var(--radius-md)",
-                                color: "white",
-                                fontSize: "0.95rem",
-                                outline: "none"
-                            }}
+                            required
+                            disabled={loading}
+                            fullWidth
                         />
+
+                        <div className="flex items-center justify-between text-sm">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    className="w-4 h-4 rounded bg-slate-800 border border-slate-700 accent-indigo-600"
+                                    defaultChecked
+                                />
+                                <span className="text-slate-400 hover:text-slate-300 transition-colors">
+                                    Remember me
+                                </span>
+                            </label>
+                            <a href="#" className="text-indigo-400 hover:text-indigo-300 transition-colors">
+                                Forgot password?
+                            </a>
+                        </div>
+
+                        <Button
+                            variant="primary"
+                            size="lg"
+                            fullWidth
+                            loading={loading}
+                            type="submit"
+                        >
+                            Sign In
+                        </Button>
+                    </form>
+
+                    {/* Divider */}
+                    <div className="my-6 sm:my-8 flex items-center gap-3">
+                        <div className="flex-1 h-px bg-slate-700" />
+                        <span className="text-xs font-semibold text-slate-500 uppercase tracking-widest">OR</span>
+                        <div className="flex-1 h-px bg-slate-700" />
                     </div>
 
-                    <button
-                        type="submit"
-                        className="btn-primary"
-                        style={{
-                            marginTop: "1rem",
-                            padding: "0.875rem",
-                            fontSize: "1rem",
-                            width: "100%",
-                            opacity: loading ? 0.7 : 1
-                        }}
-                        disabled={loading}
-                    >
-                        {loading ? "Authenticating..." : "Sign in to Dashboard"}
-                    </button>
-                </form>
+                    {/* Social Buttons */}
+                    <div className="space-y-3 sm:space-y-4">
+                        <Button variant="outline" size="md" fullWidth>
+                            <span>🔷</span>
+                            Continue with Google
+                        </Button>
+                        <Button variant="outline" size="md" fullWidth>
+                            <span>💼</span>
+                            Continue with Microsoft
+                        </Button>
+                    </div>
 
-                <p style={{ textAlign: "center", marginTop: "2rem", fontSize: "0.85rem", color: "var(--text-secondary)" }}>
-                    Don't have an account? <Link href="/register" style={{ color: "white", fontWeight: 600, textDecoration: "none" }}>Register now</Link>
+                    {/* Footer */}
+                    <p className="mt-6 sm:mt-8 text-center text-sm text-slate-400">
+                        Don't have an account?{" "}
+                        <Link
+                            href="/register"
+                            className="font-semibold text-indigo-400 hover:text-indigo-300 transition-colors"
+                        >
+                            Create one
+                        </Link>
+                    </p>
+                </Card>
+
+                {/* Footer Text */}
+                <p className="text-center text-xs text-slate-500 mt-6 sm:mt-8">
+                    By signing in, you agree to our Terms of Service and Privacy Policy
                 </p>
             </motion.div>
         </div>

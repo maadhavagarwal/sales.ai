@@ -2,14 +2,21 @@
 
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { addCustomer, getCustomers } from "@/services/api"
+import { addCustomer, getCustomers, getCustomerLedger } from "@/services/api"
 import { useStore } from "@/store/useStore"
+import { Card, Button, Badge } from "@/components/ui"
 
 export default function WorkspaceCRM() {
     const { currencySymbol } = useStore()
     const [customers, setCustomers] = useState<any[]>([])
     const [showAdd, setShowAdd] = useState(false)
     const [loading, setLoading] = useState(false)
+
+    // Ledger Modal State
+    const [showLedger, setShowLedger] = useState(false)
+    const [selectedCustomer, setSelectedCustomer] = useState<any>(null)
+    const [ledgerData, setLedgerData] = useState<any[]>([])
+    const [ledgerLoading, setLedgerLoading] = useState(false)
 
     // Form state
     const [formData, setFormData] = useState({ name: "", email: "", phone: "", address: "", gstin: "", pan: "" })
@@ -28,6 +35,7 @@ export default function WorkspaceCRM() {
     }
 
     const handleAdd = async () => {
+        if (!formData.name) return
         setLoading(true)
         try {
             await addCustomer(formData)
@@ -35,96 +43,285 @@ export default function WorkspaceCRM() {
             setFormData({ name: "", email: "", phone: "", address: "", gstin: "", pan: "" })
             refreshData()
         } catch (e) {
-            alert("Failed to add client profile")
+            console.error(e)
         } finally {
             setLoading(false)
         }
     }
 
+    const handleViewLedger = async (customer: any) => {
+        setSelectedCustomer(customer)
+        setShowLedger(true)
+        setLedgerLoading(true)
+        try {
+            // We use name or id as reference for ledger lookup
+            const data = await getCustomerLedger(customer.name)
+            setLedgerData(data)
+        } catch (e) {
+            console.error(e)
+        } finally {
+            setLedgerLoading(false)
+        }
+    }
+
     return (
-        <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div className="space-y-12 font-jakarta">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 pb-6 border-b border-white/5">
                 <div>
-                    <h2 style={{ fontSize: "1.25rem", fontWeight: 800 }}>Statutory Client Directory (CRM)</h2>
-                    <p style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>Manage enterprise clients with GST and PAN compliance</p>
+                    <h2 className="text-3xl font-black text-white tracking-tighter">Client Strategic Intelligence</h2>
+                    <p className="text-sm font-bold text-[--text-muted] mt-2 opacity-60 uppercase tracking-[0.2em]">
+                        Autonomous Entity Registry & Relationship Health Matrix.
+                    </p>
                 </div>
-                <button className="btn-primary" onClick={() => setShowAdd(true)}>
-                    + Board New Entity
-                </button>
+                <div className="flex gap-4">
+                    <Button variant="outline" size="lg" onClick={refreshData} className="tracking-widest text-[10px]">SYNC CORE</Button>
+                    <Button variant="pro" size="lg" onClick={() => setShowAdd(true)} icon={<span>+</span>} className="shadow-[--shadow-glow] tracking-widest text-[10px]">
+                        BOARD NEW ENTITY
+                    </Button>
+                </div>
             </div>
 
             <AnimatePresence>
                 {showAdd && (
                     <motion.div
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        className="chart-card"
-                        style={{ border: "1px solid var(--accent-cyan)", background: "rgba(6,182,212,0.02)", padding: "2rem" }}
+                        initial={{ opacity: 0, scale: 0.98, y: -20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.98, y: -20 }}
                     >
-                        <h3 style={{ fontSize: "1rem", fontWeight: 800, marginBottom: "1.5rem", color: "var(--accent-cyan)" }}>Client Onboarding Directive</h3>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.25rem", marginBottom: "1.25rem" }}>
-                            <div className="input-group">
-                                <label style={{ fontSize: "0.65rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: "0.4rem", display: "block" }}>Business/Entity Name</label>
-                                <input placeholder="e.g. Reliance Industries" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="input-base" style={{ background: "rgba(0,0,0,0.3)", width: "100%" }} />
+                        <Card variant="bento" padding="lg" className="border-[--primary]/30 bg-[--primary]/5 shadow-[0_0_50px_rgba(99,102,241,0.1)]">
+                            <div className="flex items-center gap-4 mb-10 pb-6 border-b border-white/5">
+                                <div className="w-10 h-10 rounded-xl bg-[--primary]/20 flex items-center justify-center text-xl shadow-inner">🏢</div>
+                                <h3 className="text-xs font-black uppercase tracking-[0.3em] text-white">Strategic Onboarding Protocol</h3>
                             </div>
-                            <div className="input-group">
-                                <label style={{ fontSize: "0.65rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: "0.4rem", display: "block" }}>Primary Email</label>
-                                <input placeholder="finance@entity.com" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="input-base" style={{ background: "rgba(0,0,0,0.3)", width: "100%" }} />
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-10">
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black uppercase tracking-[0.3em] text-[--text-muted] ml-1">Entity Legal Name</label>
+                                    <input
+                                        placeholder="e.g. Global Dynamics Corp"
+                                        value={formData.name}
+                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                        className="input-pro w-full h-14"
+                                    />
+                                </div>
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black uppercase tracking-[0.3em] text-[--text-muted] ml-1">Capital Channel (Email)</label>
+                                    <input
+                                        placeholder="finance@corp.com"
+                                        value={formData.email}
+                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                        className="input-pro w-full h-14"
+                                    />
+                                </div>
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black uppercase tracking-[0.3em] text-[--text-muted] ml-1">Telecom Link</label>
+                                    <input
+                                        placeholder="+91 XXXX XXX XXX"
+                                        value={formData.phone}
+                                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                        className="input-pro w-full h-14"
+                                    />
+                                </div>
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black uppercase tracking-[0.3em] text-[--text-muted] ml-1">Statutory GSTIN</label>
+                                    <input
+                                        placeholder="27AAAAA0000A1Z5"
+                                        value={formData.gstin}
+                                        onChange={(e) => setFormData({ ...formData, gstin: e.target.value })}
+                                        className="input-pro w-full h-14"
+                                    />
+                                </div>
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black uppercase tracking-[0.3em] text-[--text-muted] ml-1">Federal PAN</label>
+                                    <input
+                                        placeholder="ABCDE1234F"
+                                        value={formData.pan}
+                                        onChange={(e) => setFormData({ ...formData, pan: e.target.value })}
+                                        className="input-pro w-full h-14"
+                                    />
+                                </div>
                             </div>
-                            <div className="input-group">
-                                <label style={{ fontSize: "0.65rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: "0.4rem", display: "block" }}>Business GSTIN</label>
-                                <input placeholder="27AAAAA0000A1Z5" value={formData.gstin} onChange={(e) => setFormData({ ...formData, gstin: e.target.value })} className="input-base" style={{ background: "rgba(0,0,0,0.3)", width: "100%" }} />
+
+                            <div className="space-y-3 mb-12">
+                                <label className="text-[10px] font-black uppercase tracking-[0.3em] text-[--text-muted] ml-1">Registered Headquarters</label>
+                                <textarea
+                                    placeholder="Full Registered Address for Statutory Documentation"
+                                    value={formData.address}
+                                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                                    className="input-pro w-full min-h-[120px] py-4 h-auto leading-relaxed"
+                                />
                             </div>
-                            <div className="input-group">
-                                <label style={{ fontSize: "0.65rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: "0.4rem", display: "block" }}>Business PAN</label>
-                                <input placeholder="ABCDE1234F" value={formData.pan} onChange={(e) => setFormData({ ...formData, pan: e.target.value })} className="input-base" style={{ background: "rgba(0,0,0,0.3)", width: "100%" }} />
+
+                            <div className="flex flex-col sm:flex-row gap-5 pt-8 border-t border-white/5">
+                                <Button variant="pro" size="lg" onClick={handleAdd} loading={loading} className="flex-1 h-14 tracking-widest text-xs shadow-[--shadow-glow]">
+                                    INITIALIZE ENTITY PROFILE
+                                </Button>
+                                <Button variant="outline" size="lg" onClick={() => setShowAdd(false)} className="px-12 h-14 tracking-widest text-xs">
+                                    ABORT
+                                </Button>
                             </div>
-                        </div>
-                        <div style={{ marginBottom: "1.5rem" }}>
-                            <label style={{ fontSize: "0.65rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: "0.4rem", display: "block" }}>Registered Address</label>
-                            <textarea placeholder="Line 1, City, State, PIN" value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} className="input-base" style={{ background: "rgba(0,0,0,0.3)", width: "100%", height: "80px" }} />
-                        </div>
-                        <div style={{ display: "flex", gap: "1rem" }}>
-                            <button className="btn-primary" onClick={handleAdd} disabled={loading} style={{ flex: 1 }}>{loading ? "Adding..." : "Add Client Profile"}</button>
-                            <button className="btn-secondary" onClick={() => setShowAdd(false)}>Cancel</button>
-                        </div>
+                        </Card>
                     </motion.div>
                 )}
             </AnimatePresence>
 
-            <div className="chart-card">
-                <h3 style={{ fontSize: "0.9rem", fontWeight: 700, marginBottom: "1rem" }}>Enterprise Client Directory</h3>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "1rem" }}>
-                    {customers.length === 0 && (
-                        <div style={{ gridColumn: "1 / -1", textAlign: "center", color: "var(--text-muted)", padding: "3rem" }}>
-                            No clients available. Expand your business by adding your first customer profile!
-                        </div>
-                    )}
-                    {customers.map((c) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+                <AnimatePresence>
+                    {customers.length === 0 ? (
                         <motion.div
-                            key={c.id}
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
-                            className="metric-card"
-                            style={{ padding: "1.25rem", borderLeft: "4px solid var(--accent-cyan)" }}
+                            className="md:col-span-2 xl:col-span-3"
                         >
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.75rem" }}>
-                                <h4 style={{ fontSize: "1rem", fontWeight: 700 }}>{c.name}</h4>
-                                <span className="badge badge-primary">ID: {c.id}</span>
-                            </div>
-                            <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)", marginBottom: "0.25rem" }}>📧 {c.email || 'No email'}</p>
-                            <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)", marginBottom: "0.25rem" }}>📞 {c.phone || 'No phone'}</p>
-                            <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "1rem" }}>📍 {c.address || 'No address'}</p>
-
-                            <div style={{ paddingTop: "1rem", borderTop: "1px solid var(--border-subtle)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase" }}>Lifetime Value (LTV)</span>
-                                <span style={{ fontSize: "0.9rem", fontWeight: 800, color: "var(--accent-emerald)" }}>{currencySymbol}{(c.total_spend || 0).toLocaleString()}</span>
-                            </div>
+                            <Card variant="glass" padding="lg" className="py-40 text-center border-dashed border-2 border-white/5 bg-white/[0.01]">
+                                <div className="w-24 h-24 bg-gradient-to-br from-[--primary]/10 to-transparent rounded-full flex items-center justify-center mx-auto mb-8 text-4xl opacity-40 shadow-inner">
+                                    🧬
+                                </div>
+                                <h4 className="text-xs font-black text-white uppercase tracking-[0.4em]">Corporate Registry Vacant</h4>
+                                <p className="text-sm font-bold text-[--text-muted] mt-4 opacity-40 italic max-w-sm mx-auto leading-relaxed">
+                                    Onboard enterprise stakeholders to activate statutory tracking and relationship lifecycle management.
+                                </p>
+                            </Card>
                         </motion.div>
-                    ))}
-                </div>
+                    ) : (
+                        customers.map((c, i) => (
+                            <motion.div
+                                key={c.id}
+                                initial={{ opacity: 0, y: 15 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95 }}
+                                transition={{ delay: i * 0.05, duration: 0.5 }}
+                            >
+                                <Card variant="glass" padding="lg" className="group hover:border-[--primary]/40 transition-all duration-700 bg-black/40 shadow-2xl overflow-hidden relative">
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-[--primary]/5 blur-3xl rounded-full -translate-y-16 translate-x-16 group-hover:bg-[--primary]/10 transition-colors" />
+
+                                    <div className="flex justify-between items-start mb-8 relative z-10">
+                                        <div className="space-y-2">
+                                            <h4 className="text-xl font-black text-white tracking-tighter group-hover:text-[--primary] transition-colors leading-tight">{c.name}</h4>
+                                            <div className="flex flex-wrap gap-2">
+                                                <Badge variant="outline" className="text-[8px] tracking-widest border-white/10 uppercase py-0 px-2 opacity-50 font-bold">UID: {String(c.id).slice(0, 8)}</Badge>
+                                                {c.gstin && <Badge variant="pro" pulse size="xs">GST: ACTIVE</Badge>}
+                                            </div>
+                                        </div>
+                                        <div className="w-12 h-12 bg-white/[0.03] border border-white/5 rounded-2xl flex items-center justify-center text-xl grayscale group-hover:grayscale-0 group-hover:scale-110 transition-all duration-500 shadow-inner">
+                                            💎
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-4 mb-10 relative z-10">
+                                        <div className="flex items-center gap-4 text-[11px] font-bold text-[--text-secondary] bg-white/[0.02] p-3 rounded-xl border border-white/5">
+                                            <span className="opacity-40 text-sm">✉️</span>
+                                            <span className="font-geist tracking-tight truncate">{c.email || 'entity@neural.hq'}</span>
+                                        </div>
+                                        <div className="flex items-center gap-4 text-[11px] font-bold text-[--text-secondary] bg-white/[0.02] p-3 rounded-xl border border-white/5">
+                                            <span className="opacity-40 text-sm">📱</span>
+                                            <span className="font-geist tracking-tight">{c.phone || '+91 LOG REQ'}</span>
+                                        </div>
+                                        <div className="flex items-start gap-4 text-[11px] font-bold text-[--text-muted] p-3">
+                                            <span className="opacity-40 text-sm mt-0.5">🏢</span>
+                                            <span className="line-clamp-2 leading-relaxed italic opacity-80">{c.address || 'Statutory HQ Pending Verification.'}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="pt-6 border-t border-white/5 flex items-center justify-between relative z-10">
+                                        <div className="flex flex-col">
+                                            <span className="text-[9px] font-black uppercase tracking-[0.3em] text-[--text-muted] opacity-60">Revenue Yield (LTV)</span>
+                                            <span className="text-2xl font-black text-white tracking-tighter mt-1 group-hover:text-[--primary] transition-colors">
+                                                {currencySymbol}{(c.total_spend || 0).toLocaleString()}
+                                            </span>
+                                        </div>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => handleViewLedger(c)}
+                                            className="opacity-0 group-hover:opacity-100 transition-all duration-500 translate-x-4 group-hover:translate-x-0 tracking-[0.2em] text-[8px] font-black uppercase"
+                                        >
+                                            VIEW LEDGER →
+                                        </Button>
+                                    </div>
+                                </Card>
+                            </motion.div>
+                        ))
+                    )}
+                </AnimatePresence>
             </div>
+
+            {/* Entity Ledger Modal */}
+            <AnimatePresence>
+                {showLedger && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+                        <motion.div
+                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                            onClick={() => setShowLedger(false)}
+                            className="absolute inset-0 bg-black/80 backdrop-blur-xl"
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            className="relative w-full max-w-5xl max-h-[80vh] overflow-hidden"
+                        >
+                            <Card variant="bento" padding="none" className="h-full flex flex-col border-[--primary]/30 bg-black/60 shadow-[0_0_100px_rgba(99,102,241,0.2)]">
+                                <div className="p-8 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
+                                    <div>
+                                        <Badge variant="pro" className="mb-2">Entity Audit Trail</Badge>
+                                        <h3 className="text-3xl font-black text-white tracking-tighter uppercase">{selectedCustomer?.name}</h3>
+                                    </div>
+                                    <button onClick={() => setShowLedger(false)} className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white/40 hover:text-white transition-colors">×</button>
+                                </div>
+
+                                <div className="flex-1 overflow-y-auto p-8 scrollbar-pro">
+                                    {ledgerLoading ? (
+                                        <div className="py-20 text-center"><div className="spinner mx-auto mb-4" /><p className="text-[10px] font-black uppercase tracking-widest text-white">Hydrating Ledger Stream...</p></div>
+                                    ) : (
+                                        <table className="w-full">
+                                            <thead>
+                                                <tr className="border-b border-white/5 text-left">
+                                                    <th className="pb-4 text-[10px] font-black uppercase tracking-widest text-[--text-muted]">Date</th>
+                                                    <th className="pb-4 text-[10px] font-black uppercase tracking-widest text-[--text-muted]">Type</th>
+                                                    <th className="pb-4 text-[10px] font-black uppercase tracking-widest text-[--text-muted]">Particulars</th>
+                                                    <th className="pb-4 text-[10px] font-black uppercase tracking-widest text-[--text-muted]">VCH ID</th>
+                                                    <th className="pb-4 text-right text-[10px] font-black uppercase tracking-widest text-[--text-muted]">Debit</th>
+                                                    <th className="pb-4 text-right text-[10px] font-black uppercase tracking-widest text-[--text-muted]">Credit</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-white/5">
+                                                {ledgerData.map((row, i) => (
+                                                    <tr key={i} className="group hover:bg-white/[0.01]">
+                                                        <td className="py-4 text-xs font-bold text-white/50">{row.date}</td>
+                                                        <td className="py-4"><Badge variant="outline" size="xs" className="uppercase px-4">{row.voucher_type || 'Journal'}</Badge></td>
+                                                        <td className="py-4">
+                                                            <p className="text-xs font-black text-white">{row.account_name}</p>
+                                                            <p className="text-[9px] font-bold text-[--text-muted] tracking-tight">{row.description}</p>
+                                                        </td>
+                                                        <td className="py-4 text-[9px] font-mono text-[--text-muted]">{row.voucher_id}</td>
+                                                        <td className="py-4 text-right font-black text-sm text-[--accent-cyan]">
+                                                            {row.amount > 0 ? (currencySymbol + row.amount.toLocaleString()) : ""}
+                                                        </td>
+                                                        <td className="py-4 text-right font-black text-sm text-[--accent-rose]">
+                                                            {row.amount < 0 ? (currencySymbol + Math.abs(row.amount).toLocaleString()) : ""}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                                {ledgerData.length === 0 && (
+                                                    <tr><td colSpan={6} className="py-20 text-center text-xs font-bold text-[--text-muted] italic">No transaction records found for this entity.</td></tr>
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    )}
+                                </div>
+
+                                <div className="p-8 bg-white/[0.02] border-t border-white/5 flex justify-between items-center text-sm font-black text-white tracking-tighter">
+                                    <span>NET STATUTORY BALANCE</span>
+                                    <span className={ledgerData.reduce((a, b) => a + b.amount, 0) >= 0 ? "text-[--accent-cyan]" : "text-[--accent-rose]"}>
+                                        {currencySymbol}{ledgerData.reduce((a, b) => a + b.amount, 0).toLocaleString()}
+                                    </span>
+                                </div>
+                            </Card>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     )
 }

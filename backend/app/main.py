@@ -72,7 +72,7 @@ async def login(email: str = Body(...), password: str = Body(...)):
     return JSONResponse(status_code=401, content={"error": "Invalid email or password"})
 
 # Security: Configurable CORS rather than raw wildcard
-ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,*").split(",")
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",")
 DEBUG_MODE = os.getenv("DEBUG", "False").lower() == "true"
 
 app.add_middleware(
@@ -280,6 +280,9 @@ async def upload_csv(file: UploadFile = File(...)):
         # Persist to SQL backend
         store_data(dataset_id, processed_df)
 
+        # Autonomous Workspace Sync (Extract Entities)
+        WorkspaceEngine.sync_dataset_to_workspace(processed_df)
+
         summary = get_dataset_summary(processed_df)
         sample_df = processed_df.head(5000).copy()
 
@@ -327,15 +330,36 @@ async def upload_csv(file: UploadFile = File(...)):
 @app.post("/reprocess-dataset/{dataset_id}")
 async def reprocess_dataset(dataset_id: str, sheet_name: str = Body(None)):
     try:
+        # Session Recovery from SQL if missing in RAM
         if dataset_id not in _sessions:
-            return JSONResponse(status_code=404, content={"error": "Session expired."})
+             from app.core.database_manager import get_session_data_sql
+             stored_df = get_session_data_sql(dataset_id)
+             if stored_df is not None and not stored_df.empty:
+                 _sessions[dataset_id] = {
+                     "df": stored_df,
+                     "filename": "Recovered Session",
+                     "is_recovered": True,
+                     "timestamp": time.time()
+                 }
+             else:
+                 return JSONResponse(status_code=404, content={"error": "Session expired."})
             
         session = _sessions[dataset_id]
-        file_content = session["file_content"]
-        filename = session["filename"]
         
-        file_io = io.BytesIO(file_content)
-        df = load_data_robustly(file_io, filename, sheet_name=sheet_name)
+        # Determine Data Source
+        if dataset_id.startswith("LIVE-SYNC"):
+            # Live data source: Pull fresh from Workspace
+            df = WorkspaceEngine.get_enterprise_analytics_df()
+            filename = "Live ERP Stream"
+            file_content = None
+        else:
+            # File data source: Reload from cache
+            file_content = session.get("file_content")
+            filename = session.get("filename", "reloaded.csv")
+            if not file_content:
+                 return JSONResponse(status_code=400, content={"error": "No source file found for reprocessing."})
+            file_io = io.BytesIO(file_content)
+            df = load_data_robustly(file_io, filename, sheet_name=sheet_name)
         
         pipeline = run_pipeline(df)
         processed_df = pipeline.get("_df", df)
@@ -460,6 +484,18 @@ async def dashboard_config(dataset_id: str):
             return {"error": "Session expired."}
         df = _sessions[dataset_id]["df"]
         result = generate_ai_dashboard(df)
+        return result
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/forecast/{dataset_id}")
+async def forecast_sales_endpoint(dataset_id: str, periods: int = Body(12, embed=True)):
+    try:
+        if dataset_id not in _sessions:
+            return {"error": "Session expired."}
+        df = _sessions[dataset_id]["df"]
+        from app.engines.automl_engine import forecast_sales
+        result = forecast_sales(df, periods)
         return result
     except Exception as e:
         return {"error": str(e)}
@@ -611,6 +647,11 @@ async def get_inventory():
     """Retrieves all stock and asset items."""
     return WorkspaceEngine.get_inventory()
 
+@app.get("/workspace/inventory/health")
+async def get_inventory_health():
+    """AI-driven Inventory Analytics & Health mapping."""
+    return WorkspaceEngine.get_inventory_health()
+
 @app.post("/workspace/inventory")
 async def add_inventory_item(data: dict = Body(...)):
     """Creates a new inventory/stock item."""
@@ -665,14 +706,176 @@ async def get_expenses():
     """Retrieves all categorized business expenses."""
     return WorkspaceEngine.get_expenses()
 
-@app.post("/workspace/marketing/campaigns")
-async def create_marketing_campaign(data: dict = Body(...)):
-    """Creates a new marketing performance campaign."""
-    return WorkspaceEngine.create_marketing_campaign(data)
-
 @app.get("/workspace/marketing/campaigns")
 async def get_marketing_campaigns():
     """Retrieves all marketing campaign ROI data."""
     return WorkspaceEngine.get_marketing_campaigns()
 
+@app.get("/workspace/accounting/daybook")
+async def get_daybook():
+    """Retrieves a chronological audit trail of all business vouchers."""
+    return WorkspaceEngine.get_daybook()
 
+@app.get("/workspace/accounting/trial-balance")
+async def get_trial_balance():
+    """Generates a real-time Trial Balance of all active ledgers."""
+    return WorkspaceEngine.get_trial_balance()
+
+@app.get("/workspace/accounting/pl")
+async def get_pl_statement():
+    """Generates a structured Profit & Loss statement."""
+    return WorkspaceEngine.get_profit_and_loss()
+
+@app.get("/workspace/accounting/balance-sheet")
+async def get_balance_sheet():
+    """Generates a structured Balance Sheet (Assets vs Liabilities)."""
+    return WorkspaceEngine.get_balance_sheet()
+
+@app.get("/workspace/accounting/customer-ledger/{customer_id}")
+async def get_customer_ledger(customer_id: str):
+    """Retrieves a granular audit trail for a specific customer."""
+    return WorkspaceEngine.get_customer_ledger(customer_id)
+
+@app.post("/workspace/accounting/payments")
+async def record_payment(data: dict = Body(...)):
+    """Records a professional receipt voucher (Customer Payment)."""
+    return WorkspaceEngine.record_payment(data)
+
+@app.post("/workspace/accounting/reconcile")
+async def reconcile_bank_statement(data: dict = Body(...)):
+    """AI BRS: Matches bank transactions with ledger events."""
+    entries = data.get("entries", [])
+    return WorkspaceEngine.reconcile_bank_statement(entries)
+
+@app.get("/workspace/accounting/gst")
+async def get_gst_reports():
+    """Generates statutory GSTR-1 and GSTR-3B summaries."""
+    return WorkspaceEngine.get_gst_reports()
+
+@app.get("/dashboard/sync-workspace")
+async def sync_workspace_to_dashboard():
+    """
+    Cognitive Sync: Pulls Live Workspace Data, runs full AI Pipeline, 
+    and returns Dashboard-ready state.
+    """
+    try:
+        df = WorkspaceEngine.get_enterprise_analytics_df()
+        
+        if df.empty:
+            return JSONResponse(status_code=400, content={"error": "No business ledger data found. Add invoices or expenses first."})
+
+        # Run full NeuralBI Pipeline on Workspace Ledger
+        pipeline = run_pipeline(df)
+        processed_df = pipeline.get("_df", df)
+        
+        # New Session ID for this Sync
+        dataset_id = f"LIVE-SYNC-{uuid.uuid4().hex[:6].upper()}"
+        
+        # Cache for Copilot/NLBI
+        _sessions[dataset_id] = {
+            "df": processed_df,
+            "filename": "Live ERP Stream",
+            "timestamp": time.time(),
+            "pipeline": pipeline
+        }
+
+        summary = get_dataset_summary(processed_df)
+        sample_df = processed_df.head(1000).copy()
+        for col in sample_df.columns:
+            if pd.api.types.is_datetime64_any_dtype(sample_df[col]):
+                sample_df[col] = sample_df[col].astype(str)
+        raw_data = sample_df.where(sample_df.notna(), None).to_dict(orient="records")
+
+        response = {
+            "dataset_id": dataset_id,
+            "is_live": True,
+            "rows": len(df),
+            "analytics": pipeline.get("analytics", {}),
+            "ml_predictions": pipeline.get("ml_predictions", {}),
+            "insights": pipeline.get("insights", []),
+            "strategy": pipeline.get("strategy", []),
+            "analyst_report": pipeline.get("analyst_report", {}),
+            "strategic_plan": pipeline.get("strategic_plan", ""),
+            "recommendations": pipeline.get("recommendations", []),
+            "explanations": pipeline.get("explanations", []),
+            "simulation_results": pipeline.get("simulation_results", []),
+            "anomalies": pipeline.get("anomalies", []),
+            "clustering": pipeline.get("clustering", {}),
+            "data_quality": pipeline.get("data_quality", 1.0),
+            "confidence_score": pipeline.get("confidence_score", 0.7),
+            "summary": summary,
+            "dataset_summary": summary,
+            "raw_data": raw_data,
+            "columns": list(processed_df.columns),
+            "numeric_columns": processed_df.select_dtypes(include=[np.number]).columns.tolist(),
+            "categorical_columns": processed_df.select_dtypes(include=["object"]).columns.tolist(),
+        }
+        return _make_serializable(response)
+    except Exception as e:
+        traceback.print_exc()
+        return JSONResponse(status_code=500, content={"error": f"Live Sync Failed: {str(e)}"})
+
+@app.post("/workspace/accounting/reminders/{invoice_id}")
+async def send_invoice_reminder(invoice_id: str):
+    """Triggers an autonomous payment reminder for a specific invoice."""
+    return WorkspaceEngine.send_payment_reminder(invoice_id)
+
+@app.get("/workspace/business-report/download")
+async def download_consolidated_report():
+    """Generates and streams a unified business performance report."""
+    report_text = WorkspaceEngine.generate_consolidated_business_report()
+    return PlainTextResponse(
+        report_text,
+        headers={"Content-Disposition": "attachment; filename=NeuralBI_Consolidated_Report.txt"}
+    )
+
+@app.post("/copilot-chat")
+async def copilot_chat(request: Request):
+    """
+    Live AI Command Center (Copilot v2):
+    Answers business questions by querying live SQL or the latest AI context.
+    """
+    body = await request.json()
+    query = body.get("query", "")
+    dataset_id = body.get("dataset_id") # Optional: specific context
+    
+    if not query:
+        return {"response": "I'm listening. How can I assist with your business operations today?"}
+    
+    # 1. Get Context
+    context_df = None
+    if dataset_id and dataset_id in _sessions:
+        context_df = _sessions[dataset_id].get("df")
+    else:
+        # Fallback: Live Workspace Data
+        context_df = WorkspaceEngine.get_enterprise_analytics_df()
+        
+    # 2. Query Logic (Heuristic for now, can be LLM-powered)
+    try:
+        from app.engines.nlbi_engine import run_nl_query
+        # Log the usage
+        WorkspaceEngine.log_usage("Copilot", f"Query: {query[:50]}...")
+        result = run_nl_query(query, context_df)
+        return {"response": result}
+    except Exception as e:
+        return {"response": f"Neural Link Error: {str(e)}"}
+
+@app.get("/workspace/accounting/cfo-report")
+async def get_cfo_report():
+    """Generates a high-level CFO health report."""
+    return WorkspaceEngine.get_cfo_health_report()
+
+@app.get("/workspace/usage-stats")
+async def get_usage_stats():
+    """Returns platform engagement analytics."""
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    try:
+        logs = conn.execute("SELECT module, COUNT(*) as count FROM usage_logs GROUP BY module ORDER BY count DESC").fetchall()
+        return [dict(log) for log in logs]
+    finally:
+        conn.close()
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

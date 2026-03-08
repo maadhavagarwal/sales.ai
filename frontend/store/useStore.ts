@@ -71,6 +71,11 @@ export interface UploadResults {
     summary?: Record<string, any>
     strategic_plan?: string
     available_sheets?: string[]
+    forecast?: {
+        forecast: Array<{ date: string; predicted_revenue: number }>
+        model_info: string
+        r2_score: number
+    }
 }
 
 // Dashboard widget configuration  
@@ -131,6 +136,7 @@ interface AppState {
     removeWidget: (id: string) => void
     setEditingWidget: (id: string | null) => void
     setWidgets: (widgets: DashboardWidget[]) => void
+    fetchForecast: (datasetId: string, periods?: number) => Promise<void>
 }
 
 const CHART_COLORS = [
@@ -147,7 +153,7 @@ export const useStore = create<AppState>((set) => ({
     currencySymbol: "₹",
     currencyCode: "INR",
     sidebarCollapsed: false,
-    theme: (typeof window !== 'undefined' && localStorage.getItem('nb-enterprise-theme') as any) || "dark",
+    theme: "dark", // Default to dark, will be updated on client
     widgets: [],
     editingWidget: null,
 
@@ -175,7 +181,23 @@ export const useStore = create<AppState>((set) => ({
         widgets: state.widgets.filter((w) => w.id !== id),
     })),
     setEditingWidget: (editingWidget) => set({ editingWidget }),
-    setWidgets: (widgets) => set({ widgets })
+    setWidgets: (widgets) => set({ widgets }),
+    fetchForecast: async (datasetId, periods = 12) => {
+        try {
+            const response = await fetch(`http://localhost:8000/forecast/${datasetId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ periods })
+            })
+            const data = await response.json()
+            if (data.error) throw new Error(data.error)
+            set((state) => ({
+                results: state.results ? { ...state.results, forecast: data } : null
+            }))
+        } catch (error) {
+            console.error('Forecast fetch failed:', error)
+        }
+    }
 }))
 
 export { CHART_COLORS }

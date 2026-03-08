@@ -9,7 +9,7 @@ DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.d
 def init_workspace_db():
     conn = sqlite3.connect(DB_PATH)
     try:
-        # User management table
+   
         conn.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -47,7 +47,7 @@ def init_workspace_db():
         conn.execute("""
             CREATE TABLE IF NOT EXISTS customers (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
+                name TEXT UNIQUE NOT NULL,
                 email TEXT,
                 phone TEXT,
                 address TEXT,
@@ -110,6 +110,9 @@ def init_workspace_db():
                 amount REAL,
                 description TEXT,
                 date TEXT,
+                voucher_id TEXT,
+                voucher_type TEXT, -- Contra, Payment, Receipt, Journal, Sales, Purchase
+                voucher_no TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
@@ -162,6 +165,12 @@ def init_workspace_db():
             conn.execute("ALTER TABLE invoices ADD COLUMN due_date TEXT")
         except sqlite3.OperationalError: pass
         try:
+            conn.execute("ALTER TABLE invoices ADD COLUMN payment_terms TEXT")
+        except sqlite3.OperationalError: pass
+        try:
+            conn.execute("ALTER TABLE invoices ADD COLUMN reminder_last_sent TEXT")
+        except sqlite3.OperationalError: pass
+        try:
             conn.execute("ALTER TABLE invoices ADD COLUMN cgst_total REAL DEFAULT 0.0")
         except sqlite3.OperationalError: pass
         try:
@@ -178,6 +187,27 @@ def init_workspace_db():
         except sqlite3.OperationalError: pass
         try:
             conn.execute("ALTER TABLE invoices ADD COLUMN notes TEXT")
+        except sqlite3.OperationalError: pass
+
+        # Usage Logs for Software Usage Reporting
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS usage_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                module TEXT,
+                action TEXT,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        # Ensure missing columns exist in ledger (Tally Update)
+        try:
+            conn.execute("ALTER TABLE ledger ADD COLUMN voucher_id TEXT")
+        except sqlite3.OperationalError: pass
+        try:
+            conn.execute("ALTER TABLE ledger ADD COLUMN voucher_type TEXT")
+        except sqlite3.OperationalError: pass
+        try:
+            conn.execute("ALTER TABLE ledger ADD COLUMN voucher_no TEXT")
         except sqlite3.OperationalError: pass
 
         conn.commit()

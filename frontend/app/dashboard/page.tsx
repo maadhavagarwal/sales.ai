@@ -1,436 +1,57 @@
 "use client"
 
 import { useState, useMemo, useCallback, useEffect } from "react"
-import Sidebar from "@/components/layout/Sidebar"
-import PageHeader from "@/components/layout/PageHeader"
+import DashboardLayout from "@/components/layout/DashboardLayout"
 import CSVUploader from "@/components/upload/CSVUploader"
 import MetricsCards from "@/components/dashboard/MetricsCards"
 import StrategyPanel from "@/components/dashboard/StrategyPanel"
 import InsightsPanel from "@/components/dashboard/InsightsPanel"
 import ExplanationsPanel from "@/components/dashboard/ExplanationsPanel"
 import NLBIChartGenerator from "@/components/ai/NLBIChartGenerator"
-import { useStore, CHART_COLORS } from "@/store/useStore"
-import type { DashboardWidget } from "@/store/useStore"
-import { getDashboardConfig, downloadReport, downloadCleanData, downloadStrategicPlanPDF, reprocessDataset } from "@/services/api"
+import ChartWidget from "@/components/dashboard/ChartWidget"
+import WidgetEditor from "@/components/dashboard/WidgetEditor"
+import DataTable from "@/components/dashboard/DataTable"
+import { useToast } from "@/components/ui/Toast"
+import { useStore, CHART_COLORS, DashboardWidget } from "@/store/useStore"
+import { getDashboardConfig, downloadReport, downloadCleanData, downloadStrategicPlanPDF, reprocessDataset, getCopilotResponse } from "@/services/api"
 import { motion, AnimatePresence } from "framer-motion"
-import ReactECharts from "echarts-for-react"
 import MarkdownRenderer from "@/components/ai/MarkdownRenderer"
+import { Button, Card, Badge } from "@/components/ui"
 
-/* ============================
-   EDITABLE CHART WIDGET
-   ============================ */
-function ChartWidget({
-  widget,
-  rawData,
-  onEdit,
-  onRemove,
-}: {
-  widget: DashboardWidget
-  rawData: Record<string, any>[]
-  onEdit: () => void
-  onRemove: () => void
-}) {
-  const { currencySymbol } = useStore()
-  // Aggregate data for both chart and AI reading
-  const { categories, values } = useMemo(() => {
-    if (!rawData || rawData.length === 0) return { categories: [], values: [] }
-    const { xColumn, yColumn, aggregation, type } = widget
-
-    const grouped: Record<string, number[]> = {}
-    for (const row of rawData) {
-      const key = String(row[xColumn] ?? "Unknown")
-      if (!grouped[key]) grouped[key] = []
-      const val = parseFloat(row[yColumn])
-      if (!isNaN(val)) grouped[key].push(val)
-    }
-
-    let cats = Object.keys(grouped).slice(0, 50)
-    let vals = cats.map((cat) => {
-      const arr = grouped[cat]
-      if (!arr || arr.length === 0) return 0
-      switch (aggregation) {
-        case "sum": return arr.reduce((a, b) => a + b, 0)
-        case "mean": return arr.reduce((a, b) => a + b, 0) / arr.length
-        case "count": return arr.length
-        case "min": return Math.min(...arr)
-        case "max": return Math.max(...arr)
-        default: return arr.reduce((a, b) => a + b, 0)
-      }
-    })
-
-    if (type === "bar" || type === "pie" || type === "donut") {
-      const pairs = cats.map((c, i) => ({ cat: c, val: vals[i] }))
-      pairs.sort((a, b) => b.val - a.val)
-      cats = pairs.map(p => p.cat)
-      vals = pairs.map(p => p.val)
-    }
-
-    return { categories: cats, values: vals }
-  }, [widget, rawData])
-
-  const chartOption = useMemo(() => {
-    if (!rawData || rawData.length === 0) return null
-    const { xColumn, yColumn, type, color } = widget
-    const baseTextStyle = { color: "#9ca3af", fontFamily: "Inter, system-ui, sans-serif" }
-
-    if (type === "pie" || type === "donut") {
-      return {
-        tooltip: { trigger: "item", formatter: "{b}: {c} ({d}%)" },
-        series: [{
-          type: "pie",
-          radius: type === "donut" ? ["45%", "70%"] : ["0%", "70%"],
-          center: ["50%", "55%"],
-          itemStyle: { borderRadius: 6, borderColor: "#0a0f1e", borderWidth: 2 },
-          label: { color: "#9ca3af", fontSize: 11 },
-          data: categories.map((c, i) => ({
-            name: c,
-            value: Math.round(values[i] * 100) / 100,
-            itemStyle: { color: CHART_COLORS[i % CHART_COLORS.length] },
-          })),
-        }],
-      }
-    }
-
-    if (type === "scatter") {
-      const scatterData = rawData
-        .map((r) => [parseFloat(r[xColumn]), parseFloat(r[yColumn])])
-        .filter(([x, y]) => !isNaN(x) && !isNaN(y))
-        .slice(0, 500)
-
-      return {
-        tooltip: { trigger: "item" },
-        xAxis: { type: "value", name: xColumn, nameTextStyle: baseTextStyle, axisLabel: baseTextStyle, splitLine: { lineStyle: { color: "rgba(255,255,255,0.04)" } } },
-        yAxis: { type: "value", name: yColumn, nameTextStyle: baseTextStyle, axisLabel: baseTextStyle, splitLine: { lineStyle: { color: "rgba(255,255,255,0.04)" } } },
-        series: [{ type: "scatter", data: scatterData, symbolSize: 6, itemStyle: { color: color || "#6366f1", opacity: 0.7 } }],
-      }
-    }
-
-    return {
-      tooltip: { trigger: "axis", backgroundColor: "rgba(17,24,39,0.95)", borderColor: "rgba(255,255,255,0.1)", textStyle: { color: "#f9fafb" } },
-      grid: { left: "3%", right: "4%", bottom: "12%", top: "8%", containLabel: true },
-      xAxis: {
-        type: "category",
-        data: categories,
-        axisLabel: { ...baseTextStyle, fontSize: 10, rotate: categories.length > 8 ? 35 : 0 },
-        axisLine: { lineStyle: { color: "rgba(255,255,255,0.1)" } },
-      },
-      yAxis: {
-        type: "value",
-        axisLabel: { ...baseTextStyle, fontSize: 10, formatter: (v: number) => v >= 1000000 ? `${currencySymbol}${(v / 1000000).toFixed(1)}M` : v >= 1000 ? `${currencySymbol}${(v / 1000).toFixed(0)}K` : v.toString() },
-        splitLine: { lineStyle: { color: "rgba(255,255,255,0.04)" } },
-      },
-      series: [{
-        type: type === "area" ? "line" : type,
-        data: values.map((v) => Math.round(v * 100) / 100),
-        areaStyle: type === "area" ? { color: { type: "linear", x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: (color || "#6366f1") + "40" }, { offset: 1, color: "transparent" }] } } : undefined,
-        itemStyle: { color: color || "#6366f1", borderRadius: type === "bar" ? [4, 4, 0, 0] : undefined },
-        smooth: type === "line" || type === "area",
-        lineStyle: type === "line" || type === "area" ? { width: 2.5 } : undefined,
-        barMaxWidth: 40,
-      }],
-    }
-  }, [widget, rawData, categories, values])
-
-  const dataReading = useMemo(() => {
-    if (!categories || categories.length === 0 || !values || values.length === 0) return ""
-    const maxVal = Math.max(...values)
-    const maxIdx = values.indexOf(maxVal)
-    const total = values.reduce((a, b) => a + b, 0)
-    const pct = ((maxVal / (total || 1)) * 100).toFixed(1)
-    return `AI Reading: ${categories[maxIdx]} leads with ${maxVal.toLocaleString()} (${pct}% of total ${widget.yColumn}).`
-  }, [categories, values, widget.yColumn])
-
-  return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      className="chart-card"
-      style={{ position: "relative" }}
-    >
-      {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
-        <div>
-          <h3 style={{ fontSize: "0.9rem", fontWeight: 700, color: "var(--text-primary)" }}>{widget.title}</h3>
-          <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: "2px" }}>
-            {widget.yColumn} by {widget.xColumn} • {widget.aggregation} • {widget.type}
-          </p>
-        </div>
-        <div style={{ display: "flex", gap: "0.375rem" }}>
-          <button onClick={onEdit} style={{ background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: "6px", padding: "4px 10px", fontSize: "0.7rem", color: "var(--primary-400)", cursor: "pointer" }}>
-            ✏ Edit
-          </button>
-          <button onClick={onRemove} style={{ background: "rgba(244,63,94,0.1)", border: "1px solid rgba(244,63,94,0.3)", borderRadius: "6px", padding: "4px 10px", fontSize: "0.7rem", color: "var(--accent-rose)", cursor: "pointer" }}>
-            ✕
-          </button>
-        </div>
-      </div>
-      <ReactECharts option={chartOption} style={{ height: "240px" }} />
-
-      {/* AI Reading Hook */}
-      <div style={{
-        marginTop: "1rem",
-        padding: "0.75rem",
-        background: "rgba(99,102,241,0.05)",
-        borderRadius: "var(--radius-md)",
-        borderLeft: "3px solid var(--primary-500)",
-        fontSize: "0.75rem",
-        color: "var(--text-secondary)",
-        lineHeight: 1.4
-      }}>
-        <span style={{ fontWeight: 800, color: "var(--primary-400)", marginRight: "0.5rem" }}>🤖</span>
-        {dataReading}
-      </div>
-    </motion.div>
-  )
-}
-
-/* ============================
-   ADD / EDIT WIDGET MODAL
-   ============================ */
-function WidgetEditor({
-  existingWidget,
-  numericColumns,
-  categoricalColumns,
-  onSave,
-  onClose,
-}: {
-  existingWidget?: DashboardWidget | null
-  numericColumns: string[]
-  categoricalColumns: string[]
-  onSave: (widget: DashboardWidget) => void
-  onClose: () => void
-}) {
-  const allColumns = [...categoricalColumns, ...numericColumns]
-  const [type, setType] = useState<DashboardWidget["type"]>(existingWidget?.type || "bar")
-  const [title, setTitle] = useState(existingWidget?.title || "")
-  const [xColumn, setXColumn] = useState(existingWidget?.xColumn || categoricalColumns[0] || "")
-  const [yColumn, setYColumn] = useState(existingWidget?.yColumn || numericColumns[0] || "")
-  const [aggregation, setAggregation] = useState<DashboardWidget["aggregation"]>(existingWidget?.aggregation || "sum")
-  const [width, setWidth] = useState<DashboardWidget["width"]>(existingWidget?.width || "half")
-  const [color, setColor] = useState(existingWidget?.color || CHART_COLORS[Math.floor(Math.random() * CHART_COLORS.length)])
-
-  const chartTypes = [
-    { value: "bar", label: "Bar", icon: "📊" },
-    { value: "line", label: "Line", icon: "📈" },
-    { value: "area", label: "Area", icon: "📉" },
-    { value: "pie", label: "Pie", icon: "🥧" },
-    { value: "donut", label: "Donut", icon: "🍩" },
-    { value: "scatter", label: "Scatter", icon: "⚡" },
-  ]
-
-  const handleSave = () => {
-    const autoTitle = title || `${yColumn} by ${xColumn}`
-    onSave({
-      id: existingWidget?.id || `widget_${Date.now()}`,
-      type,
-      title: autoTitle,
-      xColumn,
-      yColumn,
-      aggregation,
-      width,
-      color,
-    })
-  }
-
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}
-      onClick={onClose}
-    >
-      <motion.div
-        initial={{ scale: 0.9, y: 20 }}
-        animate={{ scale: 1, y: 0 }}
-        onClick={(e) => e.stopPropagation()}
-        style={{ background: "linear-gradient(135deg, rgba(17,24,39,0.98), rgba(10,15,30,0.99))", border: "1px solid var(--border-default)", borderRadius: "var(--radius-xl)", padding: "2rem", width: "520px", maxHeight: "90vh", overflowY: "auto" }}
-      >
-        <h2 style={{ fontSize: "1.15rem", fontWeight: 700, marginBottom: "1.5rem", background: "var(--gradient-primary)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-          {existingWidget ? "Edit Chart" : "Add New Chart"}
-        </h2>
-
-        {/* Chart Type Selector */}
-        <div style={{ marginBottom: "1.25rem" }}>
-          <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: "0.5rem" }}>Chart Type</label>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.5rem" }}>
-            {chartTypes.map((ct) => (
-              <button
-                key={ct.value}
-                onClick={() => setType(ct.value as DashboardWidget["type"])}
-                style={{ padding: "0.75rem", borderRadius: "var(--radius-md)", border: type === ct.value ? "2px solid var(--primary-500)" : "1px solid var(--border-default)", background: type === ct.value ? "rgba(99,102,241,0.1)" : "rgba(255,255,255,0.02)", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.25rem" }}
-              >
-                <span style={{ fontSize: "1.25rem" }}>{ct.icon}</span>
-                <span style={{ fontSize: "0.75rem", color: type === ct.value ? "var(--primary-400)" : "var(--text-secondary)" }}>{ct.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Title */}
-        <div style={{ marginBottom: "1rem" }}>
-          <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: "0.375rem" }}>Title (optional)</label>
-          <input className="input-field" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Auto-generated if empty" />
-        </div>
-
-        {/* X & Y Axis */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", marginBottom: "1rem" }}>
-          <div>
-            <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: "0.375rem" }}>
-              {type === "scatter" ? "X Axis" : "Group By"}
-            </label>
-            <select className="input-field" value={xColumn} onChange={(e) => setXColumn(e.target.value)} style={{ cursor: "pointer" }}>
-              {allColumns.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </div>
-          <div>
-            <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: "0.375rem" }}>
-              {type === "scatter" ? "Y Axis" : "Value"}
-            </label>
-            <select className="input-field" value={yColumn} onChange={(e) => setYColumn(e.target.value)} style={{ cursor: "pointer" }}>
-              {numericColumns.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </div>
-        </div>
-
-        {/* Aggregation & Width */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", marginBottom: "1rem" }}>
-          <div>
-            <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: "0.375rem" }}>Aggregation</label>
-            <select className="input-field" value={aggregation} onChange={(e) => setAggregation(e.target.value as any)} style={{ cursor: "pointer" }}>
-              <option value="sum">Sum</option>
-              <option value="mean">Average</option>
-              <option value="count">Count</option>
-              <option value="min">Min</option>
-              <option value="max">Max</option>
-            </select>
-          </div>
-          <div>
-            <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: "0.375rem" }}>Width</label>
-            <select className="input-field" value={width} onChange={(e) => setWidth(e.target.value as any)} style={{ cursor: "pointer" }}>
-              <option value="third">1/3 Width</option>
-              <option value="half">1/2 Width</option>
-              <option value="full">Full Width</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Color Picker */}
-        <div style={{ marginBottom: "1.5rem" }}>
-          <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: "0.375rem" }}>Color</label>
-          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-            {CHART_COLORS.map((c) => (
-              <button
-                key={c}
-                onClick={() => setColor(c)}
-                style={{ width: 28, height: 28, borderRadius: "50%", background: c, border: color === c ? "3px solid white" : "2px solid transparent", cursor: "pointer", transition: "all 0.15s" }}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Actions */}
-        <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end" }}>
-          <button className="btn-secondary" onClick={onClose}>Cancel</button>
-          <button className="btn-primary" onClick={handleSave}>
-            {existingWidget ? "Update Chart" : "Add Chart"}
-          </button>
-        </div>
-      </motion.div>
-    </motion.div>
-  )
-}
-
-/* ============================
-   DATA TABLE COMPONENT
-   ============================ */
-function DataTable({ data, columns }: { data: Record<string, any>[]; columns: string[] }) {
-  const [sortCol, setSortCol] = useState("")
-  const [sortAsc, setSortAsc] = useState(true)
-  const [page, setPage] = useState(0)
-  const pageSize = 20
-
-  const sorted = useMemo(() => {
-    if (!sortCol) return data
-    return [...data].sort((a, b) => {
-      const va = a[sortCol]; const vb = b[sortCol]
-      if (va == null) return 1; if (vb == null) return -1
-      if (typeof va === "number" && typeof vb === "number") return sortAsc ? va - vb : vb - va
-      return sortAsc ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va))
-    })
-  }, [data, sortCol, sortAsc])
-
-  const pageData = sorted.slice(page * pageSize, (page + 1) * pageSize)
-  const totalPages = Math.ceil(sorted.length / pageSize)
-
-  const handleSort = (col: string) => {
-    if (sortCol === col) setSortAsc(!sortAsc)
-    else { setSortCol(col); setSortAsc(true) }
-  }
-
-  const fmtVal = (v: any) => {
-    if (v == null) return "—"
-    if (typeof v === "number") return v >= 1000 ? v.toLocaleString(undefined, { maximumFractionDigits: 2 }) : v.toString()
-    return String(v).length > 30 ? String(v).slice(0, 30) + "…" : String(v)
-  }
-
-  return (
-    <div className="chart-card" style={{ overflow: "hidden" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
-        <h3 style={{ fontSize: "0.9rem", fontWeight: 700 }}>📋 Data Table</h3>
-        <span style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>{data.length} rows</span>
-      </div>
-      <div style={{ overflowX: "auto", maxHeight: "480px", overflowY: "auto" }}>
-        <table className="data-table">
-          <thead>
-            <tr>
-              {columns.slice(0, 12).map((col) => (
-                <th key={col} onClick={() => handleSort(col)} style={{ cursor: "pointer", whiteSpace: "nowrap", userSelect: "none" }}>
-                  {col} {sortCol === col ? (sortAsc ? "↑" : "↓") : ""}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {pageData.map((row, i) => (
-              <tr key={i}>
-                {columns.slice(0, 12).map((col) => (
-                  <td key={col} style={{ whiteSpace: "nowrap" }}>{fmtVal(row[col])}</td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      {totalPages > 1 && (
-        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "0.75rem", marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "1px solid var(--border-subtle)" }}>
-          <button className="btn-ghost" onClick={() => setPage(Math.max(0, page - 1))} disabled={page === 0}>← Prev</button>
-          <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>Page {page + 1} of {totalPages}</span>
-          <button className="btn-ghost" onClick={() => setPage(Math.min(totalPages - 1, page + 1))} disabled={page >= totalPages - 1}>Next →</button>
-        </div>
-      )}
-    </div>
-  )
-}
-
-/* ============================
-   MAIN DASHBOARD PAGE
-   ============================ */
 export default function Dashboard() {
-  const { results, datasetId, fileName, widgets, addWidget, updateWidget, removeWidget, setWidgets, setResults } = useStore()
+  const { results, datasetId, fileName, widgets, addWidget, updateWidget, removeWidget, setWidgets, setResults, setFileName } = useStore()
   const [showEditor, setShowEditor] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<"dashboard" | "data" | "ai">("dashboard")
   const [isGenerating, setIsGenerating] = useState(false)
+  const [isSyncing, setIsSyncing] = useState(false)
   const [isReprocessing, setIsReprocessing] = useState(false)
   const [selectedSheet, setSelectedSheet] = useState<string>("0")
+
+  const { showToast } = useToast()
 
   const numericCols = results?.numeric_columns || []
   const catCols = results?.categorical_columns || []
   const rawData = results?.raw_data || []
   const allCols = results?.columns || []
+
+  // Business Logic
+  const handleLiveSync = async () => {
+    setIsSyncing(true)
+    try {
+      const { syncWorkspaceToDashboard } = await import("@/services/api")
+      const data = await syncWorkspaceToDashboard()
+      setResults(data)
+      setFileName("Live Enterprise Stream")
+      setWidgets([]) // Reset widgets for new dataset logic
+      showToast("success", "Live Sync Successful", "Workspace data synchronized.")
+    } catch (err: any) {
+      console.error("Live Sync Failed:", err)
+      showToast("error", "Live Sync Failed", err.message || "An error occurred during sync.")
+    } finally {
+      setIsSyncing(false)
+    }
+  }
 
   const generateAIDashboard = async () => {
     if (!datasetId) return
@@ -472,424 +93,265 @@ export default function Dashboard() {
     }
   }
 
-  // Auto-generate default widgets on first load
   const autoGenerateWidgets = useCallback(() => {
     if (!results || widgets.length > 0) return
-
     const auto: DashboardWidget[] = []
-
     if (results.analytics?.region_sales) {
-      auto.push({
-        id: "auto_region", type: "bar", title: "Revenue by Region",
-        xColumn: "region", yColumn: "revenue", aggregation: "sum", width: "half", color: "#6366f1",
-      })
+      auto.push({ id: "auto_region", type: "bar", title: "Revenue by Region", xColumn: "region", yColumn: "revenue", aggregation: "sum", width: "half", color: "#6366f1" })
     }
     if (results.analytics?.top_products) {
-      auto.push({
-        id: "auto_products", type: "bar", title: "Top Products",
-        xColumn: "product", yColumn: "revenue", aggregation: "sum", width: "half", color: "#8b5cf6",
-      })
+      auto.push({ id: "auto_products", type: "bar", title: "Top Products", xColumn: "product", yColumn: "revenue", aggregation: "sum", width: "half", color: "#8b5cf6" })
     }
     if (catCols.length > 0 && numericCols.length > 0 && auto.length < 2) {
-      auto.push({
-        id: "auto_1", type: "bar", title: `${numericCols[0]} by ${catCols[0]}`,
-        xColumn: catCols[0], yColumn: numericCols[0], aggregation: "sum", width: "half", color: "#06b6d4",
-      })
+      auto.push({ id: "auto_1", type: "bar", title: `${numericCols[0]} by ${catCols[0]}`, xColumn: catCols[0], yColumn: numericCols[0], aggregation: "sum", width: "half", color: "#06b6d4" })
     }
     if (catCols.length > 0 && numericCols.length > 0) {
-      auto.push({
-        id: "auto_pie", type: "pie", title: `${numericCols[0]} Distribution`,
-        xColumn: catCols[0], yColumn: numericCols[0], aggregation: "sum", width: "half", color: "#10b981",
-      })
+      auto.push({ id: "auto_pie", type: "pie", title: `${numericCols[0]} Distribution`, xColumn: catCols[0], yColumn: numericCols[0], aggregation: "sum", width: "half", color: "#10b981" })
     }
-    if (numericCols.length >= 2) {
-      auto.push({
-        id: "auto_scatter", type: "scatter", title: `${numericCols[0]} vs ${numericCols[1]}`,
-        xColumn: numericCols[0], yColumn: numericCols[1], aggregation: "sum", width: "half", color: "#f59e0b",
-      })
-    }
-    if (catCols.length > 1 && numericCols.length > 0) {
-      auto.push({
-        id: "auto_line", type: "line", title: `${numericCols[0]} by ${catCols[1] || catCols[0]}`,
-        xColumn: catCols[1] || catCols[0], yColumn: numericCols[0], aggregation: "mean", width: "half", color: "#f43f5e",
-      })
-    }
-
     if (auto.length > 0) setWidgets(auto)
   }, [results, widgets.length, catCols, numericCols, setWidgets])
 
-  // Auto-generate on first results
   useEffect(() => {
-    if (results && widgets.length === 0) {
-      autoGenerateWidgets()
-    }
+    if (results && widgets.length === 0) autoGenerateWidgets()
   }, [results, widgets.length, autoGenerateWidgets])
 
   const editingWidget = editingId ? widgets.find((w) => w.id === editingId) : null
 
   const handleSave = (widget: DashboardWidget) => {
-    if (editingId) {
-      updateWidget(widget.id, widget)
-    } else {
-      addWidget(widget)
-    }
+    if (editingId) updateWidget(widget.id, widget)
+    else addWidget(widget)
     setShowEditor(false)
     setEditingId(null)
   }
 
-  const getGridCol = (w: DashboardWidget["width"]) => {
-    if (w === "full") return "1 / -1"
-    if (w === "third") return "span 1"
-    return "span 1"
-  }
+  const headerActions = (
+    <div className="flex items-center gap-4">
+      {results?.available_sheets && results.available_sheets.length > 1 && (
+        <div className="flex items-center gap-3 bg-black/40 px-4 py-2 rounded-2xl border border-white/10 shadow-inner">
+          <span className="text-[10px] font-black tracking-widest text-[--text-muted]">ENGINE BOOK:</span>
+          <select
+            value={selectedSheet}
+            onChange={(e) => handleSheetChange(e.target.value)}
+            className="bg-transparent border-none text-xs font-black text-[--primary] outline-none cursor-pointer uppercase tracking-tight"
+          >
+            {results.available_sheets.map((s: string) => (
+              <option key={s} value={s} className="bg-slate-900">{s}</option>
+            ))}
+            <option value="ALL" className="bg-slate-900 text-[--accent-amber]">Combined Master</option>
+          </select>
+        </div>
+      )}
+      <Button variant="outline" size="sm" onClick={handleLiveSync} loading={isSyncing} icon={<span>⚡</span>} className="hidden sm:flex tracking-widest text-[10px]">COGNITIVE SYNC</Button>
+      <Button variant="pro" size="sm" onClick={generateAIDashboard} loading={isGenerating} icon={<span>✨</span>} className="shadow-[--shadow-glow] tracking-widest text-[10px]">AI AUTONOMOUS</Button>
+      <Button variant="primary" size="sm" onClick={() => { setEditingId(null); setShowEditor(true) }} icon={<span>+</span>} className="tracking-widest text-[10px]">VISUALIZE</Button>
+    </div>
+  )
 
   return (
-    <>
-      <Sidebar />
-      <div className="main-content">
-        <PageHeader
-          title="Dashboard"
-          subtitle={fileName ? `Analyzing: ${fileName}` : "Upload a dataset to begin"}
-          actions={
-            results && (
-              <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-                {results.available_sheets && results.available_sheets.length > 1 && (
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginRight: "1rem", background: "rgba(255,255,255,0.03)", padding: "0.25rem 0.5rem", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.05)" }}>
-                    <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 600 }}>📚 BOOK:</span>
-                    <select
-                      value={selectedSheet}
-                      onChange={(e) => handleSheetChange(e.target.value)}
-                      disabled={isReprocessing}
-                      style={{
-                        background: "none",
-                        border: "none",
-                        color: "var(--primary-400)",
-                        fontSize: "0.85rem",
-                        fontWeight: 700,
-                        cursor: "pointer",
-                        outline: "none",
-                        padding: "0.25rem"
-                      }}
-                    >
-                      {results.available_sheets.map((s: string) => (
-                        <option key={s} value={s} style={{ background: "var(--bg-dark)", color: "var(--text-main)" }}>Sheet: {s}</option>
-                      ))}
-                      <option value="ALL" style={{ background: "var(--bg-dark)", color: "var(--accent-amber)" }}>✨ All Sheets (Combined)</option>
-                    </select>
-                    {isReprocessing && <span style={{ fontSize: "0.7rem", color: "var(--primary-500)", animation: "pulse 1.5s infinite" }}>Processing...</span>}
-                  </div>
-                )}
-                <button className="btn-secondary" onClick={() => window.print()} style={{ padding: "0.5rem 1rem", fontSize: "0.8rem" }}>
-                  🖨️ Export PDF
-                </button>
-                <button
-                  className="btn-secondary"
-                  onClick={() => datasetId && downloadReport(datasetId)}
-                  style={{
-                    padding: "0.5rem 1rem",
-                    fontSize: "0.8rem",
-                    border: "1px solid var(--accent-amber)",
-                    background: "rgba(245,158,11,0.05)",
-                    color: "var(--accent-amber)"
-                  }}
-                >
-                  📄 Download Master Report
-                </button>
-                <button
-                  className="btn-secondary"
-                  onClick={() => datasetId && downloadCleanData(datasetId)}
-                  style={{
-                    padding: "0.5rem 1rem",
-                    fontSize: "0.8rem",
-                    border: "1px solid var(--accent-emerald)",
-                    background: "rgba(16,185,129,0.05)",
-                    color: "var(--accent-emerald)"
-                  }}
-                >
-                  🧹 Download Clean CSV
-                </button>
-                <button
-                  className="btn-secondary"
-                  onClick={generateAIDashboard}
-                  disabled={isGenerating}
-                  style={{
-                    padding: "0.5rem 1rem",
-                    fontSize: "0.8rem",
-                    border: "1px solid var(--primary-500)",
-                    background: "rgba(99,102,241,0.05)",
-                    color: "var(--primary-400)"
-                  }}
-                >
-                  {isGenerating ? "🪄 Generating..." : "✨ AI Auto-Layout"}
-                </button>
-                <span className="badge badge-success">{results.rows?.toLocaleString()} rows</span>
-                <button className="btn-primary" onClick={() => { setEditingId(null); setShowEditor(true) }} style={{ padding: "0.5rem 1rem", fontSize: "0.8rem" }}>
-                  + Add Chart
-                </button>
+    <DashboardLayout
+      title="Executive Nexus"
+      subtitle={fileName ? (
+        <div className="flex items-center gap-2">
+          <span className={fileName.includes("Live") ? "text-[--accent-cyan]" : "text-[--primary]"}>{fileName.includes("Live") ? "LIVE STREAM ACTIVE:" : "Vector Stream Active:"}</span>
+          <span>{fileName}</span>
+          {fileName.includes("Live") && <Badge variant="pro" pulse size="xs">SYNCHRONIZED</Badge>}
+        </div>
+      ) : "Awaiting autonomous data ingestion..."}
+      actions={results ? headerActions : null}
+    >
+      <div className="space-y-16">
+        {!results ? (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="max-w-3xl mx-auto text-center py-20"
+          >
+            <Card variant="glass" padding="lg" className="border-dashed border-white/10 bg-white/[0.01]">
+              <div className="w-24 h-24 bg-gradient-to-br from-[--primary]/20 to-[--accent-violet]/20 rounded-[40px] flex items-center justify-center mx-auto mb-10 shadow-[--shadow-glow] border border-white/10 relative overflow-hidden group">
+                <div className="absolute inset-0 bg-[--primary]/10 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                <span className="text-4xl relative z-10 transition-transform group-hover:scale-110">🚀</span>
               </div>
-            )
-          }
-        />
+              <h2 className="text-4xl font-black text-white tracking-tighter mb-4 font-jakarta">
+                Initialize Neural Analysis
+              </h2>
+              <p className="text-md text-[--text-muted] font-medium max-w-lg mx-auto leading-relaxed mb-12 italic">
+                Inject enterprise datasets or synchronize with live Workspace operations to activate autonomous intelligence.
+              </p>
 
-        <div className="page-body">
-          {/* Upload Section */}
-          {!results && (
-            <div style={{ maxWidth: "640px", margin: "3rem auto" }}>
-              <div style={{ textAlign: "center", marginBottom: "2rem" }}>
-                <h2 style={{ fontSize: "1.5rem", fontWeight: 800, marginBottom: "0.5rem", background: "var(--gradient-primary)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-                  AI-Powered Analytics Dashboard
-                </h2>
-                <p style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>
-                  Upload any sales CSV — we'll automatically detect columns, run AI analysis, and build an editable dashboard
-                </p>
-              </div>
-              <CSVUploader />
-            </div>
-          )}
-
-          {/* Results Dashboard */}
-          <AnimatePresence>
-            {results && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.4 }}
-                style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}
-              >
-                {/* Tab Bar */}
-                <div style={{ display: "flex", gap: "2px", background: "var(--surface-2)", borderRadius: "var(--radius-md)", padding: "3px", width: "fit-content" }}>
-                  {[
-                    { key: "dashboard", label: "📊 Dashboard" },
-                    { key: "data", label: "📋 Data" },
-                    { key: "ai", label: "🤖 AI Insights" },
-                  ].map((tab) => (
-                    <button
-                      key={tab.key}
-                      onClick={() => setActiveTab(tab.key as any)}
-                      style={{
-                        padding: "0.5rem 1.25rem", borderRadius: "var(--radius-sm)", border: "none", cursor: "pointer",
-                        background: activeTab === tab.key ? "var(--primary-600)" : "transparent",
-                        color: activeTab === tab.key ? "white" : "var(--text-secondary)",
-                        fontSize: "0.8rem", fontWeight: 600, transition: "all 0.15s",
-                      }}
-                    >
-                      {tab.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* ========== DASHBOARD TAB ========== */}
-                {activeTab === "dashboard" && (
-                  <>
-                    {/* NLBI Engine */}
-                    <NLBIChartGenerator />
-
-                    {/* Metrics */}
-                    {results.analytics && <MetricsCards analytics={results.analytics} />}
-
-                    {/* Editable Chart Grid */}
-                    <div style={{
-                      display: "grid",
-                      gridTemplateColumns: "repeat(2, 1fr)",
-                      gap: "1.25rem",
-                    }}>
-                      <AnimatePresence>
-                        {widgets.map((w) => (
-                          <div key={w.id} style={{ gridColumn: getGridCol(w.width) }}>
-                            <ChartWidget
-                              widget={w}
-                              rawData={rawData}
-                              onEdit={() => { setEditingId(w.id); setShowEditor(true) }}
-                              onRemove={() => removeWidget(w.id)}
-                            />
-                          </div>
-                        ))}
-                      </AnimatePresence>
-                    </div>
-
-                    {/* Add Chart Prompt */}
-                    {widgets.length < 8 && (
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        onClick={() => { setEditingId(null); setShowEditor(true) }}
-                        style={{
-                          border: "2px dashed var(--border-default)", borderRadius: "var(--radius-lg)", padding: "2.5rem",
-                          textAlign: "center", cursor: "pointer", transition: "all 0.2s",
-                          background: "rgba(99,102,241,0.02)",
-                        }}
-                        whileHover={{ borderColor: "var(--primary-500)", background: "rgba(99,102,241,0.05)" }}
-                      >
-                        <div style={{ fontSize: "1.5rem", marginBottom: "0.5rem" }}>+</div>
-                        <div style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
-                          Click to add a new chart widget
-                        </div>
-                      </motion.div>
-                    )}
-
-                    {/* Simulations */}
-                    {results.simulation_results?.length > 0 && (
-                      <div className="chart-card">
-                        <h3 style={{ fontSize: "0.9rem", fontWeight: 700, marginBottom: "1rem" }}>🔮 What-If Simulations</h3>
-                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.75rem" }}>
-                          {results.simulation_results.map((sim, i) => (
-                            <div key={i} style={{ padding: "1rem", background: "rgba(99,102,241,0.04)", borderRadius: "var(--radius-md)", border: "1px solid var(--border-subtle)" }}>
-                              <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginBottom: "0.25rem" }}>{sim.scenario}</div>
-                              <div style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--accent-cyan)" }}>
-                                ${sim.estimated_revenue?.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </>
-                )}
-
-                {/* ========== DATA TAB ========== */}
-                {activeTab === "data" && rawData.length > 0 && (
-                  <>
-                    {/* Dataset Summary */}
-                    {results.dataset_summary && (
-                      <div className="chart-card">
-                        <h3 style={{ fontSize: "0.9rem", fontWeight: 700, marginBottom: "1rem" }}>📊 Dataset Profile</h3>
-                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "0.75rem" }}>
-                          <div className="metric-card">
-                            <div style={{ fontSize: "0.65rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Rows</div>
-                            <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--primary-400)" }}>{results.dataset_summary.total_rows.toLocaleString()}</div>
-                          </div>
-                          <div className="metric-card">
-                            <div style={{ fontSize: "0.65rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Columns</div>
-                            <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--accent-cyan)" }}>{results.dataset_summary.total_columns}</div>
-                          </div>
-                          <div className="metric-card">
-                            <div style={{ fontSize: "0.65rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Numeric</div>
-                            <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--accent-emerald)" }}>{results.dataset_summary.numeric_columns?.length || 0}</div>
-                          </div>
-                          <div className="metric-card">
-                            <div style={{ fontSize: "0.65rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Categorical</div>
-                            <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--accent-amber)" }}>{results.dataset_summary.categorical_columns?.length || 0}</div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Numeric Stats */}
-                    {results.dataset_summary?.numeric_stats && Object.keys(results.dataset_summary.numeric_stats).length > 0 && (
-                      <div className="chart-card">
-                        <h3 style={{ fontSize: "0.9rem", fontWeight: 700, marginBottom: "1rem" }}>📈 Column Statistics</h3>
-                        <div style={{ overflowX: "auto" }}>
-                          <table className="data-table">
-                            <thead>
-                              <tr>
-                                <th>Column</th><th>Sum</th><th>Mean</th><th>Median</th><th>Min</th><th>Max</th><th>Std</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {Object.entries(results.dataset_summary.numeric_stats).map(([col, stats]) => (
-                                <tr key={col}>
-                                  <td style={{ fontWeight: 600, color: "var(--primary-400)" }}>{col}</td>
-                                  <td>{stats.sum?.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
-                                  <td>{stats.mean?.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
-                                  <td>{stats.median?.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
-                                  <td>{stats.min?.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
-                                  <td>{stats.max?.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
-                                  <td>{stats.std?.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Data Table */}
-                    <DataTable data={rawData} columns={allCols} />
-                  </>
-                )}
-
-                {/* ========== AI INSIGHTS TAB ========== */}
-                {activeTab === "ai" && (
-                  <>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.25rem" }}>
-                      {results.strategy?.length > 0 && <StrategyPanel strategy={results.strategy} />}
-                      {results.insights?.length > 0 && <InsightsPanel insights={results.insights} />}
-                    </div>
-
-                    {results.recommendations?.length > 0 && (
-                      <div className="chart-card">
-                        <h3 style={{ fontSize: "0.9rem", fontWeight: 700, marginBottom: "1rem" }}>🎯 AI Recommendations</h3>
-                        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                          {results.recommendations.map((rec, i) => (
-                            <div key={i} style={{ padding: "0.75rem 1rem", background: "rgba(16,185,129,0.04)", borderRadius: "var(--radius-md)", borderLeft: "3px solid var(--accent-emerald)", fontSize: "0.85rem", color: "var(--text-secondary)" }}>
-                              {rec}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {results.explanations?.length > 0 && <ExplanationsPanel explanations={results.explanations} />}
-
-                    {/* Analyst Report */}
-                    {results.analyst_report?.report && (
-                      <div className="chart-card">
-                        <h3 style={{ fontSize: "0.9rem", fontWeight: 700, marginBottom: "1.5rem" }}>🧠 AI Autonomous CDO Report</h3>
-                        <MarkdownRenderer text={results.analyst_report.report} />
-                      </div>
-                    )}
-
-                    {/* NEW: Detailed Strategic Plan Section */}
-                    {results.strategic_plan && (
-                      <div className="chart-card" style={{ border: "1px solid var(--primary-500)", background: "rgba(99,102,241,0.03)" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
-                          <h3 style={{ fontSize: "1.1rem", fontWeight: 800, color: "var(--primary-400)" }}>🌟 Deep Strategic Analysis & Roadmap</h3>
-                          <div style={{ display: "flex", gap: "0.75rem" }}>
-                            <button
-                              className="btn-primary"
-                              onClick={() => alert("Strategic Posture Activated: Syncing Marketing Hub and Finance ledger.")}
-                              style={{ padding: "0.5rem 1rem", fontSize: "0.8rem", background: "#10b981", border: "none" }}
-                            >
-                              🚀 Activate Strategy
-                            </button>
-                            <button
-                              className="btn-primary"
-                              onClick={() => datasetId && downloadStrategicPlanPDF(datasetId as string)}
-                              style={{ padding: "0.5rem 1rem", fontSize: "0.8rem", background: "var(--gradient-primary)" }}
-                            >
-                              📥 Download Master Report PDF
-                            </button>
-                          </div>
-                        </div>
-                        <div className="markdown-content" style={{ marginTop: "1rem" }}>
-                          <MarkdownRenderer text={results.strategic_plan} />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* ML Results */}
-                    {results.ml_predictions && Object.keys(results.ml_predictions).length > 0 && (
-                      <div className="chart-card">
-                        <h3 style={{ fontSize: "0.9rem", fontWeight: 700, marginBottom: "1rem" }}>🧠 ML Pipeline Results</h3>
-                        <pre style={{ fontSize: "0.8rem", color: "var(--text-secondary)", background: "rgba(0,0,0,0.2)", padding: "1rem", borderRadius: "var(--radius-md)", overflowX: "auto", whiteSpace: "pre-wrap" }}>
-                          {JSON.stringify(results.ml_predictions, null, 2)}
-                        </pre>
-                      </div>
-                    )}
-                  </>
-                )}
-
-                {/* Upload another */}
-                <div style={{ marginTop: "0.5rem", padding: "1rem 0" }}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+                <div className="p-8 bg-black/40 rounded-3xl border border-white/5 shadow-2xl flex flex-col items-center">
                   <CSVUploader />
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+                <div className="p-8 bg-black/40 rounded-3xl border border-white/5 shadow-2xl flex flex-col items-center justify-center gap-6 group hover:border-[--primary]/30 transition-all">
+                  <div className="w-16 h-16 rounded-2xl bg-[--primary]/10 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">⚡</div>
+                  <div className="text-center">
+                    <h4 className="text-sm font-black text-white uppercase tracking-widest">Workspace Live Sync</h4>
+                    <p className="text-[10px] text-[--text-muted] font-bold mt-2 uppercase tracking-tight">Sync directly with Bills, Expenses & Ledgers.</p>
+                  </div>
+                  <Button variant="pro" size="lg" onClick={handleLiveSync} loading={isSyncing} className="w-full shadow-[--shadow-glow]">
+                    SYNC LIVE ERP
+                  </Button>
+                </div>
+              </div>
+
+              <div className="mt-12 flex items-center justify-center gap-8 grayscale opacity-40">
+                <span className="text-[10px] font-black uppercase tracking-[0.3em]">TensorFlow Engine</span>
+                <span className="text-[10px] font-black uppercase tracking-[0.3em]">PyTorch Core</span>
+                <span className="text-[10px] font-black uppercase tracking-[0.3em]">LLM Strategic Layer</span>
+              </div>
+            </Card>
+          </motion.div>
+        ) : (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col gap-12">
+            {/* Top Bar Status */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-6 pb-6 border-b border-white/5">
+              <div className="flex bg-black/40 p-1.5 rounded-2xl border border-white/10 shadow-inner overflow-hidden">
+                {(["dashboard", "data", "ai"] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`
+                                    relative px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.3em] transition-all duration-500
+                                    ${activeTab === tab
+                        ? "text-white"
+                        : "text-[--text-muted] hover:text-white"}
+                                `}
+                  >
+                    {tab}
+                    {activeTab === tab && (
+                      <motion.div
+                        layoutId="navTab"
+                        className="absolute inset-0 bg-gradient-to-br from-[--primary] to-[--primary-dark] shadow-[--shadow-glow] z-[-1] rounded-xl"
+                      />
+                    )}
+                  </button>
+                ))}
+              </div>
+              <div className="flex gap-4">
+                <Badge variant="pro" pulse size="lg" className="border-white/10 bg-black/40 font-geist tracking-[0.2em]">
+                  {results.rows?.toLocaleString()} DATAPOINTS AGGREGATED
+                </Badge>
+              </div>
+            </div>
+
+            <AnimatePresence mode="wait">
+              {activeTab === "dashboard" && (
+                <motion.div
+                  key="dashboard"
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 10 }}
+                  className="space-y-12"
+                >
+                  <NLBIChartGenerator />
+                  {results.analytics && <MetricsCards analytics={results.analytics} />}
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                    <AnimatePresence>
+                      {widgets.map((w) => (
+                        <div key={w.id} className={w.width === "full" ? "md:col-span-2" : ""}>
+                          <ChartWidget
+                            widget={w}
+                            rawData={rawData}
+                            onEdit={() => { setEditingId(w.id); setShowEditor(true) }}
+                            onRemove={() => removeWidget(w.id)}
+                          />
+                        </div>
+                      ))}
+                    </AnimatePresence>
+                  </div>
+
+                  {widgets.length < 8 && (
+                    <button
+                      onClick={() => { setEditingId(null); setShowEditor(true) }}
+                      className="w-full py-24 rounded-3xl border-2 border-dashed border-white/5 text-[--text-muted] hover:border-[--primary]/50 hover:text-white hover:bg-[--primary]/5 transition-all group relative overflow-hidden"
+                    >
+                      <div className="relative z-10 flex flex-col items-center gap-4">
+                        <span className="text-3xl group-hover:scale-125 group-hover:rotate-12 transition-transform opacity-40 group-hover:opacity-100">📡</span>
+                        <span className="text-[10px] font-black uppercase tracking-[0.4em] transition-all group-hover:tracking-[0.6em]">Integrate Synthetic Perspective</span>
+                      </div>
+                      <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[--primary]/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </button>
+                  )}
+                </motion.div>
+              )}
+
+              {activeTab === "data" && (
+                <motion.div
+                  key="data"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="space-y-12"
+                >
+                  <Card variant="bento" padding="lg">
+                    <DataTable data={rawData} columns={allCols} />
+                  </Card>
+                </motion.div>
+              )}
+
+              {activeTab === "ai" && (
+                <motion.div
+                  key="ai"
+                  initial={{ opacity: 0, scale: 0.99 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.99 }}
+                  className="space-y-12"
+                >
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                    {results.strategy?.length > 0 && <StrategyPanel strategy={results.strategy} />}
+                    {results.insights?.length > 0 && <InsightsPanel insights={results.insights} />}
+                  </div>
+                  {results.explanations?.length > 0 && <ExplanationsPanel explanations={results.explanations} />}
+
+                  {results.analyst_report?.report && (
+                    <Card variant="glass" padding="lg">
+                      <div className="flex items-center gap-4 mb-10 pb-6 border-b border-white/5">
+                        <div className="w-10 h-10 rounded-xl bg-[--primary]/20 flex items-center justify-center text-xl">📋</div>
+                        <h3 className="text-xs font-black uppercase tracking-[0.3em] text-white">Autonomous Board Executive Directive</h3>
+                      </div>
+                      <div className="prose prose-invert max-w-none prose-p:font-medium prose-headings:font-black prose-headings:tracking-tighter">
+                        <MarkdownRenderer text={results.analyst_report.report} />
+                      </div>
+                    </Card>
+                  )}
+
+                  {results.strategic_plan && (
+                    <Card variant="bento" padding="lg" className="border-[--primary]/30 bg-gradient-to-br from-[--primary]/5 to-transparent">
+                      <div className="flex flex-col md:flex-row justify-between gap-8 mb-12">
+                        <div>
+                          <Badge variant="pro" className="mb-4">Top Secret Intelligence</Badge>
+                          <h3 className="text-3xl font-black text-white tracking-tighter leading-none font-jakarta">Quantum Strategic Roadmap</h3>
+                          <p className="text-xs font-bold text-[--text-muted] mt-3 opacity-60 uppercase tracking-widest leading-relaxed">Synthesized Multi-horizon Autonomous Execution Architecture.</p>
+                        </div>
+                        <div className="flex gap-4 items-start">
+                          <Button variant="pro" size="md" onClick={() => datasetId && downloadStrategicPlanPDF(datasetId)} className="shadow-[--shadow-glow]">
+                            EXPORT MASTER INTEL
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="prose prose-invert max-w-none bg-black/20 p-8 rounded-2xl border border-white/5 shadow-inner">
+                        <MarkdownRenderer text={results.strategic_plan} />
+                      </div>
+                    </Card>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <div className="pt-16 border-t border-white/5">
+              <div className="flex items-center gap-4 mb-10">
+                <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">📥</div>
+                <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-[--text-muted]">Ingestion Stream Aggregator</h4>
+              </div>
+              <Card variant="glass" padding="lg" className="bg-white/[0.01]">
+                <CSVUploader />
+              </Card>
+            </div>
+          </motion.div>
+        )}
       </div>
 
-      {/* Widget Editor Modal */}
       <AnimatePresence>
         {showEditor && (
           <WidgetEditor
@@ -901,6 +363,103 @@ export default function Dashboard() {
           />
         )}
       </AnimatePresence>
-    </>
+
+      <CopilotFloating results={results} datasetId={datasetId} />
+    </DashboardLayout>
+  )
+}
+
+function CopilotFloating({ results, datasetId }: any) {
+  const [isOpen, setIsOpen] = useState(false)
+  const [query, setQuery] = useState("")
+  const [history, setHistory] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
+
+  const handleSend = async () => {
+    if (!query) return
+    setLoading(true)
+    const currentQuery = query
+    setQuery("")
+    setHistory([...history, { type: "user", text: currentQuery }])
+
+    try {
+      const res = await getCopilotResponse(currentQuery, datasetId)
+      setHistory(h => [...h, { type: "ai", text: res.response }])
+    } catch (e) {
+      setHistory(h => [...h, { type: "ai", text: "Neural Link Error: System recalibrating..." }])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="fixed bottom-8 right-8 z-[100]">
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            className="mb-4 w-[400px] h-[500px] bg-black/80 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+          >
+            <div className="p-4 bg-[--primary]/10 border-b border-white/5 flex justify-between items-center">
+              <div>
+                <Badge variant="primary" size="xs">COPILOT v2</Badge>
+                <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mt-1">Autonomous Business Intelligence</p>
+              </div>
+              <button onClick={() => setIsOpen(false)} className="text-white/40 hover:text-white transition-colors">✕</button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 scroll-pro">
+              {history.length === 0 && (
+                <div className="h-full flex flex-col items-center justify-center text-center p-8">
+                  <span className="text-4xl mb-4">🧠</span>
+                  <p className="text-xs font-bold text-white uppercase tracking-widest">Neural Link Active</p>
+                  <p className="text-[10px] text-white/40 mt-2 leading-relaxed italic">
+                    "Ask me about your sales, inventory risk, or financial health. I analyze live data streams."
+                  </p>
+                </div>
+              )}
+              {history.map((msg, i) => (
+                <div key={i} className={`flex ${msg.type === "user" ? "justify-end" : "justify-start"}`}>
+                  <div className={`max-w-[85%] p-3 rounded-xl text-xs font-bold ${msg.type === "user" ? "bg-[--primary] text-white shadow-[0_0_20px_rgba(99,102,241,0.3)]" : "bg-white/5 text-white/80 border border-white/5"}`}>
+                    <MarkdownRenderer text={msg.text} />
+                  </div>
+                </div>
+              ))}
+              {loading && <div className="text-[10px] font-black text-[--primary] animate-pulse italic">Neural reasoning in progress...</div>}
+            </div>
+
+            <div className="p-4 bg-white/[0.02] border-t border-white/5">
+              <div className="relative">
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                  placeholder="Query your enterprise data..."
+                  className="input-pro w-full pr-12 text-xs py-3"
+                />
+                <button
+                  onClick={handleSend}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-[--primary]/20 text-[--primary] flex items-center justify-center hover:bg-[--primary] hover:text-white transition-all"
+                >
+                  ↑
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <motion.button
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-16 h-16 rounded-full bg-[--primary] shadow-[0_0_30px_rgba(99,102,241,0.5)] flex items-center justify-center text-2xl relative group"
+      >
+        <div className="absolute inset-0 rounded-full border-4 border-white/20 animate-ping group-hover:hidden" />
+        🧠
+      </motion.button>
+    </div>
   )
 }

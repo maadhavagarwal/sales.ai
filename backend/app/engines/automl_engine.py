@@ -113,3 +113,49 @@ def run_automl(df):
         "best_mae": float(best_score),
         "model_scores": results,
     }
+
+
+def forecast_sales(df, periods=12):
+    """
+    Simple time series forecasting using linear regression on date features.
+    Assumes 'date' and 'revenue' columns exist.
+    """
+    if "date" not in df.columns or "revenue" not in df.columns:
+        return {"error": "Date and revenue columns required for forecasting"}
+
+    df = df.copy()
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
+    df = df.dropna(subset=["date", "revenue"])
+    df = df.sort_values("date")
+
+    if len(df) < 5:
+        return {"error": "Not enough data points for forecasting"}
+
+    # Create time index
+    df["time_index"] = (df["date"] - df["date"].min()).dt.days
+
+    # Fit linear model
+    from sklearn.linear_model import LinearRegression
+    model = LinearRegression()
+    X = df[["time_index"]]
+    y = df["revenue"]
+    model.fit(X, y)
+
+    # Forecast future periods
+    last_date = df["date"].max()
+    future_dates = pd.date_range(start=last_date, periods=periods+1, freq="M")[1:]
+    future_indices = (future_dates - df["date"].min()).days.values.reshape(-1, 1)
+    predictions = model.predict(future_indices)
+
+    forecast = []
+    for date, pred in zip(future_dates, predictions):
+        forecast.append({
+            "date": date.strftime("%Y-%m-%d"),
+            "predicted_revenue": float(max(0, pred))  # Ensure non-negative
+        })
+
+    return {
+        "forecast": forecast,
+        "model_info": "Linear regression on time index",
+        "r2_score": float(model.score(X, y))
+    }

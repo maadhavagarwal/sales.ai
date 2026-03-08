@@ -1,13 +1,15 @@
-# 🚀 AI Decision Intelligence Platform
+# 🚀 NeuralBI: Enterprise Statutory AI & Logistics platform
 
-A high-performance, Generative AI Data Pipeline & Dashboard platform. Upload a `CSV`, let the AI auto-structure the data, run ML forecasting, detect anomalies, cluster performance segments, and instantly build an editable Next.js/React Power BI dashboard.
+A high-performance, **Tally-grade** Generative AI Financial & Logistics platform. Upload a `CSV`, let the AI auto-structure your statutory data, run ML forecasting, and instantly manage enterprise-grade accounting and warehouse logistics.
 
 ## 🌟 Capabilities
-- **Universal Schema Mapping:** Automatically figures out what variables are Revenue, Dimensions, Dates, and KPIs without manual configuration.
-- **Deep ML Pipeline:** Instant Time-Series Forecasting (Random Forests), Anomaly Detection (Isolation Forest), and Category Clustering (K-Means).
-- **Executive Summaries:** An `autonomous_analyst` writes plain-English logic about what is driving the data.
-- **Full BI Dashboard Editor:** Move, edit, drag, and configure dynamic widgets.
-- **Export to PDF:** Download crisp board-ready reports.
+- **Universal Schema Mapping:** Automatically identifies Revenue, COGS, Dimensions, and statutory KPIs without manual configuration.
+- **Enterprise Statutory Reporting:** Hierarchical Profit & Loss (P&L) statements, solvent-mapped Balance Sheets, and real-time Trial Balances.
+- **Autonomous Bank Reconciliation (BRS):** Neural Matching engine that aligns bank statements with internal ledgers using fuzzy-logic scoring.
+- **GST Compliance Engine:** Integrated GSTR-1 and GSTR-3B summary generation with automated tax-liability and ITC offset mapping.
+- **Predictive Logistics:** AI-driven inventory health monitoring with autonomous "Days-to-Stock-Out" forecasting and Restock Quantum recommendations.
+- **Recursive AI Copilot:** A true strategic partner that understands business context and offers proactive fiscal recommendations.
+- **Executive Summaries:** An `autonomous_analyst` writes plain-English logic about driving factors behind your financial KPIs.
 
 ---
 

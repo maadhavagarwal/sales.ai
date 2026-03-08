@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { createMarketingCampaign, getMarketingCampaigns } from "@/services/api"
 import { useStore } from "@/store/useStore"
+import { Card, Button, Badge } from "@/components/ui"
 
 export default function WorkspaceMarketing() {
     const { currencySymbol, results } = useStore()
@@ -30,6 +31,7 @@ export default function WorkspaceMarketing() {
     }
 
     const handleCreate = async () => {
+        if (!formData.name || !formData.spend) return
         setLoading(true)
         try {
             await createMarketingCampaign(formData)
@@ -37,142 +39,180 @@ export default function WorkspaceMarketing() {
             setFormData({ name: "", channel: "Meta", spend: 0, conversions: 0, revenue_generated: 0 })
             refreshData()
         } catch (e) {
-            alert("Failed to create campaign")
+            console.error(e)
         } finally {
             setLoading(false)
         }
     }
 
+    const totalSpend = campaigns.reduce((a, b) => a + b.spend, 0)
+    const totalRevenue = campaigns.reduce((a, b) => a + b.revenue_generated, 0)
+    const avgROAS = totalRevenue / (totalSpend || 1)
+
     return (
-        <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1.25rem" }}>
-                <div className="metric-card" style={{ borderLeft: "4px solid var(--accent-indigo)" }}>
-                    <p style={{ fontSize: "0.65rem", color: "var(--text-muted)", textTransform: "uppercase" }}>Total Marketing Spend</p>
-                    <p style={{ fontSize: "1.5rem", fontWeight: 800 }}>{currencySymbol}{campaigns.reduce((a, b) => a + b.spend, 0).toLocaleString()}</p>
-                </div>
-                <div className="metric-card" style={{ borderLeft: "4px solid var(--accent-emerald)" }}>
-                    <p style={{ fontSize: "0.65rem", color: "var(--text-muted)", textTransform: "uppercase" }}>Campaign Revenue</p>
-                    <p style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--accent-emerald)" }}>{currencySymbol}{campaigns.reduce((a, b) => a + b.revenue_generated, 0).toLocaleString()}</p>
-                </div>
-                <div className="metric-card" style={{ borderLeft: "4px solid var(--accent-cyan)" }}>
-                    <p style={{ fontSize: "0.65rem", color: "var(--text-muted)", textTransform: "uppercase" }}>Avg. ROAS</p>
-                    <p style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--accent-cyan)" }}>
-                        {(campaigns.reduce((a, b) => a + b.revenue_generated, 0) / (campaigns.reduce((a, b) => a + b.spend, 0) || 1)).toFixed(2)}x
-                    </p>
-                </div>
-            </div>
-
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div>
-                    <h2 style={{ fontSize: "1.25rem", fontWeight: 800 }}>Marketing Performance Hub</h2>
-                    <p style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>Track multi-channel acquisition and ROI performance</p>
-                </div>
-                <button className="btn-primary" onClick={() => setShowCreate(true)}>
-                    + Launch New Campaign
-                </button>
-            </div>
-
-            {/* AI Suggestion Logic Connection */}
-            <motion.div
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="chart-card"
-                style={{ borderLeft: "4px solid var(--primary-500)", background: "rgba(99,102,241,0.05)", padding: "1.25rem" }}
-            >
-                <div style={{ display: "flex", gap: "1rem", alignItems: "flex-start" }}>
-                    <div style={{ fontSize: "1.5rem" }}>🤖</div>
-                    <div>
-                        <h4 style={{ fontSize: "0.85rem", fontWeight: 800, color: "var(--primary-400)", marginBottom: "0.4rem" }}>AI GROWTH DIRECTIVE</h4>
-                        <div style={{ fontSize: "1rem", color: "var(--text-secondary)", fontStyle: "italic", lineHeight: 1.5 }}>
-                            {typeof aiSuggestion === 'string' && aiSuggestion.length > 300
-                                ? aiSuggestion.substring(0, 300) + "..."
-                                : aiSuggestion}
+        <div className="space-y-16">
+            {/* Performance KPIs */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {[
+                    { label: "Total Asset Allocation", val: totalSpend, color: "var(--accent-indigo)", icon: "🛡️" },
+                    { label: "Yield Generated", val: totalRevenue, color: "var(--accent-emerald)", icon: "💸" },
+                    { label: "Aggregated ROAS", val: `${avgROAS.toFixed(2)}x`, color: "var(--accent-cyan)", icon: "🚀" },
+                ].map((stat, i) => (
+                    <Card key={i} variant="glass" padding="md" className="group">
+                        <div className="flex items-center gap-4">
+                            <div
+                                className="w-10 h-10 rounded-[--radius-sm] flex items-center justify-center text-lg shadow-inner"
+                                style={{ background: `${stat.color}15`, border: `1px solid ${stat.color}20` }}
+                            >
+                                {stat.icon}
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[--text-muted]">{stat.label}</p>
+                                <p className="text-xl font-black text-white truncate tracking-tight">
+                                    {typeof stat.val === 'number' ? currencySymbol : ''}{stat.val.toLocaleString()}
+                                </p>
+                            </div>
                         </div>
+                    </Card>
+                ))}
+            </div>
+
+            {/* AI Growth Directive */}
+            <Card variant="bento" padding="lg" className="border-[--primary]/30 bg-gradient-to-br from-[--primary]/5 to-transparent relative overflow-hidden">
+                <div className="absolute -right-12 -top-12 w-64 h-64 bg-[--primary]/10 blur-[100px] rounded-full" />
+                <div className="relative z-10 flex flex-col md:flex-row gap-8 items-center">
+                    <div className="w-16 h-16 rounded-2xl bg-[--primary]/20 flex items-center justify-center text-3xl shadow-[--shadow-glow]">
+                        🤖
+                    </div>
+                    <div className="flex-1 text-center md:text-left">
+                        <Badge variant="primary" size="xs" className="mb-3">AI Growth Directive</Badge>
+                        <p className="text-lg font-bold text-white leading-relaxed italic pr-12">
+                            "{typeof aiSuggestion === 'string' && aiSuggestion.length > 250
+                                ? aiSuggestion.substring(0, 250) + "..."
+                                : aiSuggestion}"
+                        </p>
                     </div>
                 </div>
-            </motion.div>
+            </Card>
+
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
+                <div>
+                    <h2 className="text-3xl font-black text-[--text-primary] tracking-tight">Growth Performance Orchestrator</h2>
+                    <p className="text-sm font-medium text-[--text-muted] mt-1 italic">
+                        Deploy acquisition drives and track multi-channel ROI in high fidelity.
+                    </p>
+                </div>
+                <Button variant="pro" size="lg" onClick={() => setShowCreate(true)} icon={<span>⚡</span>} className="shadow-[--shadow-glow]">
+                    Deploy New Growth Drive
+                </Button>
+            </div>
 
             <AnimatePresence>
                 {showCreate && (
                     <motion.div
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        className="chart-card"
-                        style={{ border: "1px solid var(--accent-indigo)", background: "rgba(99,102,241,0.03)" }}
+                        initial={{ opacity: 0, scale: 0.98, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.98, y: 20 }}
                     >
-                        <h3 style={{ fontSize: "1rem", fontWeight: 700, marginBottom: "1.25rem" }}>Deploy Growth Campaign</h3>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1rem", marginBottom: "1.5rem" }}>
-                            <div>
-                                <label style={{ fontSize: "0.65rem", color: "var(--text-muted)", display: "block", marginBottom: "0.4rem" }}>Campaign Name</label>
-                                <input placeholder="Q1 Scaler" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="input-base" style={{ background: "rgba(0,0,0,0.2)" }} />
+                        <Card variant="bento" padding="lg" className="border-[--primary]/30 bg-[--primary]/5">
+                            <div className="space-y-10">
+                                <div className="flex justify-between items-center pb-6 border-b border-white/5">
+                                    <h3 className="text-xs font-black uppercase tracking-[0.3em] text-[--primary]">Capital Deployment Protocol</h3>
+                                    <Badge variant="outline">Allocation Mode: ACTIVE</Badge>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-[--text-muted]">Campaign Nomenclature</label>
+                                        <input placeholder="e.g. Q1 Efficiency Scaling" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="input-pro w-full font-bold bg-black/40" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-[--text-muted]">Acquisition Channel</label>
+                                        <select value={formData.channel} onChange={(e) => setFormData({ ...formData, channel: e.target.value })} className="input-pro w-full font-bold bg-black/40">
+                                            <option>Meta (FB/IG)</option>
+                                            <option>Google Search Ads</option>
+                                            <option>LinkedIn B2B</option>
+                                            <option>Retargeting Email</option>
+                                            <option>Brand Awareness (Offline)</option>
+                                        </select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-[--text-muted]">Budget Allocation ({currencySymbol})</label>
+                                        <input type="number" value={formData.spend} onChange={(e) => setFormData({ ...formData, spend: parseFloat(e.target.value) || 0 })} className="input-pro w-full font-bold bg-black/40 text-[--accent-cyan]" />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-[--text-muted]">Conversion Quantum</label>
+                                        <input type="number" value={formData.conversions} onChange={(e) => setFormData({ ...formData, conversions: parseInt(e.target.value) || 0 })} className="input-pro w-full font-bold bg-black/40" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-[--text-muted]">Revenue Realization ({currencySymbol})</label>
+                                        <input type="number" value={formData.revenue_generated} onChange={(e) => setFormData({ ...formData, revenue_generated: parseFloat(e.target.value) || 0 })} className="input-pro w-full font-bold bg-black/40 text-[--accent-emerald]" />
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-4 pt-10 border-t border-white/5">
+                                    <Button variant="pro" size="lg" onClick={handleCreate} loading={loading} className="flex-2 h-16 uppercase text-[10px] tracking-widest">
+                                        Authorize Capital Deployment
+                                    </Button>
+                                    <Button variant="outline" size="lg" onClick={() => setShowCreate(false)} className="flex-1 h-16 uppercase text-[10px] tracking-widest opacity-60">
+                                        Abort Launch
+                                    </Button>
+                                </div>
                             </div>
-                            <div>
-                                <label style={{ fontSize: "0.65rem", color: "var(--text-muted)", display: "block", marginBottom: "0.4rem" }}>Channel</label>
-                                <select value={formData.channel} onChange={(e) => setFormData({ ...formData, channel: e.target.value })} className="input-base" style={{ background: "rgba(0,0,0,0.2)", width: "100%" }}>
-                                    <option>Meta</option>
-                                    <option>Google Ads</option>
-                                    <option>LinkedIn</option>
-                                    <option>Email</option>
-                                    <option>Offline</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label style={{ fontSize: "0.65rem", color: "var(--text-muted)", display: "block", marginBottom: "0.4rem" }}>Budget ({currencySymbol})</label>
-                                <input type="number" value={formData.spend || 0} onChange={(e) => setFormData({ ...formData, spend: parseFloat(e.target.value) || 0 })} className="input-base" style={{ background: "rgba(0,0,0,0.2)" }} />
-                            </div>
-                        </div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1.5rem" }}>
-                            <div>
-                                <label style={{ fontSize: "0.65rem", color: "var(--text-muted)", display: "block", marginBottom: "0.4rem" }}>Conversions</label>
-                                <input type="number" value={formData.conversions || 0} onChange={(e) => setFormData({ ...formData, conversions: parseInt(e.target.value) || 0 })} className="input-base" style={{ background: "rgba(0,0,0,0.2)" }} />
-                            </div>
-                            <div>
-                                <label style={{ fontSize: "0.65rem", color: "var(--text-muted)", display: "block", marginBottom: "0.4rem" }}>Revenue ({currencySymbol})</label>
-                                <input type="number" value={formData.revenue_generated || 0} onChange={(e) => setFormData({ ...formData, revenue_generated: parseFloat(e.target.value) || 0 })} className="input-base" style={{ background: "rgba(0,0,0,0.2)" }} />
-                            </div>
-                        </div>
-                        <div style={{ display: "flex", gap: "1rem" }}>
-                            <button className="btn-primary" onClick={handleCreate} disabled={loading} style={{ flex: 1 }}>{loading ? "Launching..." : "Deploy Campaign"}</button>
-                            <button className="btn-secondary" onClick={() => setShowCreate(false)}>Cancel</button>
-                        </div>
+                        </Card>
                     </motion.div>
                 )}
             </AnimatePresence>
 
-            <div className="chart-card">
-                <h3 style={{ fontSize: "0.9rem", fontWeight: 700, marginBottom: "1.5rem" }}>Active Acquisition Channels</h3>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "1rem" }}>
-                    {campaigns.length === 0 && (
-                        <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "3rem", color: "var(--text-muted)" }}>
-                            No active growth campaigns. Launch your first acquisition drive to see data!
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                {campaigns.length === 0 ? (
+                    <Card variant="glass" padding="lg" className="col-span-full border-dashed border-white/10 py-24 text-center">
+                        <p className="text-xs font-black uppercase tracking-[0.2em] text-[--text-muted] italic">ROAS Data Unavailable</p>
+                        <p className="text-[10px] font-bold text-[--text-muted] mt-2 opacity-60">No active acquisition drives detected. Initialize your first campaign expansion protocol.</p>
+                    </Card>
+                ) : campaigns.map((camp) => (
+                    <Card key={camp.id} variant="bento" padding="lg" className="group hover:border-[--primary]/50 transition-all">
+                        <div className="flex justify-between items-start mb-8">
+                            <div className="min-w-0">
+                                <h4 className="text-sm font-black text-white truncate group-hover:text-[--primary] transition-colors">{camp.name}</h4>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-[--text-muted] mt-1 opacity-50">{camp.channel}</p>
+                            </div>
+                            <Badge variant="primary" size="xs">ROI {(camp.revenue_generated / (camp.spend || 1)).toFixed(1)}x</Badge>
                         </div>
-                    )}
-                    {campaigns.map((camp) => (
-                        <div key={camp.id} className="metric-card" style={{ padding: "1.25rem", background: "rgba(255,255,255,0.02)" }}>
-                            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "1rem" }}>
-                                <h4 style={{ fontWeight: 800 }}>{camp.name}</h4>
-                                <span className="badge badge-primary" style={{ fontSize: "0.65rem" }}>{camp.channel}</span>
+
+                        <div className="grid grid-cols-2 gap-6 pb-6 border-b border-white/5">
+                            <div>
+                                <p className="text-[9px] font-black uppercase tracking-widest text-[--text-muted]">Net Spend</p>
+                                <p className="text-md font-black text-white tracking-tight mt-1">
+                                    {currencySymbol}{camp.spend.toLocaleString()}
+                                </p>
                             </div>
-                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
-                                <div>
-                                    <p style={{ fontSize: "0.6rem", color: "var(--text-muted)", textTransform: "uppercase" }}>Spend</p>
-                                    <p style={{ fontWeight: 700 }}>{currencySymbol}{camp.spend.toLocaleString()}</p>
-                                </div>
-                                <div>
-                                    <p style={{ fontSize: "0.6rem", color: "var(--text-muted)", textTransform: "uppercase" }}>Revenue</p>
-                                    <p style={{ fontWeight: 700, color: "var(--accent-emerald)" }}>{currencySymbol}{camp.revenue_generated.toLocaleString()}</p>
-                                </div>
-                            </div>
-                            <div style={{ marginTop: "1rem", paddingTop: "0.75rem", borderTop: "1px solid var(--border-subtle)", display: "flex", justifyContent: "space-between" }}>
-                                <span style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>ROI Efficiency</span>
-                                <span style={{ fontSize: "0.85rem", fontWeight: 800, color: "var(--accent-indigo)" }}>
-                                    {(camp.revenue_generated / (camp.spend || 1)).toFixed(1)}x
-                                </span>
+                            <div>
+                                <p className="text-[9px] font-black uppercase tracking-widest text-[--text-muted]">Realized Revenue</p>
+                                <p className="text-md font-black text-[--accent-emerald] tracking-tight mt-1">
+                                    {currencySymbol}{camp.revenue_generated.toLocaleString()}
+                                </p>
                             </div>
                         </div>
-                    ))}
-                </div>
+
+                        <div className="pt-6">
+                            <div className="flex justify-between items-center mb-2">
+                                <span className="text-[9px] font-black uppercase tracking-widest text-[--text-muted]">Efficiency Matrix</span>
+                                <span className="text-[10px] font-black text-white">{camp.conversions} Conversions</span>
+                            </div>
+                            <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+                                <motion.div
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${Math.min((camp.revenue_generated / (camp.spend || 1)) * 20, 100)}%` }}
+                                    className="h-full bg-gradient-to-r from-[--primary] to-[--accent-cyan]"
+                                />
+                            </div>
+                        </div>
+                    </Card>
+                ))}
             </div>
         </div>
     )
