@@ -326,26 +326,3 @@ class WorkspaceEngine:
             return [dict(row) for row in cursor.fetchall()]
         finally:
             conn.close()
-
-    @staticmethod
-    def get_financial_statements():
-        """Generates real-time Balance Sheet and P&L metrics."""
-        conn = sqlite3.connect(DB_PATH)
-        conn.row_factory = sqlite3.Row
-        try:
-            cursor = conn.cursor()
-            # Summary by type
-            cursor.execute("SELECT type, SUM(amount) as total FROM ledger GROUP BY type")
-            summary = {row['type']: row['total'] for row in cursor.fetchall()}
-            
-            # Additional detail for Balance Sheet
-            return {
-                "assets": summary.get('ASSET', 0),
-                "liabilities": summary.get('LIABILITY', 0),
-                "equity": summary.get('ASSET', 0) - summary.get('LIABILITY', 0),
-                "revenue": summary.get('INCOME', 0),
-                "expenses": summary.get('EXPENSE', 0),
-                "net_profit": summary.get('INCOME', 0) - summary.get('EXPENSE', 0)
-            }
-        finally:
-            conn.close()

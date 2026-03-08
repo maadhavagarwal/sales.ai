@@ -14,3 +14,5 @@ matplotlib
 fpdf2
 openpyxl
 torch
+sentry-sdk
+prometheus-fastapi-instrumentator
