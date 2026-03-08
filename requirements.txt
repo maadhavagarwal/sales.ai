@@ -11,3 +11,6 @@ requests
 watchfiles
 scipy
 matplotlib
+fpdf2
+openpyxl
+torch
