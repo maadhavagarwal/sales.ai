@@ -593,7 +593,7 @@ export default function Dashboard() {
                     color: "var(--accent-amber)"
                   }}
                 >
-                  📄 Download Report
+                  📄 Download Master Report
                 </button>
                 <button
                   className="btn-secondary"
@@ -857,7 +857,7 @@ export default function Dashboard() {
                               onClick={() => datasetId && downloadStrategicPlanPDF(datasetId as string)}
                               style={{ padding: "0.5rem 1rem", fontSize: "0.8rem", background: "var(--gradient-primary)" }}
                             >
-                              📥 Download PDF
+                              📥 Download Master Report PDF
                             </button>
                           </div>
                         </div>

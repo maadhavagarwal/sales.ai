@@ -262,7 +262,7 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
-        <div style={{ maxWidth: "1400px", margin: "8rem auto 0", textAlign: "center", pt: "2rem", borderTop: "1px solid rgba(255,255,255,0.03)", fontSize: "0.85rem", color: "var(--text-muted)" }}>
+        <div style={{ maxWidth: "1400px", margin: "8rem auto 0", textAlign: "center", paddingTop: "2rem", borderTop: "1px solid rgba(255,255,255,0.03)", fontSize: "0.85rem", color: "var(--text-muted)" }}>
           © 2026 NeuralBI Enterprise Suite. Built for Statutory Excellence.
         </div>
       </footer>

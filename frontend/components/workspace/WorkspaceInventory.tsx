@@ -18,7 +18,8 @@ export default function WorkspaceInventory() {
         quantity: 0,
         cost_price: 0,
         sale_price: 0,
-        category: "General"
+        category: "General",
+        hsn_code: ""
     })
 
     useEffect(() => {
@@ -40,7 +41,7 @@ export default function WorkspaceInventory() {
         try {
             await addInventoryItem(formData)
             setShowAdd(false)
-            setFormData({ sku: "", name: "", quantity: 0, cost_price: 0, sale_price: 0, category: "General" })
+            setFormData({ sku: "", name: "", quantity: 0, cost_price: 0, sale_price: 0, category: "General", hsn_code: "" })
             refreshData()
         } catch (e) {
             alert("Failed to add inventory item. SKU might already exist.")
@@ -58,7 +59,7 @@ export default function WorkspaceInventory() {
                     <p style={{ fontSize: "1.5rem", fontWeight: 800 }}>{items.length}</p>
                 </div>
                 <div className="metric-card" style={{ borderLeft: "4px solid var(--accent-emerald)" }}>
-                    <p style={{ fontSize: "0.6rem", color: "var(--text-muted)", textTransform: "uppercase" }}>Inventory Value</p>
+                    <p style={{ fontSize: "0.6rem", color: "var(--text-muted)", textTransform: "uppercase" }}>Inventory Value (Cost)</p>
                     <p style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--accent-emerald)" }}>{currencySymbol}{items.reduce((a, b) => a + (b.quantity * b.cost_price), 0).toLocaleString()}</p>
                 </div>
                 <div className="metric-card" style={{ borderLeft: "4px solid var(--accent-amber)" }}>
@@ -66,7 +67,7 @@ export default function WorkspaceInventory() {
                     <p style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--accent-amber)" }}>{items.filter(i => i.quantity < 10).length}</p>
                 </div>
                 <div className="metric-card" style={{ borderLeft: "4px solid var(--accent-cyan)" }}>
-                    <p style={{ fontSize: "0.6rem", color: "var(--text-muted)", textTransform: "uppercase" }}>Projected Revenue</p>
+                    <p style={{ fontSize: "0.6rem", color: "var(--text-muted)", textTransform: "uppercase" }}>Market Value (Sales)</p>
                     <p style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--accent-cyan)" }}>{currencySymbol}{items.reduce((a, b) => a + (b.quantity * b.sale_price), 0).toLocaleString()}</p>
                 </div>
             </div>
@@ -74,7 +75,7 @@ export default function WorkspaceInventory() {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
                     <h2 style={{ fontSize: "1.25rem", fontWeight: 800 }}>Items & Physical Stock</h2>
-                    <p style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>Manage your warehouse assets and SKU-level inventory</p>
+                    <p style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>Manage your warehouse assets and statutory HSN codes</p>
                 </div>
                 <button className="btn-primary" onClick={() => setShowAdd(true)}>
                     + Add New Stock Item
@@ -110,22 +111,26 @@ export default function WorkspaceInventory() {
                                 </select>
                             </div>
                         </div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1.25rem", marginBottom: "1.5rem" }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "1.25rem", marginBottom: "1.5rem" }}>
                             <div className="input-group">
                                 <label style={{ fontSize: "0.65rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: "0.4rem", display: "block" }}>Current Qty</label>
-                                <input type="number" value={formData.quantity} onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) })} className="input-base" style={{ background: "rgba(0,0,0,0.3)", width: "100%" }} />
+                                <input type="number" value={formData.quantity} onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) || 0 })} className="input-base" style={{ background: "rgba(0,0,0,0.3)", width: "100%" }} />
                             </div>
                             <div className="input-group">
                                 <label style={{ fontSize: "0.65rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: "0.4rem", display: "block" }}>Cost Price ({currencySymbol})</label>
-                                <input type="number" value={formData.cost_price} onChange={(e) => setFormData({ ...formData, cost_price: parseFloat(e.target.value) })} className="input-base" style={{ background: "rgba(0,0,0,0.3)", width: "100%" }} />
+                                <input type="number" value={formData.cost_price} onChange={(e) => setFormData({ ...formData, cost_price: parseFloat(e.target.value) || 0 })} className="input-base" style={{ background: "rgba(0,0,0,0.3)", width: "100%" }} />
                             </div>
                             <div className="input-group">
                                 <label style={{ fontSize: "0.65rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: "0.4rem", display: "block" }}>Sale Price ({currencySymbol})</label>
-                                <input type="number" value={formData.sale_price} onChange={(e) => setFormData({ ...formData, sale_price: parseFloat(e.target.value) })} className="input-base" style={{ background: "rgba(0,0,0,0.3)", width: "100%" }} />
+                                <input type="number" value={formData.sale_price} onChange={(e) => setFormData({ ...formData, sale_price: parseFloat(e.target.value) || 0 })} className="input-base" style={{ background: "rgba(0,0,0,0.3)", width: "100%" }} />
+                            </div>
+                            <div className="input-group">
+                                <label style={{ fontSize: "0.65rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: "0.4rem", display: "block" }}>HSN Code</label>
+                                <input placeholder="998311" value={formData.hsn_code} onChange={(e) => setFormData({ ...formData, hsn_code: e.target.value })} className="input-base" style={{ background: "rgba(0,0,0,0.3)", width: "100%" }} />
                             </div>
                         </div>
                         <div style={{ display: "flex", gap: "1rem" }}>
-                            <button className="btn-primary" onClick={handleAdd} disabled={loading} style={{ flex: 1 }}>{loading ? "Registering..." : "Onboard Asset"}</button>
+                            <button className="btn-primary" onClick={handleAdd} disabled={loading} style={{ flex: 1 }}>{loading ? "Registering..." : "Onboard Asset & Sync Ledger"}</button>
                             <button className="btn-secondary" onClick={() => setShowAdd(false)}>Cancel</button>
                         </div>
                     </motion.div>
@@ -139,20 +144,22 @@ export default function WorkspaceInventory() {
                             <th>SKU</th>
                             <th>Item Name</th>
                             <th>Category</th>
+                            <th>HSN</th>
                             <th>Stock Level</th>
-                            <th>Unit Value</th>
-                            <th>Total Value</th>
+                            <th>Unit Sale</th>
+                            <th>Market Value</th>
                             <th>Status</th>
                         </tr>
                     </thead>
                     <tbody>
                         {items.length === 0 ? (
-                            <tr><td colSpan={7} style={{ textAlign: "center", padding: "3rem", color: "var(--text-muted)" }}>No warehouse assets found. Board your first stock item.</td></tr>
+                            <tr><td colSpan={8} style={{ textAlign: "center", padding: "3rem", color: "var(--text-muted)" }}>No warehouse assets found. Board your first stock item.</td></tr>
                         ) : items.map((item) => (
                             <tr key={item.id}>
                                 <td style={{ fontWeight: 800, color: "var(--primary-400)", fontSize: "0.75rem" }}>{item.sku}</td>
                                 <td>{item.name}</td>
                                 <td><span className="badge badge-secondary">{item.category}</span></td>
+                                <td style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>{item.hsn_code || '---'}</td>
                                 <td style={{ fontWeight: 800, color: item.quantity < 10 ? "var(--accent-amber)" : "inherit" }}>{item.quantity} units</td>
                                 <td>{currencySymbol}{item.sale_price.toLocaleString()}</td>
                                 <td style={{ fontWeight: 800 }}>{currencySymbol}{(item.quantity * item.sale_price).toLocaleString()}</td>

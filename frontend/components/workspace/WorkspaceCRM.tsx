@@ -119,7 +119,7 @@ export default function WorkspaceCRM() {
 
                             <div style={{ paddingTop: "1rem", borderTop: "1px solid var(--border-subtle)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                                 <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase" }}>Lifetime Value (LTV)</span>
-                                <span style={{ fontSize: "0.9rem", fontWeight: 800, color: "var(--accent-emerald)" }}>{currencySymbol}{c.total_spend.toLocaleString()}</span>
+                                <span style={{ fontSize: "0.9rem", fontWeight: 800, color: "var(--accent-emerald)" }}>{currencySymbol}{(c.total_spend || 0).toLocaleString()}</span>
                             </div>
                         </motion.div>
                     ))}

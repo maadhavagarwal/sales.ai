@@ -78,7 +78,7 @@ export default function WorkspaceAccounts() {
                     <p style={{ fontSize: "1.5rem", fontWeight: 800 }}>{currencySymbol}{(statements?.assets || 0).toLocaleString()}</p>
                 </div>
                 <div className="metric-card" style={{ borderLeft: "4px solid var(--accent-amber)" }}>
-                    <p style={{ fontSize: "0.6rem", color: "var(--text-muted)", textTransform: "uppercase" }}>Managed Liabilities</p>
+                    <p style={{ fontSize: "0.6rem", color: "var(--text-muted)", textTransform: "uppercase" }}>Statutory Liabilities</p>
                     <p style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--accent-amber)" }}>{currencySymbol}{(statements?.liabilities || 0).toLocaleString()}</p>
                 </div>
                 <div className="metric-card" style={{ borderLeft: "4px solid var(--accent-indigo)" }}>
@@ -173,7 +173,7 @@ export default function WorkspaceAccounts() {
                                     </div>
                                     <div className="input-group">
                                         <label className="label-stat">Amount ({currencySymbol})</label>
-                                        <input type="number" value={ledgerForm.amount} onChange={(e) => setLedgerForm({ ...ledgerForm, amount: parseFloat(e.target.value) })} className="input-base" style={{ width: "100%" }} />
+                                        <input type="number" value={ledgerForm.amount} onChange={(e) => setLedgerForm({ ...ledgerForm, amount: parseFloat(e.target.value) || 0 })} className="input-base" style={{ width: "100%" }} />
                                     </div>
                                 </div>
                                 <div className="input-group" style={{ marginBottom: "1.5rem" }}>
@@ -208,11 +208,11 @@ export default function WorkspaceAccounts() {
                                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 2fr", gap: "1.25rem", marginBottom: "1.25rem" }}>
                                     <div className="input-group">
                                         <label className="label-stat">Base Amount</label>
-                                        <input type="number" value={noteForm.amount} onChange={(e) => setNoteForm({ ...noteForm, amount: parseFloat(e.target.value) })} className="input-base" style={{ width: "100%" }} />
+                                        <input type="number" value={noteForm.amount} onChange={(e) => setNoteForm({ ...noteForm, amount: parseFloat(e.target.value) || 0 })} className="input-base" style={{ width: "100%" }} />
                                     </div>
                                     <div className="input-group">
                                         <label className="label-stat">Tax Adjust</label>
-                                        <input type="number" value={noteForm.tax_amount} onChange={(e) => setNoteForm({ ...noteForm, tax_amount: parseFloat(e.target.value) })} className="input-base" style={{ width: "100%" }} />
+                                        <input type="number" value={noteForm.tax_amount} onChange={(e) => setNoteForm({ ...noteForm, tax_amount: parseFloat(e.target.value) || 0 })} className="input-base" style={{ width: "100%" }} />
                                     </div>
                                     <div className="input-group">
                                         <label className="label-stat">Reason for Issuance</label>
@@ -254,7 +254,7 @@ export default function WorkspaceAccounts() {
                                         </span>
                                     </td>
                                     <td style={{ fontSize: "0.85rem", opacity: 0.7 }}>{entry.description}</td>
-                                    <td style={{ textAlign: "right", fontWeight: 900, color: entry.type === 'INCOME' || entry.type === 'ASSET' ? 'var(--accent-emerald)' : 'var(--accent-rose)' }}>
+                                    <td style={{ textAlign: "right", fontWeight: 900, color: entry.amount >= 0 ? 'var(--accent-emerald)' : 'var(--accent-rose)' }}>
                                         {entry.amount.toLocaleString()}
                                     </td>
                                 </tr>
@@ -300,25 +300,48 @@ export default function WorkspaceAccounts() {
             )}
 
             {activeTab === 'statements' && (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem" }}>
-                    {/* Simplified Balance Sheet */}
-                    <div className="chart-card">
-                        <h3 style={{ fontSize: "1.1rem", fontWeight: 800, marginBottom: "2rem", borderBottom: "1px solid var(--border-subtle)", paddingBottom: "1rem" }}>Balance Sheet (Consolidated)</h3>
-                        <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-                            <StatementLine label="Non-Current Assets" value={statements?.assets} />
-                            <StatementLine label="Short-Term Liabilities" value={statements?.liabilities} isRed />
-                            <div style={{ height: "1px", background: "var(--border-subtle)", margin: "0.5rem 0" }} />
-                            <StatementLine label="Equity & Reserves" value={statements?.equity} isBold />
+                <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "2rem" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
+                        {/* Simplified Balance Sheet */}
+                        <div className="chart-card">
+                            <h3 style={{ fontSize: "1.1rem", fontWeight: 800, marginBottom: "2rem", borderBottom: "1px solid var(--border-subtle)", paddingBottom: "1rem" }}>Balance Sheet (Consolidated)</h3>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+                                <StatementLine label="Capital Assets (Bank & Inventory)" value={statements?.assets} />
+                                <StatementLine label="Short-Term Liabilities (GST Output)" value={statements?.liabilities} isRed />
+                                <div style={{ height: "1px", background: "var(--border-subtle)", margin: "0.5rem 0" }} />
+                                <StatementLine label="Enterprise Equity (Reserves)" value={statements?.equity} isBold />
+                            </div>
+                        </div>
+                        {/* Simplified P&L */}
+                        <div className="chart-card">
+                            <h3 style={{ fontSize: "1.1rem", fontWeight: 800, marginBottom: "2rem", borderBottom: "1px solid var(--border-subtle)", paddingBottom: "1rem" }}>Profit & Loss Statement</h3>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+                                <StatementLine label="Gross Operating Revenue" value={statements?.revenue} />
+                                <StatementLine label="Direct & Indirect Expenses" value={statements?.expenses} isRed />
+                                <div style={{ height: "1px", background: "var(--border-subtle)", margin: "0.5rem 0" }} />
+                                <StatementLine label="Net Taxable Profit" value={statements?.net_profit} isBold isGreen />
+                            </div>
                         </div>
                     </div>
-                    {/* Simplified P&L */}
-                    <div className="chart-card">
-                        <h3 style={{ fontSize: "1.1rem", fontWeight: 800, marginBottom: "2rem", borderBottom: "1px solid var(--border-subtle)", paddingBottom: "1rem" }}>Profit & Loss Statement</h3>
-                        <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-                            <StatementLine label="Operating Revenue" value={statements?.revenue} />
-                            <StatementLine label="Statutory Expenses" value={statements?.expenses} isRed />
-                            <div style={{ height: "1px", background: "var(--border-subtle)", margin: "0.5rem 0" }} />
-                            <StatementLine label="Net Operating Profit" value={statements?.net_profit} isBold isGreen />
+
+                    <div className="chart-card" style={{ background: "rgba(255,255,255,0.02)", border: "1px dashed var(--border-subtle)" }}>
+                        <h4 style={{ fontSize: "0.8rem", fontWeight: 800, color: "var(--text-muted)", marginBottom: "1.5rem" }}>FINANCIAL HEALTH CHECK</h4>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+                            <div style={{ padding: "1rem", background: "rgba(16,185,129,0.05)", borderRadius: "12px", border: "1px solid rgba(16,185,129,0.1)" }}>
+                                <p style={{ fontSize: "0.7rem", color: "var(--accent-emerald)", fontWeight: 800 }}>PROFITABILITY MARGIN</p>
+                                <p style={{ fontSize: "1.25rem", fontWeight: 900 }}>
+                                    {statements?.revenue > 0 ? ((statements.net_profit / statements.revenue) * 100).toFixed(1) : 0}%
+                                </p>
+                            </div>
+                            <div style={{ padding: "1rem", background: "rgba(59,130,246,0.05)", borderRadius: "12px", border: "1px solid rgba(59,130,246,0.1)" }}>
+                                <p style={{ fontSize: "0.7rem", color: "var(--accent-cyan)", fontWeight: 800 }}>LIQUIDITY RATIO</p>
+                                <p style={{ fontSize: "1.25rem", fontWeight: 900 }}>
+                                    {statements?.liabilities > 0 ? (statements.assets / statements.liabilities).toFixed(2) : '∞'}
+                                </p>
+                            </div>
+                            <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", lineHeight: 1.5 }}>
+                                <p>This Overview is synchronized with your <strong>Double-Entry Ledger</strong>. Any change in Invoicing, Marketing Spend, or Inventory Acquisition is automatically reflected across all books.</p>
+                            </div>
                         </div>
                     </div>
                 </div>

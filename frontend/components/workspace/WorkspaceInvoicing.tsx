@@ -60,7 +60,7 @@ export default function WorkspaceInvoicing() {
         let igst = 0
 
         items.forEach(item => {
-            const lineSub = item.qty * item.price
+            const lineSub = (item.qty || 0) * (item.price || 0)
             subtotal += lineSub
             const tax = lineSub * (item.taxRate / 100)
 
@@ -147,49 +147,43 @@ export default function WorkspaceInvoicing() {
                         style={{ border: "1px solid var(--primary-500)", background: "rgba(99,102,241,0.02)", padding: "2rem" }}
                     >
                         <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid var(--border-subtle)", paddingBottom: "1.5rem", marginBottom: "2rem" }}>
-                            <h3 style={{ fontSize: "1.25rem", fontWeight: 900, color: "var(--primary-400)" }}>TAX INVOICE</h3>
+                            <div>
+                                <h3 style={{ fontSize: "1.25rem", fontWeight: 900, color: "var(--primary-400)" }}>TAX INVOICE</h3>
+                                <div style={{ marginTop: "1rem" }}>
+                                    <label style={{ fontSize: "0.65rem", color: "var(--text-muted)", display: "block" }}>BILL TO (CUSTOMER)</label>
+                                    <select
+                                        className="input-base"
+                                        style={{ marginTop: "0.5rem", minWidth: "250px", fontWeight: 800 }}
+                                        value={selectedCustomer?.id || ""}
+                                        onChange={(e) => {
+                                            const cust = customers.find(c => String(c.id) === e.target.value)
+                                            setSelectedCustomer(cust || null)
+                                        }}
+                                    >
+                                        <option value="">Select Enterprise Client</option>
+                                        {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                    </select>
+                                </div>
+                            </div>
                             <div style={{ textAlign: "right" }}>
-                                <p style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)" }}>DATE: {new Date().toLocaleDateString()}</p>
-                                <p style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)" }}>INVOICE #: AUTO-GEN</p>
+                                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", justifyContent: "flex-end", marginBottom: "0.5rem" }}>
+                                    <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>Inter-State Transaction (IGST)</span>
+                                    <input type="checkbox" checked={isInterState} onChange={(e) => setIsInterState(e.target.checked)} />
+                                </div>
+                                <p style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>CGST and SGST will be applied otherwise.</p>
                             </div>
                         </div>
 
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem", marginBottom: "2rem" }}>
-                            <div>
-                                <label style={{ display: "block", fontSize: "0.7rem", fontWeight: 800, marginBottom: "0.5rem", color: "var(--text-muted)", textTransform: "uppercase" }}>Bill To (Customer)</label>
-                                <select
-                                    className="input-base"
-                                    value={selectedCustomer?.id || ""}
-                                    onChange={(e) => {
-                                        const cust = customers.find(c => String(c.id) === e.target.value)
-                                        setSelectedCustomer(cust || null)
-                                    }}
-                                    style={{ width: "100%", background: "rgba(0,0,0,0.3)", padding: "0.8rem" }}
-                                >
-                                    <option value="">Select Enterprise Client...</option>
-                                    {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                </select>
-                                {selectedCustomer && (
-                                    <div style={{ marginTop: "1rem", fontSize: "0.8rem", color: "var(--text-secondary)" }}>
-                                        <p><strong>GSTIN:</strong> {selectedCustomer.gstin || 'N/A'}</p>
-                                        <p><strong>PAN:</strong> {selectedCustomer.pan || 'N/A'}</p>
-                                        <p><strong>Address:</strong> {selectedCustomer.address}</p>
-                                    </div>
-                                )}
-                            </div>
-                            <div>
-                                <label style={{ display: "block", fontSize: "0.7rem", fontWeight: 800, marginBottom: "0.5rem", color: "var(--text-muted)", textTransform: "uppercase" }}>Tax Configuration</label>
-                                <div style={{ background: "rgba(0,0,0,0.2)", padding: "1rem", borderRadius: "8px", border: "1px solid var(--border-subtle)" }}>
-                                    <label style={{ display: "flex", alignItems: "center", gap: "0.75rem", cursor: "pointer", fontSize: "0.85rem" }}>
-                                        <input type="checkbox" checked={isInterState} onChange={(e) => setIsInterState(e.target.checked)} />
-                                        Inter-State Transaction (IGST)
-                                    </label>
-                                    <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: "0.5rem" }}>
-                                        If unchecked, 50/50 CGST and SGST will be applied.
-                                    </p>
+                        {selectedCustomer && (
+                            <div style={{ marginBottom: "2rem", padding: "1rem", background: "rgba(255,255,255,0.02)", borderRadius: "8px", border: "1px solid var(--border-subtle)" }}>
+                                <p style={{ fontSize: "0.9rem", fontWeight: 700 }}>{selectedCustomer.name}</p>
+                                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginTop: "0.5rem" }}>
+                                    <p style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>GSTIN: <span style={{ color: "var(--text-main)" }}>{selectedCustomer.gstin || 'N/A'}</span></p>
+                                    <p style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>PAN: <span style={{ color: "var(--text-main)" }}>{selectedCustomer.pan || 'N/A'}</span></p>
+                                    <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", gridColumn: "span 2" }}>Address: {selectedCustomer.address || 'N/A'}</p>
                                 </div>
                             </div>
-                        </div>
+                        )}
 
                         <div style={{ marginBottom: "2rem" }}>
                             <div style={{ display: "grid", gridTemplateColumns: "1.5fr 2fr 1fr 0.8fr 1fr 1.2fr", gap: "1rem", marginBottom: "0.75rem", paddingBottom: "0.5rem", borderBottom: "1px solid var(--border-subtle)" }}>
@@ -213,10 +207,10 @@ export default function WorkspaceInvoicing() {
                                     </select>
                                     <input placeholder="Service/Product Desc" value={item.desc} onChange={(e) => updateItem(i, 'desc', e.target.value)} className="input-base" style={{ background: "rgba(255,255,255,0.03)" }} />
                                     <input placeholder="998311" value={item.hsn} onChange={(e) => updateItem(i, 'hsn', e.target.value)} className="input-base" style={{ background: "rgba(255,255,255,0.03)" }} />
-                                    <input type="number" value={item.qty} onChange={(e) => updateItem(i, 'qty', parseInt(e.target.value))} className="input-base" style={{ background: "rgba(255,255,255,0.03)" }} />
-                                    <input type="number" value={item.price} onChange={(e) => updateItem(i, 'price', parseFloat(e.target.value))} className="input-base" style={{ background: "rgba(255,255,255,0.03)" }} />
+                                    <input type="number" value={item.qty} onChange={(e) => updateItem(i, 'qty', parseInt(e.target.value) || 0)} className="input-base" style={{ background: "rgba(255,255,255,0.03)" }} />
+                                    <input type="number" value={item.price} onChange={(e) => updateItem(i, 'price', parseFloat(e.target.value) || 0)} className="input-base" style={{ background: "rgba(255,255,255,0.03)" }} />
                                     <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", fontWeight: 700 }}>
-                                        {currencySymbol}{(item.qty * item.price).toLocaleString()}
+                                        {currencySymbol}{((item.qty || 0) * (item.price || 0)).toLocaleString()}
                                     </div>
                                 </div>
                             ))}

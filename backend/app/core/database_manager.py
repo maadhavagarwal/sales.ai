@@ -129,6 +129,57 @@ def init_workspace_db():
             )
         """)
         
+        # Ensure missing columns exist in customers table (Indian statutory updates)
+        try:
+            conn.execute("ALTER TABLE customers ADD COLUMN gstin TEXT")
+        except sqlite3.OperationalError: pass
+        try:
+            conn.execute("ALTER TABLE customers ADD COLUMN pan TEXT")
+        except sqlite3.OperationalError: pass
+        try:
+            conn.execute("ALTER TABLE customers ADD COLUMN phone TEXT")
+        except sqlite3.OperationalError: pass
+        try:
+            conn.execute("ALTER TABLE customers ADD COLUMN total_spend REAL DEFAULT 0.0")
+        except sqlite3.OperationalError: pass
+
+        # Ensure missing columns exist in inventory (Statutory update)
+        try:
+            conn.execute("ALTER TABLE inventory ADD COLUMN hsn_code TEXT")
+        except sqlite3.OperationalError: pass
+
+        # Ensure missing columns exist in invoices table (Statutory Billing Update)
+        try:
+            conn.execute("ALTER TABLE invoices ADD COLUMN invoice_number TEXT")
+        except sqlite3.OperationalError: pass
+        try:
+            conn.execute("ALTER TABLE invoices ADD COLUMN customer_gstin TEXT")
+        except sqlite3.OperationalError: pass
+        try:
+            conn.execute("ALTER TABLE invoices ADD COLUMN customer_pan TEXT")
+        except sqlite3.OperationalError: pass
+        try:
+            conn.execute("ALTER TABLE invoices ADD COLUMN due_date TEXT")
+        except sqlite3.OperationalError: pass
+        try:
+            conn.execute("ALTER TABLE invoices ADD COLUMN cgst_total REAL DEFAULT 0.0")
+        except sqlite3.OperationalError: pass
+        try:
+            conn.execute("ALTER TABLE invoices ADD COLUMN sgst_total REAL DEFAULT 0.0")
+        except sqlite3.OperationalError: pass
+        try:
+            conn.execute("ALTER TABLE invoices ADD COLUMN igst_total REAL DEFAULT 0.0")
+        except sqlite3.OperationalError: pass
+        try:
+            conn.execute("ALTER TABLE invoices ADD COLUMN total_tax REAL DEFAULT 0.0")
+        except sqlite3.OperationalError: pass
+        try:
+            conn.execute("ALTER TABLE invoices ADD COLUMN currency TEXT DEFAULT '₹'")
+        except sqlite3.OperationalError: pass
+        try:
+            conn.execute("ALTER TABLE invoices ADD COLUMN notes TEXT")
+        except sqlite3.OperationalError: pass
+
         conn.commit()
     finally:
         conn.close()

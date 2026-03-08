@@ -119,17 +119,17 @@ export default function WorkspaceMarketing() {
                             </div>
                             <div>
                                 <label style={{ fontSize: "0.65rem", color: "var(--text-muted)", display: "block", marginBottom: "0.4rem" }}>Budget ({currencySymbol})</label>
-                                <input type="number" value={formData.spend} onChange={(e) => setFormData({ ...formData, spend: parseFloat(e.target.value) })} className="input-base" style={{ background: "rgba(0,0,0,0.2)" }} />
+                                <input type="number" value={formData.spend || 0} onChange={(e) => setFormData({ ...formData, spend: parseFloat(e.target.value) || 0 })} className="input-base" style={{ background: "rgba(0,0,0,0.2)" }} />
                             </div>
                         </div>
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1.5rem" }}>
                             <div>
                                 <label style={{ fontSize: "0.65rem", color: "var(--text-muted)", display: "block", marginBottom: "0.4rem" }}>Conversions</label>
-                                <input type="number" value={formData.conversions} onChange={(e) => setFormData({ ...formData, conversions: parseInt(e.target.value) || 0 })} className="input-base" style={{ background: "rgba(0,0,0,0.2)" }} />
+                                <input type="number" value={formData.conversions || 0} onChange={(e) => setFormData({ ...formData, conversions: parseInt(e.target.value) || 0 })} className="input-base" style={{ background: "rgba(0,0,0,0.2)" }} />
                             </div>
                             <div>
                                 <label style={{ fontSize: "0.65rem", color: "var(--text-muted)", display: "block", marginBottom: "0.4rem" }}>Revenue ({currencySymbol})</label>
-                                <input type="number" value={formData.revenue_generated} onChange={(e) => setFormData({ ...formData, revenue_generated: parseFloat(e.target.value) || 0 })} className="input-base" style={{ background: "rgba(0,0,0,0.2)" }} />
+                                <input type="number" value={formData.revenue_generated || 0} onChange={(e) => setFormData({ ...formData, revenue_generated: parseFloat(e.target.value) || 0 })} className="input-base" style={{ background: "rgba(0,0,0,0.2)" }} />
                             </div>
                         </div>
                         <div style={{ display: "flex", gap: "1rem" }}>

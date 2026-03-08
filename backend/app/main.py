@@ -113,6 +113,95 @@ async def rate_limiter_middleware(request: Request, call_next):
 # In a real production app, we would use Redis or S3 for this.
 _sessions = {}
 
+def generate_master_report_text(dataset_id: str):
+    """
+    Consolidates ALL model-generated documents into a single professional Master Report text.
+    Includes Analyst Report, Strategic Plan, Deep RL Findings, and ML Insights.
+    """
+    if dataset_id not in _sessions:
+        return None
+        
+    session = _sessions[dataset_id]
+    pipeline = session.get("pipeline", {})
+    analytics = pipeline.get("analytics", {})
+    summary = pipeline.get("summary", {})
+    
+    report_io = io.StringIO()
+    report_io.write(f"========================================================================\n")
+    report_io.write(f"     NEURAL BI ENTERPRISE SUITE - UNIFIED BUSINESS INTELLIGENCE MASTER REPORT\n")
+    report_io.write(f"========================================================================\n\n")
+    
+    report_io.write(f"REPORT METADATA:\n")
+    report_io.write(f"Session ID: {dataset_id}\n")
+    report_io.write(f"Source File: {session.get('filename', 'N/A')}\n")
+    report_io.write(f"Timestamp: {time.ctime(session['timestamp'])}\n")
+    report_io.write(f"Data Scan Depth: {summary.get('total_rows', 'N/A')} Rows Analyzed\n")
+    report_io.write(f"AI Confidence Score: {pipeline.get('confidence_score', 0.85)*100:.1f}%\n\n")
+
+    # 1. Executive Summary (AI Analyst)
+    # Use Markdown headers for PDF compatibility
+    report_io.write(f"# I. EXECUTIVE CDO SUMMARY (AUTONOMOUS ANALYST)\n")
+    report_io.write(f"----------------------------------------------\n")
+    report_io.write(f"{pipeline.get('analyst_report', {}).get('report', 'No summary available.')}\n\n")
+
+    # 2. Deep RL Pricing Optimization
+    pricing = pipeline.get("ml_predictions", {}).get("pricing_optimization")
+    if pricing:
+        report_io.write(f"# II. DEEP RL PRICING OPTIMIZATION & CAPITAL DIRECTIVE\n")
+        report_io.write(f"-----------------------------------------------------\n")
+        report_io.write(f"Recommended Price Adjustment: {pricing.get('best_price_adjustment_percent', 0)}%\n")
+        report_io.write(f"Neural Engine: {pricing.get('engine', 'DQN-v2')}\n")
+        report_io.write(f"Market Elasticity (Modeled): {pricing.get('market_elasticity_modeled', -1.8)}\n\n")
+        report_io.write(f"AGENT REASONING LOG:\n")
+        report_io.write(f"{pricing.get('neural_intelligence', 'N/A')}\n\n")
+
+    # 3. Strategic Roadmap
+    report_io.write(f"# III. COMPREHENSIVE STRATEGIC ROADMAP\n")
+    report_io.write(f"------------------------------------\n")
+    report_io.write(f"{pipeline.get('strategic_plan', 'No roadmap generated.')}\n\n")
+
+    # 4. Tactical Recommendations
+    recs = pipeline.get("recommendations", [])
+    if recs:
+        report_io.write(f"# IV. TACTICAL ACTION ITEMS\n")
+        report_io.write(f"-------------------------\n")
+        for i, rec in enumerate(recs):
+            report_io.write(f"{i+1}. {rec}\n")
+        report_io.write("\n")
+
+    # 5. ML Insights & Anomaly Report
+    insights = pipeline.get("insights", [])
+    anomalies = pipeline.get("anomalies", [])
+    if insights or anomalies:
+        report_io.write(f"# V. KEY DATA INSIGHTS & ANOMALY DETECTION\n")
+        report_io.write(f"----------------------------------------\n")
+        if anomalies:
+            report_io.write(f"[ANOMALY ALERT]\n")
+            for a in anomalies:
+                report_io.write(f"!! {a}\n")
+            report_io.write("\n")
+        for ins in insights:
+            report_io.write(f"- {ins}\n")
+        report_io.write("\n")
+
+    # 6. Core Financial Metrics
+    report_io.write(f"# VI. CORE FINANCIAL PERFORMANCE METRICS\n")
+    report_io.write(f"---------------------------------------\n")
+    for k, v in analytics.items():
+        if isinstance(v, (int, float)) and not k.startswith('_'):
+            report_io.write(f"- {k.replace('_', ' ').upper()}: {v:,.2f}\n")
+    
+    if "top_products" in analytics:
+        report_io.write(f"\nTOP PRODUCTS PERFORMANCE:\n")
+        for prod, rev in sorted(analytics["top_products"].items(), key=lambda x: x[1], reverse=True)[:10]:
+            report_io.write(f"- {prod}: ₹{rev:,.2f}\n")
+
+    report_io.write(f"\n========================================================================\n")
+    report_io.write(f"                 END OF NEURAL BI CONSOLIDATED REPORT\n")
+    report_io.write(f"========================================================================\n")
+    
+    return report_io.getvalue()
+
 
 @app.get("/")
 def home():
@@ -397,82 +486,42 @@ async def download_clean_data(dataset_id: str):
 
 @app.get("/download-report/{dataset_id}")
 async def download_report(dataset_id: str):
+    """
+    Consolidates ALL model-generated documents into a single professional Master Report.
+    """
     try:
-        if dataset_id not in _sessions:
-            return JSONResponse(status_code=404, content={"error": "Session expired."})
+        report_text = generate_master_report_text(dataset_id)
+        if not report_text:
+            return JSONResponse(status_code=404, content={"error": "Session expired or dataset not found."})
             
-        session = _sessions[dataset_id]
-        analytics = session["analytics"]
-        report_text = session.get("analyst_report", {}).get("report", "No report available.")
-        summary = session.get("dataset_summary", {})
-        
-        # Create a formatted text report
-        report_io = io.StringIO()
-        report_io.write(f"NEURAL BI - EXECUTIVE SALES REPORT\n")
-        report_io.write(f"==================================\n\n")
-        report_io.write(f"Session ID: {dataset_id}\n")
-        report_io.write(f"Timestamp: {time.ctime(session['timestamp'])}\n\n")
-        
-        report_io.write(f"1. EXECUTIVE SUMMARY\n")
-        report_io.write(f"--------------------\n")
-        report_io.write(f"{report_text}\n\n")
-        
-        report_io.write(f"2. KEY METRICS\n")
-        report_io.write(f"--------------\n")
-        for k, v in analytics.items():
-            if isinstance(v, (int, float)):
-                report_io.write(f"- {k.replace('_', ' ').title()}: {v:,.2f}\n")
-        report_io.write("\n")
-        
-        if "top_products" in analytics:
-            report_io.write(f"3. TOP PRODUCTS\n")
-            report_io.write(f"---------------\n")
-            for prod, rev in analytics["top_products"].items():
-                report_io.write(f"- {prod}: ₹{rev:,.2f}\n")
-            report_io.write("\n")
-            
-        if "region_sales" in analytics:
-            report_io.write(f"4. REGIONAL PERFORMANCE\n")
-            report_io.write(f"-----------------------\n")
-            for reg, rev in analytics["region_sales"].items():
-                report_io.write(f"- {reg}: ₹{rev:,.2f}\n")
-            report_io.write("\n")
-            
-        report_io.write(f"5. DATASET PROFILE\n")
-        report_io.write(f"------------------\n")
-        report_io.write(f"- Total Rows: {summary.get('total_rows', 'N/A')}\n")
-        report_io.write(f"- Total Columns: {summary.get('total_columns', 'N/A')}\n")
-        
-        report_io.seek(0)
         return StreamingResponse(
-            iter([report_io.getvalue()]),
+            iter([report_text]),
             media_type="text/plain",
-            headers={"Content-Disposition": f"attachment; filename=sales_report_{dataset_id[:8]}.txt"}
+            headers={"Content-Disposition": f"attachment; filename=Master_Insight_Report_{dataset_id[:8]}.txt"}
         )
     except Exception as e:
-        return JSONResponse(status_code=500, content={"error": str(e)})
+        traceback.print_exc()
+        return JSONResponse(status_code=500, content={"error": f"Failed to generate consolidated report: {str(e)}"})
 
 @app.get("/download-strategic-plan-pdf/{dataset_id}")
 async def download_strategic_plan_pdf(dataset_id: str):
+    """
+    Consolidates ALL model-generated documents into a single professional PDF Master Report.
+    """
     try:
-        if dataset_id not in _sessions:
-            return JSONResponse(status_code=404, content={"error": "Session expired."})
+        report_text = generate_master_report_text(dataset_id)
+        if not report_text:
+            return JSONResponse(status_code=404, content={"error": "Session expired or report not found."})
             
-        session = _sessions[dataset_id]
-        plan_text = session.get("results", {}).get("strategic_plan", "")
-        
-        if not plan_text:
-            return JSONResponse(status_code=404, content={"error": "Strategic plan not generated."})
-            
-        pdf_content = create_pdf_from_text(plan_text)
+        pdf_content = create_pdf_from_text(report_text, filename=f"Master_Insight_Report_{dataset_id[:8]}.pdf")
         
         return StreamingResponse(
             io.BytesIO(pdf_content),
             media_type="application/pdf",
-            headers={"Content-Disposition": f"attachment; filename=strategic_plan_{dataset_id[:8]}.pdf"}
+            headers={"Content-Disposition": f"attachment; filename=Master_Insight_Report_{dataset_id[:8]}.pdf"}
         )
     except Exception as e:
-        print(f"PDF Error: {e}")
+        traceback.print_exc()
         return JSONResponse(status_code=500, content={"error": str(e)})
 
 # --- ENTERPRISE REAL-TIME WEBSOCKET STREAMING ---
@@ -531,11 +580,13 @@ async def websocket_rl_endpoint(websocket: WebSocket):
         except:
             pass
 
-# --- ENTERPRISE WORKSPACE API (BILLING, CRM, INVENTORY) --- at 2.6.0
 @app.post("/workspace/invoices")
 async def create_invoice(data: dict = Body(...)):
     """Creates a professional, stored business bill/invoice."""
-    return WorkspaceEngine.create_invoice(data)
+    res = WorkspaceEngine.create_invoice(data)
+    if res.get("status") == "error":
+        raise HTTPException(status_code=500, detail=res.get("message"))
+    return res
 
 @app.get("/workspace/invoices")
 async def get_invoices():
@@ -545,7 +596,10 @@ async def get_invoices():
 @app.post("/workspace/customers")
 async def add_customer(data: dict = Body(...)):
     """Adds a new client to the Enterprise CRM."""
-    return WorkspaceEngine.add_customer(data)
+    res = WorkspaceEngine.add_customer(data)
+    if res.get("status") == "error":
+        raise HTTPException(status_code=500, detail=res.get("message"))
+    return res
 
 @app.get("/workspace/customers")
 async def get_customers():
@@ -560,12 +614,26 @@ async def get_inventory():
 @app.post("/workspace/inventory")
 async def add_inventory_item(data: dict = Body(...)):
     """Creates a new inventory/stock item."""
-    return WorkspaceEngine.add_inventory_item(data)
+    res = WorkspaceEngine.add_inventory_item(data)
+    if res.get("status") == "error":
+        raise HTTPException(status_code=500, detail=res.get("message"))
+    return res
+
+@app.post("/workspace/marketing/campaigns")
+async def create_marketing_campaign(data: dict = Body(...)):
+    """Deploys a new campaign and logs spend as an expense."""
+    res = WorkspaceEngine.create_marketing_campaign(data)
+    if res.get("status") == "error":
+        raise HTTPException(status_code=500, detail=res.get("message"))
+    return res
 
 @app.post("/workspace/expenses")
 async def add_expense(data: dict = Body(...)):
     """Logs a new business expense for internal bookkeeping."""
-    return WorkspaceEngine.add_expense(data)
+    res = WorkspaceEngine.add_expense(data)
+    if res.get("status") == "error":
+        raise HTTPException(status_code=500, detail=res.get("message"))
+    return res
 
 @app.get("/workspace/ledger")
 async def get_ledger():
