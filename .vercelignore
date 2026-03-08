@@ -1,0 +1,14 @@
+backend/
+data/
+test/
+*.py
+*.log
+*.sqlite
+Dockerfile
+docker-compose.yml
+requirements.txt
+server.log
+test_results*.log
+test_sql_persistence.log
+__pycache__/
+.git/
