@@ -1,3 +1,5 @@
+sentry-sdk
+prometheus-fastapi-instrumentator
 fastapi
 uvicorn
 pandas
@@ -14,5 +16,4 @@ matplotlib
 fpdf2
 openpyxl
 torch
-sentry-sdk
-prometheus-fastapi-instrumentator
+

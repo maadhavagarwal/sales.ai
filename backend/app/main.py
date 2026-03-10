@@ -26,20 +26,29 @@ import io
 from app.utils.pdf_generator import create_pdf_from_text
 from app.engines.workspace_engine import WorkspaceEngine
 
-import sentry_sdk
-from prometheus_fastapi_instrumentator import Instrumentator
+try:
+    import sentry_sdk
+    # Enterprise Sentry Trace Tracking (Mock DSN for local)
+    sentry_sdk.init(
+        dsn="https://mock_public_key@mock_sentry.io/12345", 
+        traces_sample_rate=1.0,
+        environment="production"
+    )
+except ImportError:
+    print("Sentry SDK not found. Skipping initialization.")
+    sentry_sdk = None
 
-# Enterprise Sentry Trace Tracking (Mock DSN for local)
-sentry_sdk.init(
-    dsn="https://mock_public_key@mock_sentry.io/12345", 
-    traces_sample_rate=1.0,
-    environment="production"
-)
+try:
+    from prometheus_fastapi_instrumentator import Instrumentator
+except ImportError:
+    Instrumentator = None
 
 app = FastAPI(title="NeuralBI Enterprise API", version="2.5.0")
 
 # Enterprise Prometheus Telemetry
-Instrumentator().instrument(app).expose(app, endpoint="/metrics")
+if Instrumentator:
+    Instrumentator().instrument(app).expose(app, endpoint="/metrics")
+
 
 # Init User DB on startup
 init_auth_db()

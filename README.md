@@ -56,3 +56,5 @@ You can then view the production app at `http://localhost:3000`.
 * `/frontend/ai-bi-frontend/` -> Next.js / Tailwind App Router frontend.
 * `advanced_ai_models.py` -> Sklearn isolation forests and clustering.
 * `copilot_engine.py` -> Uses dynamic Pandas extraction to interpret human English questions against generated `dataset_ids`.
+run command 
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
