@@ -8,6 +8,7 @@ import StrategyPanel from "@/components/dashboard/StrategyPanel"
 import InsightsPanel from "@/components/dashboard/InsightsPanel"
 import ExplanationsPanel from "@/components/dashboard/ExplanationsPanel"
 import NLBIChartGenerator from "@/components/ai/NLBIChartGenerator"
+import TradingIntelligencePanel from "@/components/analytics/TradingIntelligencePanel"
 import ChartWidget from "@/components/dashboard/ChartWidget"
 import WidgetEditor from "@/components/dashboard/WidgetEditor"
 import DataTable from "@/components/dashboard/DataTable"
@@ -298,6 +299,16 @@ export default function Dashboard() {
                   exit={{ opacity: 0, scale: 0.99 }}
                   className="space-y-12"
                 >
+                  {results.dataset_type === "market_dataset" && results.market_intelligence && (
+                    <div className="mb-12">
+                      <Badge variant="pro" className="mb-6 tracking-[0.2em]">FINANCIAL RISK ENGINE ACTIVE</Badge>
+                      <TradingIntelligencePanel
+                        marketIntelligence={results.market_intelligence}
+                        report={results.analyst_report?.report || ""}
+                      />
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                     {results.strategy?.length > 0 && <StrategyPanel strategy={results.strategy} />}
                     {results.insights?.length > 0 && <InsightsPanel insights={results.insights} />}

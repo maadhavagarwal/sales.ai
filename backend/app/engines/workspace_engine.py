@@ -497,16 +497,15 @@ class WorkspaceEngine:
         Ensures high-fidelity mapping of Revenue, COGS, and Products for Sync-Back compatibility.
         """
         if df is None or df.empty:
+            print("Workspace Sync: Empty dataframe provided.")
             return {"status": "error", "message": "Null dataset provided."}
 
+        print(f"Workspace Sync: Starting for {len(df)} rows. Columns: {list(df.columns)}")
         conn = sqlite3.connect(DB_PATH)
         try:
-            cols = [c.lower() for c in df.columns]
-            
             # 1. Detect and Import Customers
             name_col = next((c for c in df.columns if c.lower() in ['customer', 'client', 'customer_name', 'name']), None)
-            if not name_col:
-                name_col = next((c for c in df.columns if 'name' in c.lower() or 'customer' in c.lower() or 'client' in c.lower()), None)
+            print(f"Workspace Sync: Detected name_col: {name_col}")
             
             if name_col:
                 email_col = next((c for c in df.columns if 'email' in c.lower()), None)
@@ -555,13 +554,17 @@ class WorkspaceEngine:
             # 3. Detect and Import Sales/Invoices (CRITICAL for Sync-Back)
             # We look for revenue/sales columns. If present, we treat each row as a realized sale.
             revenue_col = next((c for c in df.columns if c.lower() in ['revenue', 'sales', 'total_sales', 'amount']), None)
+            print(f"Workspace Sync: Detected revenue_col: {revenue_col}")
+            
             if revenue_col:
                 product_col = next((c for c in df.columns if c.lower() in ['product', 'item', 'product_name', 'sku']), None)
                 date_col = next((c for c in df.columns if c.lower() in ['date', 'order_date', 'transaction_date']), None)
                 customer_col = next((c for c in df.columns if c.lower() in ['customer', 'client', 'name']), None)
                 quantity_col = next((c for c in df.columns if c.lower() in ['quantity', 'qty', 'quantity_sold']), None)
                 cost_val_col = next((c for c in df.columns if c.lower() in ['cost', 'total_cost', 'cogs']), None)
-
+                
+                print(f"Workspace Sync: Submitting Invoice Rows to Ledger. ProdCol: {product_col}, DateCol: {date_col}, CustCol: {customer_col}")
+                
                 for _, row in df.iterrows():
                     rev = float(row[revenue_col]) if pd.notnull(row[revenue_col]) else 0
                     if rev <= 0: continue # Skip non-revenue rows for invoice sync
@@ -598,15 +601,36 @@ class WorkspaceEngine:
                         INSERT INTO ledger (account_name, type, amount, description, date, voucher_id, voucher_type)
                         VALUES (?, ?, ?, ?, ?, ?, ?)
                     """, (f"COGS - {prod}", "EXPENSE", c_val, f"Ref: {inv_id}", dt, v_id, "Sales"))
-                    # Offsets
+                    # 1. Sales Recognition (Dr AR, Cr Sales)
                     conn.execute("""
                         INSERT INTO ledger (account_name, type, amount, description, date, voucher_id, voucher_type)
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
-                    """, ("Accounts Receivable - Bulk", "ASSET", rev, f"Ref: {inv_id}", dt, v_id, "Sales"))
+                        VALUES (?, 'ASSET', ?, ?, ?, ?, 'Sales')
+                    """, (f"Accounts Receivable - {cust}", rev, f"MIG Sale Ref: {inv_id}", dt, v_id))
                     conn.execute("""
                         INSERT INTO ledger (account_name, type, amount, description, date, voucher_id, voucher_type)
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
-                    """, ("Corporate Cash/Bank", "ASSET", -c_val, f"Ref: {inv_id}", dt, v_id, "Sales"))
+                        VALUES (?, 'INCOME', ?, ?, ?, ?, 'Sales')
+                    """, ("Sales Revenue", -rev, f"MIG Revenue Ref: {inv_id}", dt, v_id))
+
+                    # 2. Collection Recognition (Dr Cash, Cr AR) - Mark as settled since it's historical
+                    conn.execute("""
+                        INSERT INTO ledger (account_name, type, amount, description, date, voucher_id, voucher_type)
+                        VALUES (?, 'ASSET', ?, ?, ?, ?, 'Receipt')
+                    """, ("Corporate Cash/Bank", rev, f"MIG Receipt Ref: {inv_id}", dt, v_id))
+                    conn.execute("""
+                        INSERT INTO ledger (account_name, type, amount, description, date, voucher_id, voucher_type)
+                        VALUES (?, 'ASSET', ?, ?, ?, ?, 'Receipt')
+                    """, (f"Accounts Receivable - {cust}", -rev, f"MIG Settlement Ref: {inv_id}", dt, v_id))
+
+                    # 3. Cost of Goods Sold Allocation (Dr COGS, Cr Inventory)
+                    if c_val > 0:
+                        conn.execute("""
+                            INSERT INTO ledger (account_name, type, amount, description, date, voucher_id, voucher_type)
+                            VALUES (?, 'EXPENSE', ?, ?, ?, ?, 'Journal')
+                        """, ("Cost of Goods Sold", c_val, f"COGS Allocation Ref: {inv_id}", dt, v_id))
+                        conn.execute("""
+                            INSERT INTO ledger (account_name, type, amount, description, date, voucher_id, voucher_type)
+                            VALUES (?, 'ASSET', ?, ?, ?, ?, 'Journal')
+                        """, ("Inventory Asset", -c_val, f"Stock Offset Ref: {inv_id}", dt, v_id))
 
             conn.commit()
             return {"status": "success", "message": "High-Fidelity Workspace Synchronization Pulse Complete."}

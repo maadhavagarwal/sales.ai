@@ -11,16 +11,20 @@ from app.engines.recommendation_engine import generate_recommendations
 from app.engines.autonomous_analyst import run_autonomous_analysis
 from app.engines.strategic_plan_engine import generate_detailed_strategic_plan
 from app.engines.deep_rl_engine import train_dqn
+from app.engines.market_dynamics_engine import MarketDynamicsEngine
+from app.engines.quant_analyst import run_quant_analysis
 
 
 def run_pipeline(df):
 
+    # 1. Standardize and Clean Data first
+    df, schema = map_schema(df)
+    df = clean_data(df, schema)
+    
+    # 2. Detect Dataset Type based on Standardized Schema
     dataset_type = detect_dataset_type(df)
 
-    df, schema = map_schema(df)
-
-    df = clean_data(df, schema)
-
+    # 3. Generate Core Analytics
     analytics = generate_analytics(df)
 
     ml_results = {}
@@ -36,6 +40,49 @@ def run_pipeline(df):
             simulation_results = run_simulations(df)
         except Exception as e:
             simulation_results = [{"error": str(e)}]
+
+    # --- MARKET INTELLIGENCE INJECTION ---
+    market_data = {}
+    if dataset_type == "market_dataset":
+        try:
+            # Standardize names for common market logic
+            # volume is usually standardized to 'quantity'
+            # price is usually standardized to 'close' or 'price'
+            price_col = 'close' if 'close' in df.columns else ('price' if 'price' in df.columns else 'revenue')
+            vol_col = 'quantity' if 'quantity' in df.columns else 'volume'
+            
+            # 1. Technical Indicators
+            indicators = MarketDynamicsEngine.calculate_indicators(df, price_col=price_col)
+            market_data["indicators"] = indicators
+            
+            # 2. Options Analysis (if columns exist)
+            if "strike" in df.columns and "iv" in df.columns:
+                # Calculate spot price from latest price column
+                spot = df[price_col].iloc[-1] if not df.empty else 100.0
+                indicators = MarketDynamicsEngine.analyze_option_chain(df, spot)
+                market_data["indicators"] = indicators
+                
+                oi_col = 'open_interest' if 'open_interest' in df.columns else 'oi'
+                calls = df[df['type'].str.lower() == 'call'] if 'type' in df.columns else pd.DataFrame()
+                puts = df[df['type'].str.lower() == 'put'] if 'type' in df.columns else pd.DataFrame()
+                
+                if not calls.empty and not puts.empty:
+                    market_data["pcr"] = MarketDynamicsEngine.calculate_pcr(calls, puts, oi_col=oi_col, vol_col=vol_col)
+                    
+            elif "strike" in df.columns:
+                # Basic PCR if no IVs for Greeks
+                oi_col = 'open_interest' if 'open_interest' in df.columns else 'oi'
+                calls = df[df['type'].str.lower() == 'call'] if 'type' in df.columns else pd.DataFrame()
+                puts = df[df['type'].str.lower() == 'put'] if 'type' in df.columns else pd.DataFrame()
+                if not calls.empty and not puts.empty:
+                    market_data["pcr"] = MarketDynamicsEngine.calculate_pcr(calls, puts, oi_col=oi_col, vol_col=vol_col)
+                    
+            # 3. Alpha Predictions using existing ML
+            ml_results = run_ml_pipeline(df)
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            print(f"Market Engine Error: {e}")
 
     strategy = generate_strategy(analytics, ml_results)
     insights = generate_insights(analytics)
@@ -89,7 +136,10 @@ def run_pipeline(df):
 
     # Autonomous analyst report
     try:
-        analyst_report = run_autonomous_analysis(df, analytics, ml_results)
+        if dataset_type == "market_dataset":
+            analyst_report = run_quant_analysis(df, analytics, market_data)
+        else:
+            analyst_report = run_autonomous_analysis(df, analytics, ml_results)
     except Exception as e:
         analyst_report = {
             "profile": {
@@ -211,4 +261,8 @@ def run_pipeline(df):
         "data_quality": data_quality,
         "confidence_score": confidence_score,
         "summary": summary,
+        "market_intelligence": {
+            "pcr": market_data.get("pcr", {}),
+            "indicators": market_data.get("indicators", pd.DataFrame()).to_dict(orient='records') if "indicators" in market_data else []
+        }
     }

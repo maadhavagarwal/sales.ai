@@ -12,6 +12,7 @@ import RevenueForecastChart from "@/components/analytics/RevenueForecastChart"
 import ClusteringPanel from "@/components/analytics/ClusteringPanel"
 import AnomalyAlertPanel from "@/components/analytics/AnomalyAlertPanel"
 import DataIntelligencePanel from "@/components/analytics/DataIntelligencePanel"
+import TradingIntelligencePanel from "@/components/analytics/TradingIntelligencePanel"
 import { useStore } from "@/store/useStore"
 import { motion } from "framer-motion"
 import ReactECharts from "echarts-for-react"
@@ -185,6 +186,16 @@ export default function AnalyticsPage() {
                             dataQuality={results.data_quality || 0}
                             summary={results.summary || {}}
                         />
+                    )}
+
+                    {results.dataset_type === "market_dataset" && results.market_intelligence && (
+                        <div className="space-y-8">
+                            <h3 className="text-xs font-black uppercase tracking-[0.3em] text-[--primary] mb-6">Financial Market Intelligence (Greeks & Sentiment)</h3>
+                            <TradingIntelligencePanel
+                                marketIntelligence={results.market_intelligence}
+                                report={results.analyst_report?.report || ""}
+                            />
+                        </div>
                     )}
 
                     {results.analytics && <MetricsCards analytics={results.analytics} />}

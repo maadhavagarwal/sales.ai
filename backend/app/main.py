@@ -329,6 +329,8 @@ async def upload_csv(file: UploadFile = File(...)):
             "anomalies": pipeline.get("anomalies", []),
             "data_quality": pipeline.get("data_quality", 1.0),
             "confidence_score": pipeline.get("confidence_score", 0.7),
+            "market_intelligence": pipeline.get("market_intelligence", {}),
+            "dataset_type": pipeline.get("dataset_type", "generic_dataset"),
         }
         return _make_serializable(response)
 
@@ -408,6 +410,8 @@ async def reprocess_dataset(dataset_id: str, sheet_name: str = Body(None)):
             "anomalies": pipeline.get("anomalies", []),
             "data_quality": pipeline.get("data_quality", 1.0),
             "confidence_score": pipeline.get("confidence_score", 0.7),
+            "market_intelligence": pipeline.get("market_intelligence", {}),
+            "dataset_type": pipeline.get("dataset_type", "generic_dataset"),
         }
         return _make_serializable(response)
     except Exception as e:

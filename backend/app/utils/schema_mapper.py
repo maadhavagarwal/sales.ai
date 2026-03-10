@@ -55,12 +55,18 @@ COLUMN_PATTERNS = {
         "discount", "discount_percent", "discount_amount", "rebate",
         "markdown", "promo", "coupon",
     ],
+    "close": ["close", "last_price", "ltp", "final_price"],
+    "strike": ["strike", "strike_price"],
+    "iv": ["implied_vol", "iv", "volatility"],
+    "open_interest": ["open_interest", "oi"],
+    "pcr": ["pcr", "put_call_ratio"],
 }
 
 # Priority order — if multiple columns match the same target, prefer first match
 PRIORITY_ORDER = [
     "revenue", "date", "product", "region", "quantity",
     "price", "cost", "customer", "profit", "discount",
+    "close", "strike", "iv", "open_interest", "pcr"
 ]
 
 

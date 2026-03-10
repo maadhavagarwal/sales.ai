@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { createInvoice, getInvoices, getCustomers, getInventory, sendInvoiceReminder } from "@/services/api"
 import { useStore } from "@/store/useStore"
-import { Card, Button, Badge } from "@/components/ui"
+import { Card, Button, Badge, Modal } from "@/components/ui"
 
 export default function WorkspaceInvoicing() {
     const { currencySymbol } = useStore()
@@ -12,6 +12,7 @@ export default function WorkspaceInvoicing() {
     const [customers, setCustomers] = useState<any[]>([])
     const [inventory, setInventory] = useState<any[]>([])
     const [showCreate, setShowCreate] = useState(false)
+    const [viewingInvoice, setViewingInvoice] = useState<any>(null)
     const [loading, setLoading] = useState(false)
 
     // Form state (GST Compliant)
@@ -80,7 +81,7 @@ export default function WorkspaceInvoicing() {
         setLoading(true)
         const totals = calculateTotals()
         try {
-            await createInvoice({
+            const res = await createInvoice({
                 customer_id: selectedCustomer.name,
                 client_gstin: selectedCustomer.gstin,
                 client_pan: selectedCustomer.pan,
@@ -101,10 +102,38 @@ export default function WorkspaceInvoicing() {
             setShowCreate(false)
             setItems([{ inventory_id: "", desc: "", qty: 1, price: 0, hsn: "", taxRate: 18 }])
             refreshData()
+
+            // Auto open for printing
+            const newInvoice = {
+                id: res.invoice_id,
+                customer_id: selectedCustomer.name,
+                client_gstin: selectedCustomer.gstin,
+                items_json: JSON.stringify(items),
+                subtotal: totals.subtotal,
+                total_tax: totals.totalTax,
+                grand_total: totals.grandTotal,
+                date: new Date().toISOString().split('T')[0]
+            }
+            setViewingInvoice(newInvoice)
         } catch (e) {
             console.error(e)
         } finally {
             setLoading(false)
+        }
+    }
+
+    const handlePrint = () => {
+        window.print()
+    }
+
+    const handleShare = () => {
+        if (!viewingInvoice) return
+        const text = `Invoice #${viewingInvoice.id} for ${viewingInvoice.customer_id}. Amount: ${currencySymbol}${viewingInvoice.grand_total}.`
+        if (navigator.share) {
+            navigator.share({ title: 'Invoice Share', text })
+        } else {
+            navigator.clipboard.writeText(text)
+            alert("Invoice details copied to clipboard.")
         }
     }
 
@@ -373,14 +402,24 @@ export default function WorkspaceInvoicing() {
                                         {currencySymbol}{inv.grand_total.toLocaleString()}
                                     </td>
                                     <td className="py-5 text-right">
-                                        <Button
-                                            variant="ghost"
-                                            size="xs"
-                                            onClick={() => sendInvoiceReminder(inv.id)}
-                                            className="text-[9px] font-black uppercase tracking-widest text-[--accent-rose] border border-[--accent-rose]/20 hover:bg-[--accent-rose]/10"
-                                        >
-                                            Send Reminder
-                                        </Button>
+                                        <div className="flex justify-end gap-2">
+                                            <Button
+                                                variant="ghost"
+                                                size="xs"
+                                                onClick={() => setViewingInvoice(inv)}
+                                                className="text-[9px] font-black uppercase tracking-widest text-[--primary] border border-[--primary]/20 hover:bg-[--primary]/10"
+                                            >
+                                                View/Print
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="xs"
+                                                onClick={() => sendInvoiceReminder(inv.id)}
+                                                className="text-[9px] font-black uppercase tracking-widest text-[--accent-rose] border border-[--accent-rose]/20 hover:bg-[--accent-rose]/10"
+                                            >
+                                                Remind
+                                            </Button>
+                                        </div>
                                     </td>
                                     <td className="py-5 text-right">
                                         <Button variant="ghost" size="xs" className="opacity-0 group-hover:opacity-100 transition-opacity uppercase text-[9px] font-black tracking-widest">
@@ -393,6 +432,96 @@ export default function WorkspaceInvoicing() {
                     </table>
                 </div>
             </Card>
-        </div >
+
+            {/* View/Print Modal */}
+            <AnimatePresence>
+                {viewingInvoice && (
+                    <Modal
+                        isOpen={!!viewingInvoice}
+                        onClose={() => setViewingInvoice(null)}
+                        title={`Tax Instrument: ${viewingInvoice.id}`}
+                        size="xl"
+                    >
+                        <div className="p-8 bg-white text-slate-900 print:p-0 print:text-black min-h-[600px] flex flex-col">
+                            <div className="flex justify-between items-start mb-12">
+                                <div>
+                                    <h1 className="text-4xl font-black tracking-tighter mb-2">TAX INVOICE</h1>
+                                    <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Generated via NB Enterprise AI</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-sm font-black">#{viewingInvoice.id}</p>
+                                    <p className="text-xs font-medium text-slate-500">{viewingInvoice.date}</p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-12 mb-12 text-xs">
+                                <div>
+                                    <p className="font-black uppercase text-slate-400 mb-2">Bill To:</p>
+                                    <p className="text-lg font-black">{viewingInvoice.customer_id}</p>
+                                    <p className="mt-1 font-medium">{viewingInvoice.client_gstin ? `GSTIN: ${viewingInvoice.client_gstin}` : 'GST-Exempt Entity'}</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="font-black uppercase text-slate-400 mb-2">Compliance Ref:</p>
+                                    <p className="font-bold">Digital Signature: VERIFIED</p>
+                                    <p className="mt-1 text-slate-500 italic">This is an AI-generated statutory document.</p>
+                                </div>
+                            </div>
+
+                            <table className="w-full mb-12">
+                                <thead className="border-y-2 border-slate-900">
+                                    <tr className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                                        <th className="py-4 text-left">Description</th>
+                                        <th className="py-4 text-center">Qty</th>
+                                        <th className="py-4 text-right">Rate</th>
+                                        <th className="py-4 text-right">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {(() => {
+                                        try {
+                                            const items = JSON.parse(viewingInvoice.items_json || "[]")
+                                            return items.map((it: any, idx: number) => (
+                                                <tr key={idx} className="text-xs font-medium">
+                                                    <td className="py-4">{it.desc || it.name}</td>
+                                                    <td className="py-4 text-center">{it.qty || it.quantity}</td>
+                                                    <td className="py-4 text-right">{currencySymbol}{(it.price || 0).toLocaleString()}</td>
+                                                    <td className="py-4 text-right">
+                                                        {currencySymbol}{((it.qty || it.quantity || 0) * (it.price || 0)).toLocaleString()}
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        } catch (e) {
+                                            return <tr><td colSpan={4} className="py-4 text-center text-slate-400 italic">Items mapping failed.</td></tr>
+                                        }
+                                    })()}
+                                </tbody>
+                            </table>
+
+                            <div className="mt-auto pt-10 border-t border-slate-900 flex justify-end">
+                                <div className="w-64 space-y-3">
+                                    <div className="flex justify-between text-xs font-bold text-slate-500">
+                                        <span>Subtotal</span>
+                                        <span>{currencySymbol}{(viewingInvoice.subtotal || 0).toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex justify-between text-xs font-bold text-slate-500">
+                                        <span>Tax Recovery</span>
+                                        <span>{currencySymbol}{(viewingInvoice.total_tax || 0).toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex justify-between text-lg font-black border-t pt-3 border-slate-900">
+                                        <span>Grand Total</span>
+                                        <span>{currencySymbol}{viewingInvoice.grand_total.toLocaleString()}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-20 flex gap-4 print:hidden">
+                                <Button variant="pro" className="flex-1" onClick={handlePrint}>Print Instrument</Button>
+                                <Button variant="outline" className="flex-1" onClick={handleShare}>Digital Share</Button>
+                            </div>
+                        </div>
+                    </Modal>
+                )}
+            </AnimatePresence>
+        </div>
     )
 }

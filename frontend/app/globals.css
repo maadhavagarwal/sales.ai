@@ -159,6 +159,53 @@ pre,
     border: 1px solid var(--border-strong);
 }
 
+.chart-card {
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    transition: all var(--transition-base);
+}
+
+.chart-card:hover {
+    border-color: var(--primary);
+    background: rgba(15, 23, 42, 0.6);
+    box-shadow: 0 0 30px rgba(99, 102, 241, 0.1);
+}
+
+.greek-box {
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    border: 1px solid var(--border-subtle);
+    align-items: center;
+    transition: all 0.2s;
+}
+
+.greek-box:hover {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: var(--primary);
+    transform: translateY(-2px);
+}
+
+.greek-label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+    font-weight: 700;
+}
+
+.greek-value {
+    font-size: 1.25rem;
+    font-weight: 900;
+    font-family: 'Geist Mono', 'JetBrains Mono', monospace;
+    letter-spacing: -0.02em;
+}
+
 /* ===== Bento Grid Utilities ===== */
 .bento-grid {
     display: grid;

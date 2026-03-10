@@ -11,6 +11,21 @@ def detect_dataset_type(df):
     cols = [c.lower() for c in df.columns]
     col_str = " ".join(cols)
 
+    # Check for market/trading signals (Options specific)
+    options_signals = ["strike", "iv", "pcr", "oi", "call", "put"]
+    # Indicators/OHLC signals (need at least 2 to avoid false positive on "Volume" or "Open")
+    ohlc_signals = ["close", "high", "low", "open", "volume", "price", "ltp", "quantity"]
+    
+    # Even more specific signals - if any of these are present, it's weighted heavily
+    expert_signals = ["rsi", "macd", "bb_upper", "delta", "gamma", "theta", "vega"]
+    
+    has_options = any(s in col_str for s in options_signals)
+    has_expert = any(s in col_str for s in expert_signals)
+    ohlc_count = sum(1 for s in ohlc_signals if s in col_str)
+    
+    if has_options or has_expert or ohlc_count >= 2:
+        return "market_dataset"
+
     # Check for sales/revenue signals
     sales_signals = ["sales", "revenue", "amount", "total", "order", "invoice",
                      "transaction", "purchase", "turnover", "gmv", "qty", "price", "party", "inv_no"]

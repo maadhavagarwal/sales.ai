@@ -41,7 +41,7 @@ export default function WorkspaceAccounts() {
         { account_name: "", type: "INCOME", amount: 0, description: "", isDebit: false }
     ])
 
-    useEffect(() => { refreshData() }, [activeTab])
+    useEffect(() => { refreshData() }, [activeTab, selectedCustomer])
 
     const refreshData = async () => {
         setLoading(true)

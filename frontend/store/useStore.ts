@@ -71,6 +71,15 @@ export interface UploadResults {
     summary?: Record<string, any>
     strategic_plan?: string
     available_sheets?: string[]
+    dataset_type?: string
+    market_intelligence?: {
+        pcr: {
+            pcr_oi: number
+            pcr_vol: number
+            sentiment: string
+        }
+        indicators: any[]
+    }
     forecast?: {
         forecast: Array<{ date: string; predicted_revenue: number }>
         model_info: string
