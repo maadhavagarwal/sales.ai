@@ -240,6 +240,17 @@ export const getGSTReports = async () => {
   return res.data
 }
 
+export const getDerivativesSnapshot = async (data: {
+  underlying?: string
+  expiry?: string
+  portfolio_value?: number
+  portfolio_beta?: number
+  hedge_ratio_target?: number
+}) => {
+  const res = await api.post("/workspace/accounting/derivatives", data)
+  return res.data
+}
+
 // --- MARKETING API ---
 export const createMarketingCampaign = async (data: any) => {
   const res = await api.post("/workspace/marketing/campaigns", data)

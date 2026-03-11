@@ -26,6 +26,7 @@ from fastapi.responses import JSONResponse, StreamingResponse, PlainTextResponse
 import io
 from app.utils.pdf_generator import create_pdf_from_text
 from app.engines.workspace_engine import WorkspaceEngine
+from app.engines.derivatives_engine import DerivativesEngine
 
 try:
     import sentry_sdk
@@ -889,6 +890,21 @@ async def reconcile_bank_statement(data: dict = Body(...)):
 async def get_gst_reports():
     """Generates statutory GSTR-1 and GSTR-3B summaries."""
     return WorkspaceEngine.get_gst_reports()
+
+@app.post("/workspace/accounting/derivatives")
+async def get_derivatives_snapshot(data: dict = Body(default={})):
+    """Returns option chain, technical indicators, Greeks, and hedge optimizer analytics."""
+    try:
+        return DerivativesEngine.get_derivatives_snapshot(
+            underlying=data.get("underlying", "NIFTY"),
+            expiry=data.get("expiry"),
+            portfolio_value=float(data.get("portfolio_value", 10_000_000)),
+            portfolio_beta=float(data.get("portfolio_beta", 0.95)),
+            hedge_ratio_target=float(data.get("hedge_ratio_target", 1.0)),
+        )
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Derivatives analytics failed: {str(e)}")
 
 @app.get("/dashboard/sync-workspace")
 async def sync_workspace_to_dashboard():
