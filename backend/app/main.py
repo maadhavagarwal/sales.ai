@@ -88,8 +88,9 @@ DEBUG_MODE = os.getenv("DEBUG", "False").lower() == "true"
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
+    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?",
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
@@ -103,6 +104,14 @@ RATE_LIMIT_WINDOW_SEC = 60
 async def rate_limiter_middleware(request: Request, call_next):
     client_ip = request.client.host if request.client else "127.0.0.1"
     now = time.time()
+
+    # Do not rate-limit local development traffic proxied through Next.js.
+    if client_ip in {"127.0.0.1", "::1", "localhost"}:
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        return response
     
     # Filter expired requests
     _rate_limits[client_ip] = [t for t in _rate_limits[client_ip] if now - t < RATE_LIMIT_WINDOW_SEC]

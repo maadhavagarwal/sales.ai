@@ -23,7 +23,7 @@ export default function Register() {
 
         setLoading(true)
         setError("")
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api/backend"
 
         try {
             const res = await fetch(`${API_URL}/register`, {

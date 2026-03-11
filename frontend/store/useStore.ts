@@ -197,7 +197,8 @@ export const useStore = create<AppState>((set) => ({
     setWidgets: (widgets) => set({ widgets }),
     fetchForecast: async (datasetId, periods = 12) => {
         try {
-            const response = await fetch(`http://localhost:8000/forecast/${datasetId}`, {
+            const apiBase = process.env.NEXT_PUBLIC_API_URL || "/api/backend"
+            const response = await fetch(`${apiBase}/forecast/${datasetId}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ periods })

@@ -1,11 +1,13 @@
 import axios from "axios"
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api/backend"
 
 const api = axios.create({
   baseURL: API_URL,
   timeout: 300000,
 })
+
+export const buildApiUrl = (path: string) => `${API_URL}${path}`
 
 export const uploadCSV = async (
   file: File,
@@ -57,15 +59,15 @@ export const getDashboardConfig = async (datasetId: string) => {
 }
 
 export const downloadReport = (datasetId: string) => {
-  window.open(`${API_URL}/download-report/${datasetId}`, "_blank")
+  window.open(buildApiUrl(`/download-report/${datasetId}`), "_blank")
 }
 
 export const downloadCleanData = (datasetId: string) => {
-  window.open(`${API_URL}/download-clean-data/${datasetId}`, "_blank")
+  window.open(buildApiUrl(`/download-clean-data/${datasetId}`), "_blank")
 }
 
 export const downloadStrategicPlanPDF = (datasetId: string) => {
-  window.open(`${API_URL}/download-strategic-plan-pdf/${datasetId}`, "_blank")
+  window.open(buildApiUrl(`/download-strategic-plan-pdf/${datasetId}`), "_blank")
 }
 
 export const reprocessDataset = async (datasetId: string, sheetName: string | null) => {
@@ -306,9 +308,9 @@ export const getCFOHealthReport = async () => {
 }
 
 export const exportWorkspaceData = (tableName: string) => {
-  window.open(`${API_URL}/workspace/export/${tableName}`, "_blank")
+  window.open(buildApiUrl(`/workspace/export/${tableName}`), "_blank")
 }
 
 export const exportCustomerLedger = (customerId: string) => {
-  window.open(`${API_URL}/workspace/export/customer-ledger/${customerId}`, "_blank")
+  window.open(buildApiUrl(`/workspace/export/customer-ledger/${customerId}`), "_blank")
 }
