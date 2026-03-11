@@ -3,7 +3,8 @@ import uuid
 import json
 import pandas as pd
 import math
-from datetime import datetime
+import traceback
+from datetime import datetime, timedelta
 from app.core.database_manager import DB_PATH
 
 class WorkspaceEngine:
@@ -22,25 +23,40 @@ class WorkspaceEngine:
             subtotal = data.get('subtotal', 0)
             grand_total = data.get('grand_total', 0)
             total_tax = tax_data.get('total', 0)
+            payment_timeline = data.get('payment_timeline', 'LATER')
+            payment_days = int(data.get('payment_days', 0) or 0)
+            due_date = data.get('due_date')
+
+            if not due_date:
+                if payment_timeline == "IMMEDIATE":
+                    due_date = datetime.now().strftime("%Y-%m-%d")
+                else:
+                    due_date = (datetime.now() + timedelta(days=max(payment_days, 1))).strftime("%Y-%m-%d")
             
             # 1. Save Invoice
             conn.execute("""
                 INSERT INTO invoices (
                     id, invoice_number, customer_id, customer_gstin, customer_pan, 
-                    date, due_date, payment_terms, items_json, subtotal, total_tax, 
-                    cgst_total, sgst_total, igst_total, grand_total, notes, currency
+                    date, due_date, payment_terms, payment_timeline, payment_days,
+                    items_json, subtotal, total_tax, cgst_total, sgst_total,
+                    igst_total, grand_total, notes, currency
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 invoice_id, invoice_id, data.get('customer_id'),
                 data.get('client_gstin'), data.get('client_pan'),
-                datetime.now().strftime("%Y-%m-%d"), data.get('due_date'),
+                datetime.now().strftime("%Y-%m-%d"), due_date,
                 data.get('payment_terms', 'Due on Receipt'),
+                payment_timeline,
+                payment_days,
                 items_json, subtotal, total_tax,
                 tax_data.get('cgst', 0), tax_data.get('sgst', 0),
                 tax_data.get('igst', 0), grand_total,
                 data.get('notes'), data.get('currency', '₹')
             ))
+
+            # Update Customer Spend (High-Fidelity CRM Sync)
+            conn.execute("UPDATE customers SET total_spend = total_spend + ? WHERE name = ? OR id = ?", (grand_total, data.get('customer_id'), data.get('customer_id')))
 
             WorkspaceEngine.log_usage("Billing", f"Generated Invoice {invoice_id}")
 
@@ -112,6 +128,36 @@ class WorkspaceEngine:
             conn.close()
 
     @staticmethod
+    def update_invoice(invoice_id: str, data: dict):
+        """Standard update for manual adjustments (Status, Due Date, Notes)."""
+        conn = sqlite3.connect(DB_PATH)
+        try:
+            conn.execute("""
+                UPDATE invoices 
+                SET status = ?, due_date = ?, notes = ?, grand_total = ?, subtotal = ?
+                WHERE id = ?
+            """, (data.get('status'), data.get('due_date'), data.get('notes'), data.get('grand_total'), data.get('subtotal'), invoice_id))
+            conn.commit()
+            return {"status": "success"}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+        finally:
+            conn.close()
+
+    @staticmethod
+    def delete_invoice(invoice_id: str):
+        """Deletes an invoice and relevant record."""
+        conn = sqlite3.connect(DB_PATH)
+        try:
+            conn.execute("DELETE FROM invoices WHERE id = ?", (invoice_id,))
+            conn.commit()
+            return {"status": "success"}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+        finally:
+            conn.close()
+
+    @staticmethod
     def add_customer(data: dict):
         conn = sqlite3.connect(DB_PATH)
         try:
@@ -135,6 +181,34 @@ class WorkspaceEngine:
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM customers")
             return [dict(row) for row in cursor.fetchall()]
+        finally:
+            conn.close()
+
+    @staticmethod
+    def update_customer(customer_id: int, data: dict):
+        conn = sqlite3.connect(DB_PATH)
+        try:
+            conn.execute("""
+                UPDATE customers 
+                SET name = ?, email = ?, phone = ?, address = ?, gstin = ?, pan = ?
+                WHERE id = ?
+            """, (data.get('name'), data.get('email'), data.get('phone'), data.get('address'), data.get('gstin'), data.get('pan'), customer_id))
+            conn.commit()
+            return {"status": "success"}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+        finally:
+            conn.close()
+
+    @staticmethod
+    def delete_customer(customer_id: int):
+        conn = sqlite3.connect(DB_PATH)
+        try:
+            conn.execute("DELETE FROM customers WHERE id = ?", (customer_id,))
+            conn.commit()
+            return {"status": "success"}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
         finally:
             conn.close()
 
@@ -177,6 +251,34 @@ class WorkspaceEngine:
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM marketing_campaigns ORDER BY start_date DESC")
             return [dict(row) for row in cursor.fetchall()]
+        finally:
+            conn.close()
+
+    @staticmethod
+    def update_marketing_campaign(campaign_id: int, data: dict):
+        conn = sqlite3.connect(DB_PATH)
+        try:
+            conn.execute("""
+                UPDATE marketing_campaigns 
+                SET name = ?, channel = ?, spend = ?, conversions = ?, revenue_generated = ?, status = ?, start_date = ?, end_date = ?
+                WHERE id = ?
+            """, (data.get('name'), data.get('channel'), data.get('spend'), data.get('conversions'), data.get('revenue_generated'), data.get('status'), data.get('start_date'), data.get('end_date'), campaign_id))
+            conn.commit()
+            return {"status": "success"}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+        finally:
+            conn.close()
+
+    @staticmethod
+    def delete_marketing_campaign(campaign_id: int):
+        conn = sqlite3.connect(DB_PATH)
+        try:
+            conn.execute("DELETE FROM marketing_campaigns WHERE id = ?", (campaign_id,))
+            conn.commit()
+            return {"status": "success"}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
         finally:
             conn.close()
 
@@ -226,6 +328,34 @@ class WorkspaceEngine:
             conn.close()
 
     @staticmethod
+    def update_inventory_item(item_id: int, data: dict):
+        conn = sqlite3.connect(DB_PATH)
+        try:
+            conn.execute("""
+                UPDATE inventory 
+                SET sku = ?, name = ?, quantity = ?, cost_price = ?, sale_price = ?, category = ?, hsn_code = ?
+                WHERE id = ?
+            """, (data.get('sku'), data.get('name'), data.get('quantity'), data.get('cost_price'), data.get('sale_price'), data.get('category'), data.get('hsn_code'), item_id))
+            conn.commit()
+            return {"status": "success"}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+        finally:
+            conn.close()
+
+    @staticmethod
+    def delete_inventory_item(item_id: int):
+        conn = sqlite3.connect(DB_PATH)
+        try:
+            conn.execute("DELETE FROM inventory WHERE id = ?", (item_id,))
+            conn.commit()
+            return {"status": "success"}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+        finally:
+            conn.close()
+
+    @staticmethod
     def add_expense(data: dict):
         """Records an expense and syncs it with Asset Offset."""
         conn = sqlite3.connect(DB_PATH)
@@ -268,6 +398,34 @@ class WorkspaceEngine:
             conn.close()
 
     @staticmethod
+    def update_expense(expense_id: int, data: dict):
+        conn = sqlite3.connect(DB_PATH)
+        try:
+            conn.execute("""
+                UPDATE expenses 
+                SET category = ?, amount = ?, description = ?, date = ?
+                WHERE id = ?
+            """, (data.get('category'), data.get('amount'), data.get('description'), data.get('date'), expense_id))
+            conn.commit()
+            return {"status": "success"}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+        finally:
+            conn.close()
+
+    @staticmethod
+    def delete_expense(expense_id: int):
+        conn = sqlite3.connect(DB_PATH)
+        try:
+            conn.execute("DELETE FROM expenses WHERE id = ?", (expense_id,))
+            conn.commit()
+            return {"status": "success"}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+        finally:
+            conn.close()
+
+    @staticmethod
     def add_ledger_entry(data: dict):
         """Universal Voucher entry point (Double-Entry)."""
         conn = sqlite3.connect(DB_PATH)
@@ -298,8 +456,38 @@ class WorkspaceEngine:
         conn.row_factory = sqlite3.Row
         try:
             cursor = conn.cursor()
-            cursor.execute("SELECT * FROM ledger ORDER BY created_at DESC")
+            cursor.execute("SELECT * FROM ledger ORDER BY date DESC, created_at DESC")
             return [dict(row) for row in cursor.fetchall()]
+        finally:
+            conn.close()
+
+    @staticmethod
+    def update_ledger_entry(entry_id: int, data: dict):
+        """Allows manual adjustment of a ledger entry (Bookkeeping override)."""
+        conn = sqlite3.connect(DB_PATH)
+        try:
+            conn.execute("""
+                UPDATE ledger 
+                SET account_name = ?, amount = ?, description = ?, date = ?, type = ?
+                WHERE id = ?
+            """, (data.get('account_name'), data.get('amount'), data.get('description'), data.get('date'), data.get('type'), entry_id))
+            conn.commit()
+            return {"status": "success"}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+        finally:
+            conn.close()
+
+    @staticmethod
+    def delete_ledger_entry(entry_id: int):
+        """Removes a ledger entry."""
+        conn = sqlite3.connect(DB_PATH)
+        try:
+            conn.execute("DELETE FROM ledger WHERE id = ?", (entry_id,))
+            conn.commit()
+            return {"status": "success"}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
         finally:
             conn.close()
 
@@ -383,6 +571,34 @@ class WorkspaceEngine:
             return [dict(row) for row in cursor.fetchall()]
         finally:
             conn.close()
+
+    @staticmethod
+    def update_accounting_note(note_id: int, data: dict):
+        conn = sqlite3.connect(DB_PATH)
+        try:
+            conn.execute("""
+                UPDATE notes 
+                SET note_type = ?, customer_id = ?, reference_invoice = ?, amount = ?, tax_amount = ?, reason = ?, date = ?
+                WHERE id = ?
+            """, (data.get('note_type'), data.get('customer_id'), data.get('reference_invoice'), data.get('amount'), data.get('tax_amount'), data.get('reason'), data.get('date'), note_id))
+            conn.commit()
+            return {"status": "success"}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+        finally:
+            conn.close()
+
+    @staticmethod
+    def delete_accounting_note(note_id: int):
+        conn = sqlite3.connect(DB_PATH)
+        try:
+            conn.execute("DELETE FROM notes WHERE id = ?", (note_id,))
+            conn.commit()
+            return {"status": "success"}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+        finally:
+            conn.close()
     
     @staticmethod
     def get_inventory_analytics():
@@ -441,14 +657,19 @@ class WorkspaceEngine:
         conn.row_factory = sqlite3.Row
         try:
             cursor = conn.cursor()
-            # We look for "Accounts Receivable - {customer_id}" account
-            # AND any descriptions that mention the customer/name
+            # Try to resolve Name if ID is passed for better matching
+            clean_id = str(customer_id).strip()
+            cursor.execute("SELECT name FROM customers WHERE id = ? OR name = ?", (clean_id, clean_id))
+            res = cursor.fetchone()
+            name_ref = res['name'] if res else clean_id
+
             cursor.execute("""
                 SELECT * FROM ledger 
                 WHERE account_name LIKE ? 
+                OR account_name LIKE ?
                 OR description LIKE ?
                 ORDER BY date DESC, created_at DESC
-            """, (f"%{customer_id}%", f"%{customer_id}%"))
+            """, (f"%{clean_id}%", f"%{name_ref}%", f"%{name_ref}%"))
             return [dict(row) for row in cursor.fetchall()]
         finally:
             conn.close()
@@ -468,18 +689,24 @@ class WorkspaceEngine:
             v_no = data.get('reference_no', '')
             payment_mode = data.get('payment_mode', 'BANK') # BANK or CASH
             
+            # Resolve Customer Name to match Ledger account names
+            cursor = conn.cursor()
+            cursor.execute("SELECT name FROM customers WHERE id = ? OR name = ?", (customer_id, customer_id))
+            res = cursor.fetchone()
+            cust_name = res[0] if res else customer_id
+
             # 1. Bank/Cash (Asset +)
             account = "Bank Account" if payment_mode == 'BANK' else "Cash-in-Hand"
             conn.execute("""
                 INSERT INTO ledger (account_name, type, amount, description, date, voucher_id, voucher_type, voucher_no)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """, (account, "ASSET", amount, f"Payment Receipt from {customer_id} Ref: {v_no}", v_date, v_id, "Receipt", v_no))
+            """, (account, "ASSET", amount, f"Payment Receipt from {cust_name} Ref: {v_no}", v_date, v_id, "Receipt", v_no))
             
             # 2. Accounts Receivable (Asset -)
             conn.execute("""
                 INSERT INTO ledger (account_name, type, amount, description, date, voucher_id, voucher_type, voucher_no)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """, (f"Accounts Receivable - {customer_id}", "ASSET", -amount, f"Collection Ref: {v_no}", v_date, v_id, "Receipt", v_no))
+            """, (f"Accounts Receivable - {cust_name}", "ASSET", -amount, f"Collection Ref: {v_no}", v_date, v_id, "Receipt", v_no))
             
             conn.commit()
             return {"status": "success", "voucher_id": v_id}
@@ -503,21 +730,33 @@ class WorkspaceEngine:
         print(f"Workspace Sync: Starting for {len(df)} rows. Columns: {list(df.columns)}")
         conn = sqlite3.connect(DB_PATH)
         try:
+            # 0. Prep and Clean Dataset
+            df = df.copy()
+            # Normalize column names for internal matching
+            col_map = {c: c.lower().strip().replace(" ", "_") for c in df.columns}
+            
+            # Helper to find columns
+            def find_col(aliases):
+                for alias in aliases:
+                    for real_col in df.columns:
+                        if col_map[real_col] == alias or alias in col_map[real_col]:
+                            return real_col
+                return None
+
             # 1. Detect and Import Customers
-            name_col = next((c for c in df.columns if c.lower() in ['customer', 'client', 'customer_name', 'name']), None)
-            print(f"Workspace Sync: Detected name_col: {name_col}")
+            name_col = find_col(['customer_name', 'customer', 'client', 'name', 'buyer'])
+            email_col = find_col(['email', 'mail_id', 'contact_email'])
+            phone_col = find_col(['phone', 'mobile', 'contact_no', 'telephone'])
+            gst_col = find_col(['gstin', 'gst_no', 'tax_id', 'vat'])
             
             if name_col:
-                email_col = next((c for c in df.columns if 'email' in c.lower()), None)
-                phone_col = next((c for c in df.columns if 'phone' in c.lower() or 'mobile' in c.lower()), None)
-                gst_col = next((c for c in df.columns if 'gst' in c.lower()), None)
-                
+                print(f"Workspace Sync: Mapping Customers via '{name_col}'")
                 for _, row in df.iterrows():
-                    name = str(row[name_col])
-                    if name == 'nan' or not name: continue
-                    email = str(row[email_col]) if email_col and pd.notnull(row[email_col]) else None
-                    phone = str(row[phone_col]) if phone_col and pd.notnull(row[phone_col]) else None
-                    gst = str(row[gst_col]) if gst_col and pd.notnull(row[gst_col]) else None
+                    name = str(row[name_col]).strip()
+                    if not name or name.lower() == 'nan': continue
+                    email = str(row[email_col]).strip() if email_col and pd.notnull(row[email_col]) else None
+                    phone = str(row[phone_col]).strip() if phone_col and pd.notnull(row[phone_col]) else None
+                    gst = str(row[gst_col]).strip() if gst_col and pd.notnull(row[gst_col]) else None
                     
                     conn.execute("""
                         INSERT INTO customers (name, email, phone, gstin)
@@ -529,15 +768,16 @@ class WorkspaceEngine:
                     """, (name, email, phone, gst))
 
             # 2. Detect and Import Inventory / Products
-            prod_col = next((c for c in df.columns if c.lower() in ['product', 'item', 'product_name', 'sku']), None)
+            prod_col = find_col(['product_name', 'product', 'item', 'sku', 'description', 'particulars'])
             if prod_col:
-                qty_col = next((c for c in df.columns if c.lower() in ['quantity', 'qty', 'stock', 'units_sold']), None)
-                sale_col = next((c for c in df.columns if c.lower() in ['revenue', 'sales', 'sale_price', 'price', 'amount']), None)
-                cost_col = next((c for c in df.columns if c.lower() in ['cost', 'cost_price', 'unit_cost', 'cogs']), None)
+                qty_col = find_col(['quantity', 'qty', 'stock', 'units', 'sold_count'])
+                sale_col = find_col(['sale_price', 'price', 'unit_price', 'rate', 'revenue', 'sales'])
+                cost_col = find_col(['cost_price', 'unit_cost', 'cogs', 'purchase_price'])
 
+                print(f"Workspace Sync: Mapping Inventory via '{prod_col}'")
                 for _, row in df.iterrows():
-                    name = str(row[prod_col])
-                    if name == 'nan' or not name: continue
+                    name = str(row[prod_col]).strip()
+                    if not name or name.lower() == 'nan': continue
                     qty = float(row[qty_col]) if qty_col and pd.notnull(row[qty_col]) else 0
                     sale = float(row[sale_col]) if sale_col and pd.notnull(row[sale_col]) else 0
                     cost = float(row[cost_col]) if cost_col and pd.notnull(row[cost_col]) else (sale * 0.7)
@@ -546,95 +786,72 @@ class WorkspaceEngine:
                         INSERT INTO inventory (sku, name, quantity, cost_price, sale_price)
                         VALUES (?, ?, ?, ?, ?)
                         ON CONFLICT(sku) DO UPDATE SET 
-                            quantity=excluded.quantity,
+                            quantity=inventory.quantity + excluded.quantity,
                             cost_price=excluded.cost_price,
                             sale_price=excluded.sale_price
-                    """, (name[:15].upper(), name, qty, cost, sale))
+                    """, (name[:15].upper().replace(" ", ""), name, qty, cost, sale))
 
             # 3. Detect and Import Sales/Invoices (CRITICAL for Sync-Back)
-            # We look for revenue/sales columns. If present, we treat each row as a realized sale.
-            revenue_col = next((c for c in df.columns if c.lower() in ['revenue', 'sales', 'total_sales', 'amount']), None)
-            print(f"Workspace Sync: Detected revenue_col: {revenue_col}")
+            revenue_col = find_col(['total_revenue', 'revenue', 'sales', 'total_sales', 'amount', 'total_amount', 'grand_total', 'value'])
+            date_col = find_col(['date', 'order_date', 'transaction_date', 'timestamp', 'invoice_date'])
             
             if revenue_col:
-                product_col = next((c for c in df.columns if c.lower() in ['product', 'item', 'product_name', 'sku']), None)
-                date_col = next((c for c in df.columns if c.lower() in ['date', 'order_date', 'transaction_date']), None)
-                customer_col = next((c for c in df.columns if c.lower() in ['customer', 'client', 'name']), None)
-                quantity_col = next((c for c in df.columns if c.lower() in ['quantity', 'qty', 'quantity_sold']), None)
-                cost_val_col = next((c for c in df.columns if c.lower() in ['cost', 'total_cost', 'cogs']), None)
-                
-                print(f"Workspace Sync: Submitting Invoice Rows to Ledger. ProdCol: {product_col}, DateCol: {date_col}, CustCol: {customer_col}")
+                print(f"Workspace Sync: Mapping Financials via '{revenue_col}'")
+                customer_col = name_col or find_col(['customer', 'client', 'name'])
+                product_col = prod_col or find_col(['product', 'item'])
+                quantity_col = find_col(['quantity', 'qty', 'count'])
+                cost_val_col = find_col(['total_cost', 'cogs', 'cost', 'expense_amount'])
                 
                 for _, row in df.iterrows():
-                    rev = float(row[revenue_col]) if pd.notnull(row[revenue_col]) else 0
-                    if rev <= 0: continue # Skip non-revenue rows for invoice sync
+                    raw_rev = row[revenue_col]
+                    try:
+                        rev = float(raw_rev) if pd.notnull(raw_rev) else 0
+                    except: rev = 0
                     
-                    prod = str(row[product_col]) if product_col and pd.notnull(row[product_col]) else "Audit Adjustment Sale"
-                    dt = str(row[date_col]) if date_col and pd.notnull(row[date_col]) else datetime.now().strftime("%Y-%m-%d")
-                    cust = str(row[customer_col]) if customer_col and pd.notnull(row[customer_col]) else "Bulk Segment Customer"
+                    if rev <= 0: continue
+                    
+                    prod = str(row[product_col]).strip() if product_col and pd.notnull(row[product_col]) else "Generic Segment Sale"
+                    
+                    # Robust Date Parsing
+                    dt_raw = row[date_col] if date_col and pd.notnull(row[date_col]) else None
+                    try:
+                        if dt_raw:
+                            dt = pd.to_datetime(dt_raw).strftime("%Y-%m-%d")
+                        else:
+                            dt = datetime.now().strftime("%Y-%m-%d")
+                    except:
+                        dt = datetime.now().strftime("%Y-%m-%d")
+
+                    cust = str(row[customer_col]).strip() if customer_col and pd.notnull(row[customer_col]) else "Walk-in Customer"
                     q = float(row[quantity_col]) if quantity_col and pd.notnull(row[quantity_col]) else 1
                     c_val = float(row[cost_val_col]) if cost_val_col and pd.notnull(row[cost_val_col]) else (rev * 0.7)
 
+                    # Update Customer Spend
+                    conn.execute("UPDATE customers SET total_spend = total_spend + ? WHERE name = ?", (rev, cust))
+
                     inv_id = f"MIG-{uuid.uuid4().hex[:8].upper()}"
-                    # Create Invoice with Granular Items (Essential for get_enterprise_analytics_df)
-                    items_json = json.dumps([{
-                        "name": prod,
-                        "quantity": q,
-                        "price": rev / q if q > 0 else rev,
-                        "tax_rate": 0
-                    }])
+                    items_json = json.dumps([{"name": prod, "quantity": q, "price": rev / q if q > 0 else rev, "tax_rate": 0}])
+                    conn.execute("INSERT INTO invoices (id, invoice_number, customer_id, date, grand_total, items_json, status) VALUES (?, ?, ?, ?, ?, ?, ?)", (inv_id, inv_id, cust, dt, rev, items_json, 'PAID'))
 
-                    conn.execute("""
-                        INSERT INTO invoices (id, invoice_number, customer_id, date, grand_total, items_json, status)
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
-                    """, (inv_id, inv_id, cust, dt, rev, items_json, 'PAID'))
-
-                    # Sync to Ledger
                     v_id = f"VCH-MIG-{uuid.uuid4().hex[:8].upper()}"
-                    # Revenue (Income)
-                    conn.execute("""
-                        INSERT INTO ledger (account_name, type, amount, description, date, voucher_id, voucher_type)
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
-                    """, ("Sales Revenue - Domestic", "INCOME", rev, f"Dataset Migration: {prod}", dt, v_id, "Sales"))
-                    # COGS (Expense) - Explicit product mapping for sync-back
-                    conn.execute("""
-                        INSERT INTO ledger (account_name, type, amount, description, date, voucher_id, voucher_type)
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
-                    """, (f"COGS - {prod}", "EXPENSE", c_val, f"Ref: {inv_id}", dt, v_id, "Sales"))
-                    # 1. Sales Recognition (Dr AR, Cr Sales)
-                    conn.execute("""
-                        INSERT INTO ledger (account_name, type, amount, description, date, voucher_id, voucher_type)
-                        VALUES (?, 'ASSET', ?, ?, ?, ?, 'Sales')
-                    """, (f"Accounts Receivable - {cust}", rev, f"MIG Sale Ref: {inv_id}", dt, v_id))
-                    conn.execute("""
-                        INSERT INTO ledger (account_name, type, amount, description, date, voucher_id, voucher_type)
-                        VALUES (?, 'INCOME', ?, ?, ?, ?, 'Sales')
-                    """, ("Sales Revenue", -rev, f"MIG Revenue Ref: {inv_id}", dt, v_id))
-
-                    # 2. Collection Recognition (Dr Cash, Cr AR) - Mark as settled since it's historical
-                    conn.execute("""
-                        INSERT INTO ledger (account_name, type, amount, description, date, voucher_id, voucher_type)
-                        VALUES (?, 'ASSET', ?, ?, ?, ?, 'Receipt')
-                    """, ("Corporate Cash/Bank", rev, f"MIG Receipt Ref: {inv_id}", dt, v_id))
-                    conn.execute("""
-                        INSERT INTO ledger (account_name, type, amount, description, date, voucher_id, voucher_type)
-                        VALUES (?, 'ASSET', ?, ?, ?, ?, 'Receipt')
-                    """, (f"Accounts Receivable - {cust}", -rev, f"MIG Settlement Ref: {inv_id}", dt, v_id))
-
-                    # 3. Cost of Goods Sold Allocation (Dr COGS, Cr Inventory)
-                    if c_val > 0:
-                        conn.execute("""
-                            INSERT INTO ledger (account_name, type, amount, description, date, voucher_id, voucher_type)
-                            VALUES (?, 'EXPENSE', ?, ?, ?, ?, 'Journal')
-                        """, ("Cost of Goods Sold", c_val, f"COGS Allocation Ref: {inv_id}", dt, v_id))
-                        conn.execute("""
-                            INSERT INTO ledger (account_name, type, amount, description, date, voucher_id, voucher_type)
-                            VALUES (?, 'ASSET', ?, ?, ?, ?, 'Journal')
-                        """, ("Inventory Asset", -c_val, f"Stock Offset Ref: {inv_id}", dt, v_id))
+                    # 1. Sales Ledger (Income)
+                    conn.execute("INSERT INTO ledger (account_name, type, amount, description, date, voucher_id, voucher_type) VALUES (?, ?, ?, ?, ?, ?, ?)", ("Sales Revenue - Domestic", 'INCOME', rev, f"Dataset Migration: {prod} for {cust}", dt, v_id, 'Sales'))
+                    # 2. Accounts Receivable (Asset - Debit - Increases)
+                    conn.execute("INSERT INTO ledger (account_name, type, amount, description, date, voucher_id, voucher_type) VALUES (?, ?, ?, ?, ?, ?, ?)", (f"Accounts Receivable - {cust}", 'ASSET', rev, f"MIG Sale Ref: {inv_id}", dt, v_id, 'Sales'))
+                    # 3. Collection (Asset - Debit - Increases Cash/Bank)
+                    conn.execute("INSERT INTO ledger (account_name, type, amount, description, date, voucher_id, voucher_type) VALUES (?, ?, ?, ?, ?, ?, ?)", ("Corporate Cash/Bank", 'ASSET', rev, f"MIG Receipt Ref: {inv_id} via {cust}", dt, v_id, 'Receipt'))
+                    # 4. Settlement (Asset - Credit - Decreases AR)
+                    conn.execute("INSERT INTO ledger (account_name, type, amount, description, date, voucher_id, voucher_type) VALUES (?, ?, ?, ?, ?, ?, ?)", (f"Accounts Receivable - {cust}", 'ASSET', -rev, f"MIG Settlement Ref: {inv_id}", dt, v_id, 'Receipt'))
+                    # 5. COGS Allocation
+                    conn.execute("INSERT INTO ledger (account_name, type, amount, description, date, voucher_id, voucher_type) VALUES (?, ?, ?, ?, ?, ?, ?)", ("Cost of Goods Sold", 'EXPENSE', c_val, f"COGS Allocation for {prod}", dt, v_id, 'Journal'))
+                    # 6. Inventory Reduction
+                    conn.execute("INSERT INTO ledger (account_name, type, amount, description, date, voucher_id, voucher_type) VALUES (?, ?, ?, ?, ?, ?, ?)", ("Inventory Asset", 'ASSET', -c_val, f"Stock Offset Ref: {inv_id}", dt, v_id, 'Journal'))
 
             conn.commit()
+            print(f"Workspace Sync: Successfully processed {len(df)} records into Workspace Core.")
             return {"status": "success", "message": "High-Fidelity Workspace Synchronization Pulse Complete."}
         except Exception as e:
+            traceback.print_exc()
             conn.rollback()
             return {"status": "error", "message": f"Workspace Sync Failed: {str(e)}"}
         finally:
@@ -709,7 +926,7 @@ class WorkspaceEngine:
             conn.close()
 
     @staticmethod
-    def get_profit_and_loss():
+    def get_pl_statement():
         """Aggregates ledger into a structured P&L statement (Revenue - Expenses)."""
         conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row
@@ -975,19 +1192,30 @@ class WorkspaceEngine:
     def send_payment_reminder(invoice_id: str):
         """Autonomously marks a reminder as sent in the ledger & invoice audit."""
         conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
         try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT id, status FROM invoices WHERE id = ? OR invoice_number = ?", (invoice_id, invoice_id))
+            invoice = cursor.fetchone()
+
+            if not invoice:
+                return {"status": "error", "message": f"Invoice not found: {invoice_id}"}
+
+            if invoice["status"] == "PAID":
+                return {"status": "error", "message": "Reminder skipped because this invoice is already marked as PAID."}
+
             ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            conn.execute("UPDATE invoices SET reminder_last_sent = ? WHERE id = ?", (ts, invoice_id))
+            conn.execute("UPDATE invoices SET reminder_last_sent = ? WHERE id = ?", (ts, invoice["id"]))
             
             # Post a virtual 'Reminder' event to the ledger tracker for visibility
             conn.execute("""
                 INSERT INTO ledger (account_name, type, amount, description, date, voucher_id, voucher_type)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, ("Accounts Receivable - Bulk", "ASSET", 0, f"PAYMENT REMINDER SENT: {invoice_id}", datetime.now().strftime("%Y-%m-%d"), f"REM-{uuid.uuid4().hex[:4]}", "Reminder"))
+            """, ("Accounts Receivable - Bulk", "ASSET", 0, f"PAYMENT REMINDER SENT: {invoice['id']}", datetime.now().strftime("%Y-%m-%d"), f"REM-{uuid.uuid4().hex[:4]}", "Reminder"))
             
             conn.commit()
-            WorkspaceEngine.log_usage("Collections", f"Sent reminder for {invoice_id}")
-            return {"status": "success", "timestamp": ts}
+            WorkspaceEngine.log_usage("Collections", f"Sent reminder for {invoice['id']}")
+            return {"status": "success", "invoice_id": invoice["id"], "timestamp": ts}
         finally:
             conn.close()
 
@@ -1008,9 +1236,9 @@ class WorkspaceEngine:
         bs = WorkspaceEngine.get_balance_sheet()
         report_io.write("PART I: CONSOLIDATED FINANCIAL HEALTH\n")
         report_io.write("-------------------------------------\n")
-        report_io.write(f"Total Revenue Realized: ₹ {pl.get('revenue', 0):,.2f}\n")
+        report_io.write(f"Total Revenue Realized: ₹ {pl.get('revenue', {}).get('total', 0):,.2f}\n")
         report_io.write(f"Net Operating Margin: ₹ {pl.get('net_profit', 0):,.2f}\n")
-        report_io.write(f"Accounts Receivable (Client Debt): ₹ {bs.get('receivables', 0):,.2f}\n")
+        report_io.write(f"Current Assets Position: ₹ {bs.get('assets', {}).get('total', 0):,.2f}\n")
         report_io.write(f"Business Equity Position: ₹ {bs.get('equity', {}).get('total', 0):,.2f}\n\n")
 
         # 2. Inventory Intelligence
@@ -1074,3 +1302,116 @@ class WorkspaceEngine:
             }
         finally:
             conn.close()
+
+    @staticmethod
+    def export_to_csv(table_name: str):
+        """Generates a CSV string for any workspace table for download."""
+        import io
+        import csv
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        try:
+            cursor = conn.cursor()
+            cursor.execute(f"SELECT * FROM {table_name}")
+            rows = cursor.fetchall()
+            if not rows:
+                return "No data found."
+            
+            output = io.StringIO()
+            writer = csv.DictWriter(output, fieldnames=rows[0].keys())
+            writer.writeheader()
+            for row in rows:
+                writer.writerow(dict(row))
+            return output.getvalue()
+        finally:
+            conn.close()
+
+    @staticmethod
+    def export_trial_balance():
+        import io, csv
+        data = WorkspaceEngine.get_trial_balance()
+        if not data: return "No ledger entries found."
+        output = io.StringIO()
+        writer = csv.DictWriter(output, fieldnames=data[0].keys())
+        writer.writeheader()
+        writer.writerows(data)
+        return output.getvalue()
+
+    @staticmethod
+    def export_daybook():
+        import io, csv
+        data = WorkspaceEngine.get_daybook()
+        if not data: return "Daybook is empty."
+        output = io.StringIO()
+        writer = csv.DictWriter(output, fieldnames=data[0].keys())
+        writer.writeheader()
+        writer.writerows(data)
+        return output.getvalue()
+
+    @staticmethod
+    def export_p_and_l():
+        import io, csv
+        pl = WorkspaceEngine.get_pl_statement()
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow(["NeuralBI Profit & Loss Statement", "", datetime.now().strftime("%Y-%m-%d")])
+        writer.writerow([])
+        
+        # Revenue
+        writer.writerow(["REVENUE FROM OPERATIONS", "", f"{pl['revenue']['total']:.2f}"])
+        for item in pl['revenue']['items']:
+            writer.writerow(["- " + item['account_name'], "", f"{item['balance']:.2f}"])
+        writer.writerow([])
+        
+        # COGS
+        writer.writerow(["COST OF GOODS SOLD (DIRECT)", "", f"({pl['cogs']['total']:.2f})"])
+        for item in pl['cogs']['items']:
+            writer.writerow(["- " + item['account_name'], "", f"{item['balance']:.2f}"])
+        writer.writerow([])
+        
+        writer.writerow(["GROSS PROFIT", "", f"{pl['gross_profit']:.2f}"])
+        writer.writerow([])
+        
+        # Overheads
+        writer.writerow(["INDIRECT OPERATIONAL EXPENSES", "", f"({pl['overheads']['total']:.2f})"])
+        for item in pl['overheads']['items']:
+            writer.writerow(["- " + item['account_name'], "", f"{item['balance']:.2f}"])
+        writer.writerow([])
+        
+        writer.writerow(["NET REALIZABLE PROFIT", "", f"{pl['net_profit']:.2f}"])
+        return output.getvalue()
+
+    @staticmethod
+    def export_balance_sheet():
+        import io, csv
+        bs = WorkspaceEngine.get_balance_sheet()
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow(["NeuralBI Balance Sheet", "", datetime.now().strftime("%Y-%m-%d")])
+        writer.writerow([])
+        
+        # Liabilities & Equity
+        writer.writerow(["CAPITAL & LIABILITIES", "AMOUNT"])
+        writer.writerow(["- Retained Earnings", f"{bs['equity']['retained_earnings']:.2f}"])
+        for item in bs['liabilities']['items']:
+            writer.writerow(["- " + item['account_name'], f"{item['balance']:.2f}"])
+        writer.writerow(["TOTAL CAPITAL & LIABILITIES", f"{bs['equity']['total']:.2f}"])
+        writer.writerow([])
+        
+        # Assets
+        writer.writerow(["BUSINESS ASSETS", "AMOUNT"])
+        for item in bs['assets']['items']:
+            writer.writerow(["- " + item['account_name'], f"{item['balance']:.2f}"])
+        writer.writerow(["TOTAL ASSETS", f"{bs['assets']['total']:.2f}"])
+        return output.getvalue()
+
+    @staticmethod
+    def export_customer_ledger(customer_id: str):
+        import io, csv
+        data = WorkspaceEngine.get_customer_ledger(customer_id)
+        if not data: return f"No transactions found for customer: {customer_id}"
+        output = io.StringIO()
+        writer = csv.DictWriter(output, fieldnames=data[0].keys())
+        writer.writeheader()
+        writer.writerows(data)
+        return output.getvalue()

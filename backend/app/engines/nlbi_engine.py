@@ -108,10 +108,7 @@ def generate_chart_from_question(question, df):
     return {"error": "Could not understand chart request. Try mentioning specific column names."}
 
 def run_nl_query(query: str, df: pd.DataFrame):
-    """
-    Neural Arbitration Engine (v3):
-    Translates natural language into business intelligence insights or projections.
-    """
+ 
     q = query.lower()
     
     if df is None or df.empty:

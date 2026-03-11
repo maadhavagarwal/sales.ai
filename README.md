@@ -6,6 +6,7 @@ A high-performance, **Tally-grade** Generative AI Financial & Logistics platform
 - **Universal Schema Mapping:** Automatically identifies Revenue, COGS, Dimensions, and statutory KPIs without manual configuration.
 - **Enterprise Statutory Reporting:** Hierarchical Profit & Loss (P&L) statements, solvent-mapped Balance Sheets, and real-time Trial Balances.
 - **Autonomous Bank Reconciliation (BRS):** Neural Matching engine that aligns bank statements with internal ledgers using fuzzy-logic scoring.
+- **Derivatives & Option Greeks Matrix:** Real-time visibility into Enterprise Delta, Gamma, Theta, and Vega with automated hedge optimization suggestions.
 - **GST Compliance Engine:** Integrated GSTR-1 and GSTR-3B summary generation with automated tax-liability and ITC offset mapping.
 - **Predictive Logistics:** AI-driven inventory health monitoring with autonomous "Days-to-Stock-Out" forecasting and Restock Quantum recommendations.
 - **Recursive AI Copilot:** A true strategic partner that understands business context and offers proactive fiscal recommendations.

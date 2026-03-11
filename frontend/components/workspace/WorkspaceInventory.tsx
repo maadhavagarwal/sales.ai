@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { getInventory, addInventoryItem, getInventoryHealth } from "@/services/api"
+import { getInventory, addInventoryItem, getInventoryHealth, updateInventoryItem, deleteInventoryItem, exportWorkspaceData } from "@/services/api"
 import { useStore } from "@/store/useStore"
 import { Card, Button, Badge } from "@/components/ui"
 
@@ -23,6 +23,7 @@ export default function WorkspaceInventory() {
         category: "General",
         hsn_code: ""
     })
+    const [editingId, setEditingId] = useState<number | null>(null)
 
     useEffect(() => {
         refreshData()
@@ -41,12 +42,17 @@ export default function WorkspaceInventory() {
         }
     }
 
-    const handleAdd = async () => {
+    const handleSave = async () => {
         if (!formData.sku || !formData.name) return
         setLoading(true)
         try {
-            await addInventoryItem(formData)
+            if (editingId) {
+                await updateInventoryItem(editingId, formData)
+            } else {
+                await addInventoryItem(formData)
+            }
             setShowAdd(false)
+            setEditingId(null)
             setFormData({ sku: "", name: "", quantity: 0, cost_price: 0, sale_price: 0, category: "General", hsn_code: "" })
             refreshData()
         } catch (e) {
@@ -54,6 +60,20 @@ export default function WorkspaceInventory() {
         } finally {
             setLoading(false)
         }
+    }
+
+    const handleEdit = (item: any) => {
+        setEditingId(item.id)
+        setFormData({
+            sku: item.sku,
+            name: item.name,
+            quantity: item.quantity,
+            cost_price: item.cost_price,
+            sale_price: item.sale_price,
+            category: item.category || "General Inventory",
+            hsn_code: item.hsn_code || ""
+        })
+        setShowAdd(true)
     }
 
     const getItemHealth = (sku: string) => health.find(h => h.sku === sku)
@@ -94,9 +114,14 @@ export default function WorkspaceInventory() {
                         Predictive inventory management powered by autonomous sales velocity mapping.
                     </p>
                 </div>
-                <Button variant="pro" size="lg" onClick={() => setShowAdd(true)} icon={<span>+</span>} className="shadow-[--shadow-glow]">
-                    Board New Physical SKU
-                </Button>
+                <div className="flex gap-4">
+                    <Button variant="outline" size="lg" onClick={() => exportWorkspaceData("inventory")} className="uppercase text-[10px] font-black tracking-widest">
+                        Export CSV
+                    </Button>
+                    <Button variant="pro" size="lg" onClick={() => setShowAdd(true)} icon={<span>+</span>} className="shadow-[--shadow-glow]">
+                        Board New Physical SKU
+                    </Button>
+                </div>
             </div>
 
             {/* Predictive Logistics Panel */}
@@ -140,7 +165,9 @@ export default function WorkspaceInventory() {
                         <Card variant="bento" padding="lg" className="border-[--primary]/30 bg-[--primary]/5">
                             <div className="space-y-10">
                                 <div className="flex justify-between items-center pb-6 border-b border-white/5">
-                                    <h3 className="text-xs font-black uppercase tracking-[0.3em] text-[--primary]">Legal Asset Onboarding Protocol</h3>
+                                    <h3 className="text-xs font-black uppercase tracking-[0.3em] text-[--primary]">
+                                        {editingId ? "Update Asset Technical Specs" : "Legal Asset Onboarding Protocol"}
+                                    </h3>
                                     <Badge variant="outline">SKU ID Generation: Active</Badge>
                                 </div>
 
@@ -184,10 +211,10 @@ export default function WorkspaceInventory() {
                                 </div>
 
                                 <div className="flex gap-4 pt-10 border-t border-white/5">
-                                    <Button variant="pro" size="lg" onClick={handleAdd} loading={loading} className="flex-2 h-16 uppercase text-[10px] tracking-widest">
-                                        {loading ? "Registering Physical Asset..." : "Authorize Registry & Sync Stocks"}
+                                    <Button variant="pro" size="lg" onClick={handleSave} loading={loading} className="flex-2 h-16 uppercase text-[10px] tracking-widest">
+                                        {editingId ? "COMMIT ASSET MODIFICATION" : "Authorize Registry & Sync Stocks"}
                                     </Button>
-                                    <Button variant="outline" size="lg" onClick={() => setShowAdd(false)} className="flex-1 h-16 uppercase text-[10px] tracking-widest opacity-60">
+                                    <Button variant="outline" size="lg" onClick={() => { setShowAdd(false); setEditingId(null); }} className="flex-1 h-16 uppercase text-[10px] tracking-widest opacity-60">
                                         Abort Registry
                                     </Button>
                                 </div>
@@ -208,6 +235,7 @@ export default function WorkspaceInventory() {
                                 <th className="text-left p-6 text-[10px] font-black uppercase tracking-widest text-[--text-muted]">Stock Magnitude</th>
                                 <th className="text-left p-6 text-[10px] font-black uppercase tracking-widest text-[--text-muted]">Burn Horizon</th>
                                 <th className="text-right p-6 text-[10px] font-black uppercase tracking-widest text-[--text-muted]">Status</th>
+                                <th className="text-center p-6 text-[10px] font-black uppercase tracking-widest text-[--text-muted]">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
@@ -254,6 +282,27 @@ export default function WorkspaceInventory() {
                                             <Badge variant={item.quantity > 0 ? 'success' : 'danger'} size="xs" className="px-4">
                                                 {item.quantity > 0 ? 'AVAILABLE' : 'DEPLETED'}
                                             </Badge>
+                                        </td>
+                                        <td className="p-6">
+                                            <div className="flex justify-center gap-4">
+                                                <button 
+                                                    onClick={() => handleEdit(item)}
+                                                    className="text-[--accent-cyan] font-black text-[10px] tracking-widest hover:underline opacity-0 group-hover:opacity-100 transition-opacity uppercase"
+                                                >
+                                                    Edit
+                                                </button>
+                                                <button 
+                                                    onClick={async () => {
+                                                        if(confirm(`Confirm deletion of SKU ${item.sku}?`)) {
+                                                            await deleteInventoryItem(item.id)
+                                                            refreshData()
+                                                        }
+                                                    }}
+                                                    className="text-[--accent-rose] font-black text-[10px] tracking-widest hover:underline opacity-0 group-hover:opacity-100 transition-opacity uppercase"
+                                                >
+                                                    Delete
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 )

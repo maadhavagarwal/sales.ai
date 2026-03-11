@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { addCustomer, getCustomers, getCustomerLedger } from "@/services/api"
+import { addCustomer, getCustomers, getCustomerLedger, deleteCustomer, updateCustomer, exportWorkspaceData, exportCustomerLedger } from "@/services/api"
 import { useStore } from "@/store/useStore"
 import { Card, Button, Badge } from "@/components/ui"
 
@@ -20,6 +20,7 @@ export default function WorkspaceCRM() {
 
     // Form state
     const [formData, setFormData] = useState({ name: "", email: "", phone: "", address: "", gstin: "", pan: "" })
+    const [editingId, setEditingId] = useState<number | null>(null)
 
     useEffect(() => {
         refreshData()
@@ -34,12 +35,17 @@ export default function WorkspaceCRM() {
         }
     }
 
-    const handleAdd = async () => {
+    const handleSave = async () => {
         if (!formData.name) return
         setLoading(true)
         try {
-            await addCustomer(formData)
+            if (editingId) {
+                await updateCustomer(editingId, formData)
+            } else {
+                await addCustomer(formData)
+            }
             setShowAdd(false)
+            setEditingId(null)
             setFormData({ name: "", email: "", phone: "", address: "", gstin: "", pan: "" })
             refreshData()
         } catch (e) {
@@ -47,6 +53,19 @@ export default function WorkspaceCRM() {
         } finally {
             setLoading(false)
         }
+    }
+
+    const handleEdit = (customer: any) => {
+        setEditingId(customer.id)
+        setFormData({
+            name: customer.name,
+            email: customer.email || "",
+            phone: customer.phone || "",
+            address: customer.address || "",
+            gstin: customer.gstin || "",
+            pan: customer.pan || ""
+        })
+        setShowAdd(true)
     }
 
     const handleViewLedger = async (customer: any) => {
@@ -74,6 +93,7 @@ export default function WorkspaceCRM() {
                     </p>
                 </div>
                 <div className="flex gap-4">
+                    <Button variant="outline" size="lg" onClick={() => exportWorkspaceData("customers")} className="tracking-widest text-[10px]">EXPORT CSV</Button>
                     <Button variant="outline" size="lg" onClick={refreshData} className="tracking-widest text-[10px]">SYNC CORE</Button>
                     <Button variant="pro" size="lg" onClick={() => setShowAdd(true)} icon={<span>+</span>} className="shadow-[--shadow-glow] tracking-widest text-[10px]">
                         BOARD NEW ENTITY
@@ -90,8 +110,10 @@ export default function WorkspaceCRM() {
                     >
                         <Card variant="bento" padding="lg" className="border-[--primary]/30 bg-[--primary]/5 shadow-[0_0_50px_rgba(99,102,241,0.1)]">
                             <div className="flex items-center gap-4 mb-10 pb-6 border-b border-white/5">
-                                <div className="w-10 h-10 rounded-xl bg-[--primary]/20 flex items-center justify-center text-xl shadow-inner">🏢</div>
-                                <h3 className="text-xs font-black uppercase tracking-[0.3em] text-white">Strategic Onboarding Protocol</h3>
+                                <div className="w-10 h-10 rounded-xl bg-[--primary]/20 flex items-center justify-center text-xl shadow-inner">{editingId ? "✏️" : "🏢"}</div>
+                                <h3 className="text-xs font-black uppercase tracking-[0.3em] text-white">
+                                    {editingId ? "Update Entity Parameters" : "Strategic Onboarding Protocol"}
+                                </h3>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-10">
@@ -153,10 +175,10 @@ export default function WorkspaceCRM() {
                             </div>
 
                             <div className="flex flex-col sm:flex-row gap-5 pt-8 border-t border-white/5">
-                                <Button variant="pro" size="lg" onClick={handleAdd} loading={loading} className="flex-1 h-14 tracking-widest text-xs shadow-[--shadow-glow]">
-                                    INITIALIZE ENTITY PROFILE
+                                <Button variant="pro" size="lg" onClick={handleSave} loading={loading} className="flex-1 h-14 tracking-widest text-xs shadow-[--shadow-glow]">
+                                    {editingId ? "COMMIT CHANGES" : "INITIALIZE ENTITY PROFILE"}
                                 </Button>
-                                <Button variant="outline" size="lg" onClick={() => setShowAdd(false)} className="px-12 h-14 tracking-widest text-xs">
+                                <Button variant="outline" size="lg" onClick={() => { setShowAdd(false); setEditingId(null); }} className="px-12 h-14 tracking-widest text-xs">
                                     ABORT
                                 </Button>
                             </div>
@@ -230,14 +252,37 @@ export default function WorkspaceCRM() {
                                                 {currencySymbol}{(c.total_spend || 0).toLocaleString()}
                                             </span>
                                         </div>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => handleViewLedger(c)}
-                                            className="opacity-0 group-hover:opacity-100 transition-all duration-500 translate-x-4 group-hover:translate-x-0 tracking-[0.2em] text-[8px] font-black uppercase"
-                                        >
-                                            VIEW LEDGER →
-                                        </Button>
+                                        <div className="flex flex-col gap-2">
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => handleViewLedger(c)}
+                                                className="opacity-0 group-hover:opacity-100 transition-all duration-500 translate-x-4 group-hover:translate-x-0 tracking-[0.2em] text-[8px] font-black uppercase"
+                                            >
+                                                VIEW LEDGER →
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => handleEdit(c)}
+                                                className="opacity-0 group-hover:opacity-100 transition-all duration-500 translate-x-4 group-hover:translate-x-0 tracking-[0.2em] text-[8px] font-black uppercase text-[--accent-cyan]"
+                                            >
+                                                EDIT PARAMETERS
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={async () => {
+                                                    if(confirm(`Confirm de-registration of ${c.name}?`)) {
+                                                        await deleteCustomer(c.id)
+                                                        refreshData()
+                                                    }
+                                                }}
+                                                className="opacity-0 group-hover:opacity-100 transition-all duration-500 translate-x-4 group-hover:translate-x-0 tracking-[0.2em] text-[8px] font-black uppercase text-[--accent-rose]"
+                                            >
+                                                DELETE ENTITY
+                                            </Button>
+                                        </div>
                                     </div>
                                 </Card>
                             </motion.div>
@@ -263,9 +308,19 @@ export default function WorkspaceCRM() {
                         >
                             <Card variant="bento" padding="none" className="h-full flex flex-col border-[--primary]/30 bg-black/60 shadow-[0_0_100px_rgba(99,102,241,0.2)]">
                                 <div className="p-8 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
-                                    <div>
-                                        <Badge variant="pro" className="mb-2">Entity Audit Trail</Badge>
-                                        <h3 className="text-3xl font-black text-white tracking-tighter uppercase">{selectedCustomer?.name}</h3>
+                                    <div className="flex gap-10 items-center">
+                                        <div>
+                                            <Badge variant="pro" className="mb-2">Entity Audit Trail</Badge>
+                                            <h3 className="text-3xl font-black text-white tracking-tighter uppercase">{selectedCustomer?.name}</h3>
+                                        </div>
+                                        <Button 
+                                            variant="outline" 
+                                            size="sm" 
+                                            onClick={() => exportCustomerLedger(selectedCustomer.name)}
+                                            className="tracking-[0.2em] text-[8px] font-black"
+                                        >
+                                            EXPORT LEDGER (CSV)
+                                        </Button>
                                     </div>
                                     <button onClick={() => setShowLedger(false)} className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white/40 hover:text-white transition-colors">×</button>
                                 </div>

@@ -86,6 +86,16 @@ export const getInvoices = async () => {
   return res.data
 }
 
+export const updateInvoice = async (invoiceId: string, data: any) => {
+  const res = await api.put(`/workspace/invoices/${invoiceId}`, data)
+  return res.data
+}
+
+export const deleteInvoice = async (invoiceId: string) => {
+  const res = await api.delete(`/workspace/invoices/${invoiceId}`)
+  return res.data
+}
+
 export const addCustomer = async (data: any) => {
   const res = await api.post("/workspace/customers", data)
   return res.data
@@ -93,6 +103,16 @@ export const addCustomer = async (data: any) => {
 
 export const getCustomers = async () => {
   const res = await api.get("/workspace/customers")
+  return res.data
+}
+
+export const updateCustomer = async (customerId: number, data: any) => {
+  const res = await api.put(`/workspace/customers/${customerId}`, data)
+  return res.data
+}
+
+export const deleteCustomer = async (customerId: number) => {
+  const res = await api.delete(`/workspace/customers/${customerId}`)
   return res.data
 }
 
@@ -112,8 +132,28 @@ export const addInventoryItem = async (data: any) => {
   return res.data
 }
 
+export const updateInventoryItem = async (itemId: number, data: any) => {
+  const res = await api.put(`/workspace/inventory/${itemId}`, data)
+  return res.data
+}
+
+export const deleteInventoryItem = async (itemId: number) => {
+  const res = await api.delete(`/workspace/inventory/${itemId}`)
+  return res.data
+}
+
 export const addExpense = async (data: any) => {
   const res = await api.post("/workspace/expenses", data)
+  return res.data
+}
+
+export const updateExpense = async (expenseId: number, data: any) => {
+  const res = await api.put(`/workspace/expenses/${expenseId}`, data)
+  return res.data
+}
+
+export const deleteExpense = async (expenseId: number) => {
+  const res = await api.delete(`/workspace/expenses/${expenseId}`)
   return res.data
 }
 
@@ -128,6 +168,16 @@ export const addLedgerEntry = async (data: any) => {
   return res.data
 }
 
+export const updateLedgerEntry = async (entryId: number, data: any) => {
+  const res = await api.put(`/workspace/ledger/${entryId}`, data)
+  return res.data
+}
+
+export const deleteLedgerEntry = async (entryId: number) => {
+  const res = await api.delete(`/workspace/ledger/${entryId}`)
+  return res.data
+}
+
 export const getAccountingNotes = async () => {
   const res = await api.get("/workspace/accounting/notes")
   return res.data
@@ -135,6 +185,16 @@ export const getAccountingNotes = async () => {
 
 export const addAccountingNote = async (data: any) => {
   const res = await api.post("/workspace/accounting/notes", data)
+  return res.data
+}
+
+export const updateAccountingNote = async (noteId: number, data: any) => {
+  const res = await api.put(`/workspace/accounting/notes/${noteId}`, data)
+  return res.data
+}
+
+export const deleteAccountingNote = async (noteId: number) => {
+  const res = await api.delete(`/workspace/accounting/notes/${noteId}`)
   return res.data
 }
 
@@ -189,6 +249,16 @@ export const getMarketingCampaigns = async () => {
   return res.data
 }
 
+export const updateMarketingCampaign = async (campaignId: number, data: any) => {
+  const res = await api.put(`/workspace/marketing/campaigns/${campaignId}`, data)
+  return res.data
+}
+
+export const deleteMarketingCampaign = async (campaignId: number) => {
+  const res = await api.delete(`/workspace/marketing/campaigns/${campaignId}`)
+  return res.data
+}
+
 export const getCustomerLedger = async (customerId: string) => {
   const res = await api.get(`/workspace/accounting/customer-ledger/${customerId}`)
   return res.data
@@ -233,4 +303,12 @@ export const getUsageStats = async () => {
 export const getCFOHealthReport = async () => {
   const res = await api.get('/workspace/accounting/cfo-report')
   return res.data
+}
+
+export const exportWorkspaceData = (tableName: string) => {
+  window.open(`${API_URL}/workspace/export/${tableName}`, "_blank")
+}
+
+export const exportCustomerLedger = (customerId: string) => {
+  window.open(`${API_URL}/workspace/export/customer-ledger/${customerId}`, "_blank")
 }

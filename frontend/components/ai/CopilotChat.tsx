@@ -10,6 +10,7 @@ interface Message {
     role: "user" | "ai"
     text: string
     reasoning?: any[]
+    suggestions?: string[]
     timestamp: Date
 }
 
@@ -76,8 +77,9 @@ export default function CopilotChat() {
 
             const aiMsg: Message = {
                 role: "ai",
-                text: res.answer || res.answer?.answer || res.error || "No response received.",
+                text: res.answer || res.response || res.answer?.answer || res.error || "No response received.",
                 reasoning: res.agent_outputs || res.answer?.agent_outputs || null,
+                suggestions: res.suggested_questions || [],
                 timestamp: new Date(),
             }
             setMessages((prev) => [...prev, aiMsg])
@@ -237,6 +239,20 @@ export default function CopilotChat() {
                                         ))}
                                     </div>
                                 </motion.details>
+                            )}
+
+                            {msg.role === "ai" && msg.suggestions && msg.suggestions.length > 0 && (
+                                <div style={{ marginTop: "0.6rem", display: "flex", flexWrap: "wrap", gap: "0.4rem", maxWidth: "600px" }}>
+                                    {msg.suggestions.map((suggestion) => (
+                                        <button
+                                            key={`${i}-${suggestion}`}
+                                            onClick={() => ask(suggestion)}
+                                            style={{ cursor: "pointer", padding: "0.35rem 0.75rem", borderRadius: "999px", border: "1px solid var(--border-default)", background: "rgba(255,255,255,0.03)", fontSize: "0.72rem", color: "var(--text-secondary)" }}
+                                        >
+                                            {suggestion}
+                                        </button>
+                                    ))}
+                                </div>
                             )}
                         </motion.div>
                     ))}

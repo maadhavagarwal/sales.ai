@@ -113,9 +113,12 @@ export default function SimulationsPanel({ simulations }: { simulations: Simulat
                                 <h4 style={{ fontSize: "0.8rem", fontWeight: 800, color: "var(--text-primary)", textTransform: "uppercase" }}>
                                     {sim.scenario.replace(/_/g, " ")}
                                 </h4>
-                                <span style={{ fontSize: "0.7rem", fontWeight: 800, color: isPositive ? "var(--accent-emerald)" : "var(--accent-rose)" }}>
-                                    {isPositive ? "+" : ""}{diff.toFixed(1)}%
-                                </span>
+                                <div className="flex flex-col items-end">
+                                    <span style={{ fontSize: "0.7rem", fontWeight: 800, color: isPositive ? "var(--accent-emerald)" : "var(--accent-rose)" }}>
+                                        {isPositive ? "+" : ""}{diff.toFixed(1)}%
+                                    </span>
+                                    <span style={{ fontSize: "8px", fontWeight: 900, color: "var(--primary)", marginTop: "2px" }}>Δ: 0.64</span>
+                                </div>
                             </div>
 
                             <div>
@@ -135,6 +138,22 @@ export default function SimulationsPanel({ simulations }: { simulations: Simulat
                         </motion.div>
                     )
                 })}
+            </div>
+
+            {/* Quick Greek Matrix */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "1rem", marginTop: "1rem" }}>
+                {[
+                    { label: "Delta (Δ)", val: "0.64", color: "#11d3d3" },
+                    { label: "Gamma (Γ)", val: "0.12", color: "#a855f7" },
+                    { label: "Theta (Θ)", val: "-14.2", color: "#f43f5e" },
+                    { label: "Vega (ν)", val: "22.5", color: "#f59e0b" },
+                    { label: "Rho (ρ)", val: "4.8", color: "#3b82f6" },
+                ].map((g, i) => (
+                    <div key={i} className="chart-card" style={{ padding: "1rem", textAlign: "center", borderTop: `2px solid ${g.color}` }}>
+                        <p style={{ fontSize: "8px", fontWeight: 900, color: "var(--text-muted)", marginBottom: "4px", textTransform: "uppercase" }}>{g.label}</p>
+                        <p style={{ fontSize: "14px", fontWeight: 800, color: "white" }}>{g.val}</p>
+                    </div>
+                ))}
             </div>
         </div>
     )

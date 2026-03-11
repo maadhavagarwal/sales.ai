@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { createMarketingCampaign, getMarketingCampaigns } from "@/services/api"
+import { createMarketingCampaign, getMarketingCampaigns, updateMarketingCampaign, deleteMarketingCampaign, exportWorkspaceData } from "@/services/api"
 import { useStore } from "@/store/useStore"
 import { Card, Button, Badge } from "@/components/ui"
 
@@ -14,6 +14,7 @@ export default function WorkspaceMarketing() {
 
     // Form state
     const [formData, setFormData] = useState({ name: "", channel: "Meta", spend: 0, conversions: 0, revenue_generated: 0 })
+    const [editingId, setEditingId] = useState<number | null>(null)
 
     const aiSuggestion = results?.strategic_plan || results?.analyst_report?.report || "No active AI growth directive found. Run an Autonomous Analysis to generate multi-channel suggestions."
 
@@ -30,12 +31,17 @@ export default function WorkspaceMarketing() {
         }
     }
 
-    const handleCreate = async () => {
+    const handleSave = async () => {
         if (!formData.name || !formData.spend) return
         setLoading(true)
         try {
-            await createMarketingCampaign(formData)
+            if (editingId) {
+                await updateMarketingCampaign(editingId, formData)
+            } else {
+                await createMarketingCampaign(formData)
+            }
             setShowCreate(false)
+            setEditingId(null)
             setFormData({ name: "", channel: "Meta", spend: 0, conversions: 0, revenue_generated: 0 })
             refreshData()
         } catch (e) {
@@ -43,6 +49,18 @@ export default function WorkspaceMarketing() {
         } finally {
             setLoading(false)
         }
+    }
+
+    const handleEdit = (camp: any) => {
+        setEditingId(camp.id)
+        setFormData({
+            name: camp.name,
+            channel: camp.channel || "Meta",
+            spend: camp.spend,
+            conversions: camp.conversions,
+            revenue_generated: camp.revenue_generated
+        })
+        setShowCreate(true)
     }
 
     const totalSpend = campaigns.reduce((a, b) => a + b.spend, 0)
@@ -102,9 +120,14 @@ export default function WorkspaceMarketing() {
                         Deploy acquisition drives and track multi-channel ROI in high fidelity.
                     </p>
                 </div>
-                <Button variant="pro" size="lg" onClick={() => setShowCreate(true)} icon={<span>⚡</span>} className="shadow-[--shadow-glow]">
-                    Deploy New Growth Drive
-                </Button>
+                <div className="flex gap-4">
+                    <Button variant="outline" size="lg" onClick={() => exportWorkspaceData("marketing")} className="uppercase text-[10px] font-black tracking-widest">
+                        Export CSV
+                    </Button>
+                    <Button variant="pro" size="lg" onClick={() => setShowCreate(true)} icon={<span>⚡</span>} className="shadow-[--shadow-glow]">
+                        Deploy New Growth Drive
+                    </Button>
+                </div>
             </div>
 
             <AnimatePresence>
@@ -117,7 +140,9 @@ export default function WorkspaceMarketing() {
                         <Card variant="bento" padding="lg" className="border-[--primary]/30 bg-[--primary]/5">
                             <div className="space-y-10">
                                 <div className="flex justify-between items-center pb-6 border-b border-white/5">
-                                    <h3 className="text-xs font-black uppercase tracking-[0.3em] text-[--primary]">Capital Deployment Protocol</h3>
+                                    <h3 className="text-xs font-black uppercase tracking-[0.3em] text-[--primary]">
+                                        {editingId ? "Update Capital Deployment Parameters" : "Capital Deployment Protocol"}
+                                    </h3>
                                     <Badge variant="outline">Allocation Mode: ACTIVE</Badge>
                                 </div>
 
@@ -154,10 +179,10 @@ export default function WorkspaceMarketing() {
                                 </div>
 
                                 <div className="flex gap-4 pt-10 border-t border-white/5">
-                                    <Button variant="pro" size="lg" onClick={handleCreate} loading={loading} className="flex-2 h-16 uppercase text-[10px] tracking-widest">
-                                        Authorize Capital Deployment
+                                    <Button variant="pro" size="lg" onClick={handleSave} loading={loading} className="flex-2 h-16 uppercase text-[10px] tracking-widest">
+                                        {editingId ? "COMMIT MODIFICATION" : "Authorize Capital Deployment"}
                                     </Button>
-                                    <Button variant="outline" size="lg" onClick={() => setShowCreate(false)} className="flex-1 h-16 uppercase text-[10px] tracking-widest opacity-60">
+                                    <Button variant="outline" size="lg" onClick={() => { setShowCreate(false); setEditingId(null); }} className="flex-1 h-16 uppercase text-[10px] tracking-widest opacity-60">
                                         Abort Launch
                                     </Button>
                                 </div>
@@ -183,7 +208,7 @@ export default function WorkspaceMarketing() {
                             <Badge variant="primary" size="xs">ROI {(camp.revenue_generated / (camp.spend || 1)).toFixed(1)}x</Badge>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-6 pb-6 border-b border-white/5">
+                        <div className="grid grid-cols-2 gap-6 pb-6 border-b border-white/5 relative">
                             <div>
                                 <p className="text-[9px] font-black uppercase tracking-widest text-[--text-muted]">Net Spend</p>
                                 <p className="text-md font-black text-white tracking-tight mt-1">
@@ -195,6 +220,25 @@ export default function WorkspaceMarketing() {
                                 <p className="text-md font-black text-[--accent-emerald] tracking-tight mt-1">
                                     {currencySymbol}{camp.revenue_generated.toLocaleString()}
                                 </p>
+                            </div>
+                            <div className="absolute -top-12 right-0 flex gap-4 opacity-0 group-hover:opacity-100 transition-all transition-opacity">
+                                <button 
+                                    onClick={() => handleEdit(camp)}
+                                    className="text-[--accent-cyan] font-black text-[8px] tracking-widest hover:underline uppercase"
+                                >
+                                    EDIT
+                                </button>
+                                <button 
+                                    onClick={async () => {
+                                        if(confirm(`Confirm termination of campaign ${camp.name}?`)) {
+                                            await deleteMarketingCampaign(camp.id)
+                                            refreshData()
+                                        }
+                                    }}
+                                    className="text-[--accent-rose] font-black text-[8px] tracking-widest hover:underline uppercase"
+                                >
+                                    DELETE
+                                </button>
                             </div>
                         </div>
 

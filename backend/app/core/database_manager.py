@@ -29,6 +29,8 @@ def init_workspace_db():
                 customer_pan TEXT,
                 date TEXT,
                 due_date TEXT,
+                payment_timeline TEXT,
+                payment_days INTEGER,
                 items_json TEXT,  -- {desc, qty, price, hsn, tax_rate, cgst, sgst, igst}
                 subtotal REAL,
                 total_tax REAL,
@@ -166,6 +168,12 @@ def init_workspace_db():
         except sqlite3.OperationalError: pass
         try:
             conn.execute("ALTER TABLE invoices ADD COLUMN payment_terms TEXT")
+        except sqlite3.OperationalError: pass
+        try:
+            conn.execute("ALTER TABLE invoices ADD COLUMN payment_timeline TEXT")
+        except sqlite3.OperationalError: pass
+        try:
+            conn.execute("ALTER TABLE invoices ADD COLUMN payment_days INTEGER DEFAULT 0")
         except sqlite3.OperationalError: pass
         try:
             conn.execute("ALTER TABLE invoices ADD COLUMN reminder_last_sent TEXT")

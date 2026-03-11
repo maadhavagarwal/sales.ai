@@ -14,7 +14,7 @@ import WidgetEditor from "@/components/dashboard/WidgetEditor"
 import DataTable from "@/components/dashboard/DataTable"
 import { useToast } from "@/components/ui/Toast"
 import { useStore, CHART_COLORS, DashboardWidget } from "@/store/useStore"
-import { getDashboardConfig, downloadReport, downloadCleanData, downloadStrategicPlanPDF, reprocessDataset, getCopilotResponse } from "@/services/api"
+import { getDashboardConfig, downloadStrategicPlanPDF, reprocessDataset, getCopilotResponse } from "@/services/api"
 import { motion, AnimatePresence } from "framer-motion"
 import MarkdownRenderer from "@/components/ai/MarkdownRenderer"
 import { Button, Card, Badge } from "@/components/ui"
@@ -26,13 +26,12 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<"dashboard" | "data" | "ai">("dashboard")
   const [isGenerating, setIsGenerating] = useState(false)
   const [isSyncing, setIsSyncing] = useState(false)
-  const [isReprocessing, setIsReprocessing] = useState(false)
   const [selectedSheet, setSelectedSheet] = useState<string>("0")
 
   const { showToast } = useToast()
 
-  const numericCols = results?.numeric_columns || []
-  const catCols = results?.categorical_columns || []
+  const numericCols = useMemo(() => results?.numeric_columns || [], [results?.numeric_columns])
+  const catCols = useMemo(() => results?.categorical_columns || [], [results?.categorical_columns])
   const rawData = results?.raw_data || []
   const allCols = results?.columns || []
 
@@ -81,7 +80,6 @@ export default function Dashboard() {
 
   const handleSheetChange = async (sheet: string) => {
     if (!datasetId) return
-    setIsReprocessing(true)
     setSelectedSheet(sheet)
     try {
       const newResults = await reprocessDataset(datasetId, sheet === "ALL" ? "ALL_SHEETS" : sheet)
@@ -89,8 +87,6 @@ export default function Dashboard() {
       setWidgets([])
     } catch (err) {
       console.error("Sheet reprocessing failed:", err)
-    } finally {
-      setIsReprocessing(false)
     }
   }
 
@@ -375,15 +371,15 @@ export default function Dashboard() {
         )}
       </AnimatePresence>
 
-      <CopilotFloating results={results} datasetId={datasetId} />
+      <CopilotFloating datasetId={datasetId} />
     </DashboardLayout>
   )
 }
 
-function CopilotFloating({ results, datasetId }: any) {
+function CopilotFloating({ datasetId }: { datasetId?: string }) {
   const [isOpen, setIsOpen] = useState(false)
   const [query, setQuery] = useState("")
-  const [history, setHistory] = useState<any[]>([])
+  const [history, setHistory] = useState<Array<{ type: "user" | "ai"; text: string }>>([])
   const [loading, setLoading] = useState(false)
 
   const handleSend = async () => {
@@ -391,7 +387,7 @@ function CopilotFloating({ results, datasetId }: any) {
     setLoading(true)
     const currentQuery = query
     setQuery("")
-    setHistory([...history, { type: "user", text: currentQuery }])
+    setHistory((prev) => [...prev, { type: "user", text: currentQuery }])
 
     try {
       const res = await getCopilotResponse(currentQuery, datasetId)

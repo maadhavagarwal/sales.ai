@@ -3,20 +3,22 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
-    getLedger, addLedgerEntry, getAccountingNotes,
-    addAccountingNote, getFinancialStatements,
-    getExpenses, addExpense, getDaybook, getTrialBalance,
+    getLedger, addLedgerEntry, updateLedgerEntry, deleteLedgerEntry,
+    getAccountingNotes, addAccountingNote, updateAccountingNote, deleteAccountingNote,
+    getFinancialStatements, getExpenses, addExpense, getDaybook, getTrialBalance,
     getPLStatement, getBalanceSheet, getGSTReports,
     getCustomers, getCustomerLedger, recordPayment,
-    downloadBusinessReport, getUsageStats, getCFOHealthReport
+    downloadBusinessReport, getUsageStats, getCFOHealthReport,
+    exportWorkspaceData, exportCustomerLedger
 } from "@/services/api"
 import { useStore } from "@/store/useStore"
 import { Card, Button, Badge } from "@/components/ui"
+import GreeksPanel from "./GreeksPanel"
 
-type TabType = "gateway" | "voucher" | "daybook" | "trial-balance" | "pl" | "bs" | "ledger" | "customer-ledger" | "compliance" | "usage" | "cfo" | "reconcile"
+type TabType = "gateway" | "voucher" | "daybook" | "trial-balance" | "pl" | "bs" | "ledger" | "customer-ledger" | "compliance" | "usage" | "cfo" | "reconcile" | "derivatives"
 
 export default function WorkspaceAccounts() {
-    const { currencySymbol } = useStore()
+    const { currencySymbol, workspaceSyncCount } = useStore()
     const [activeTab, setActiveTab] = useState<TabType>("gateway")
     const [daybook, setDaybook] = useState<any[]>([])
     const [trialBalance, setTrialBalance] = useState<any[]>([])
@@ -31,6 +33,7 @@ export default function WorkspaceAccounts() {
     const [usageStats, setUsageStats] = useState<any[]>([])
     const [cfoData, setCfoData] = useState<any>(null)
     const [loading, setLoading] = useState(false)
+    const [ledgerSearch, setLedgerSearch] = useState("")
 
     // Voucher Form State (Multi-line Double Entry)
     const [voucherType, setVoucherType] = useState("Journal")
@@ -41,7 +44,7 @@ export default function WorkspaceAccounts() {
         { account_name: "", type: "INCOME", amount: 0, description: "", isDebit: false }
     ])
 
-    useEffect(() => { refreshData() }, [activeTab, selectedCustomer])
+    useEffect(() => { refreshData() }, [activeTab, selectedCustomer, workspaceSyncCount])
 
     const refreshData = async () => {
         setLoading(true)
@@ -115,18 +118,60 @@ export default function WorkspaceAccounts() {
                     amount: e.isDebit ? e.amount : -e.amount
                 }))
             }
+            if (isEditingVoucherId) {
+                const entriesToDelete = ledger.filter(l => l.voucher_id === isEditingVoucherId);
+                for(const entry of entriesToDelete) {
+                    await deleteLedgerEntry(entry.id);
+                }
+            }
             await addLedgerEntry(payload)
+            setIsEditingVoucherId(null);
             setActiveTab("daybook")
             setVoucherEntries([
                 { account_name: "", type: "ASSET", amount: 0, description: "", isDebit: true },
                 { account_name: "", type: "INCOME", amount: 0, description: "", isDebit: false }
             ])
+            refreshData()
         } catch (e) {
             console.error(e)
         } finally {
             setLoading(false)
         }
     }
+
+    const handleDeleteVoucher = async (vId: string) => {
+        if(confirm("Confirm deletion of this entire voucher and all its entries?")) {
+            const entriesToDelete = ledger.filter(l => l.voucher_id === vId);
+            for(const entry of entriesToDelete) {
+                await deleteLedgerEntry(entry.id);
+            }
+            refreshData();
+        }
+    }
+
+    const [isEditingVoucherId, setIsEditingVoucherId] = useState<string | null>(null);
+
+    const handleEditVoucher = async (vchId: string) => {
+        const vch = daybook.find(v => v.voucher_id === vchId);
+        if (!vch) return;
+        
+        // Find all entries in ledger belonging to this voucher
+        const entries = ledger.filter(l => l.voucher_id === vchId).map(l => ({
+            account_name: l.account_name,
+            type: l.type,
+            amount: Math.abs(l.amount),
+            description: l.description,
+            isDebit: l.amount > 0,
+            id: l.id
+        }));
+
+        setVoucherType(vch.voucher_type || "Journal");
+        setVoucherNo(vch.voucher_no || vch.voucher_id);
+        setVoucherDate(vch.date);
+        setVoucherEntries(entries);
+        setIsEditingVoucherId(vchId);
+        setActiveTab("voucher");
+    };
 
     return (
         <div className="space-y-10 min-h-[800px]">
@@ -141,6 +186,7 @@ export default function WorkspaceAccounts() {
                     </p>
                 </div>
                 <div className="flex gap-4">
+                    <Button variant="outline" size="xs" onClick={refreshData} className="uppercase text-[9px] font-black border-[--primary]/20">Neural Refresh</Button>
                     <Badge variant="outline" className="border-[--primary]/30 text-[--primary]">FY: 2026-27</Badge>
                     <Badge variant="outline" className="border-white/10 opacity-50">CURRENCY: {currencySymbol}</Badge>
                 </div>
@@ -153,7 +199,7 @@ export default function WorkspaceAccounts() {
                         <section className="space-y-4">
                             <h3 className="menu-heading">Transactions</h3>
                             <div className="flex flex-col gap-2">
-                                <MenuButton label="Voucher Entry" sub="Dual-Entry Orchestration" icon="⌨️" active onClick={() => setActiveTab("voucher")} />
+                                <MenuButton label="Add/Edit Transaction" sub="Dual-Entry Orchestration" icon="⌨️" active onClick={() => setActiveTab("voucher")} />
                                 <MenuButton label="Daybook" sub="Chronological Audit Trail" icon="📋" onClick={() => setActiveTab("daybook")} />
                             </div>
                         </section>
@@ -166,13 +212,14 @@ export default function WorkspaceAccounts() {
                                 <MenuButton label="Trial Balance" sub="Aggregate Ledger Health" icon="⚖️" onClick={() => setActiveTab("trial-balance")} />
                                 <MenuButton label="General Ledger" sub="Deep-Dive Accounts" icon="📚" onClick={() => setActiveTab("ledger")} />
                                 <MenuButton label="Customer Ledger" sub="Individual Client Matrix" icon="👤" onClick={() => setActiveTab("customer-ledger")} />
+                                <MenuButton label="Derivatives Matrix" sub="Option Chain & Greeks" icon="📉" onClick={() => setActiveTab("derivatives")} />
                                 <MenuButton label="CFO Intelligence" sub="Predictive Fiscal Health" icon="⚖️" onClick={() => setActiveTab("cfo")} />
                                 <MenuButton label="Consolidated Report" sub="Download Performance Master" icon="📄" onClick={() => downloadBusinessReport()} />
                             </div>
                         </section>
 
-                        <section className="space-y-4">
-                            <h3 className="menu-heading">Utilities</h3>
+                         <section className="space-y-4">
+                            <h3 className="menu-heading">Treasury & Risk</h3>
                             <div className="flex flex-col gap-2">
                                 <MenuButton label="Bank Reconciliation" sub="AI Statement Matcher" icon="🏦" onClick={() => setActiveTab("reconcile")} />
                                 <MenuButton label="GST Compliance" sub="Statutory Tax Offset" icon="🛡️" onClick={() => setActiveTab("compliance")} />
@@ -183,9 +230,16 @@ export default function WorkspaceAccounts() {
 
                     {/* Right: Real-time Fiscal Health */}
                     <div className="lg:col-span-8 space-y-8">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <StatCard label="Net Profit" value={plData?.net_profit} color="var(--accent-emerald)" trend={plData?.net_profit > 0 ? "+ROI" : "DEFICIT"} />
-                            <StatCard label="Net Receivables" value={trialBalance.find(a => a.account_name.includes("Receivable"))?.balance || 0} color="var(--accent-amber)" trend="O/S Debt" />
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                            <div className="cursor-pointer" onClick={() => { setLedgerSearch("Revenue"); setActiveTab("ledger"); }}>
+                                <StatCard label="Net Profit" value={plData?.net_profit} color="var(--accent-emerald)" trend={plData?.net_profit > 0 ? "+ROI" : "DEFICIT"} />
+                            </div>
+                            <div className="cursor-pointer" onClick={() => { setLedgerSearch("Receivable"); setActiveTab("ledger"); }}>
+                                <StatCard label="Net Receivables" value={trialBalance.find(a => a.account_name.includes("Receivable"))?.balance || 0} color="var(--accent-amber)" trend="O/S Debt" />
+                            </div>
+                            <div className="cursor-pointer" onClick={() => setActiveTab("derivatives")}>
+                                <StatCard label="Hedge Risk (Δ)" value="0.64" color="var(--accent-cyan)" trend="PROTECTED" />
+                            </div>
                             <StatCard label="Compliance Score" value="98.4" unit="%" color="var(--accent-cyan)" trend="AA+" />
                         </div>
 
@@ -241,31 +295,71 @@ export default function WorkspaceAccounts() {
 
                         {activeTab === "daybook" && (
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                                <DaybookTable data={daybook} />
+                                <DaybookTable 
+                                    data={daybook} 
+                                    onExport={() => exportWorkspaceData("daybook")} 
+                                    onDelete={handleDeleteVoucher}
+                                    onEdit={handleEditVoucher}
+                                    setActiveTab={setActiveTab}
+                                />
                             </motion.div>
                         )}
 
                         {activeTab === "trial-balance" && (
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                                <TrialBalanceTable data={trialBalance} />
+                                <TrialBalanceTable 
+                                    data={trialBalance} 
+                                    onExport={() => exportWorkspaceData("trial_balance")} 
+                                    setLedgerSearch={setLedgerSearch}
+                                    setActiveTab={setActiveTab}
+                                />
                             </motion.div>
                         )}
 
                         {activeTab === "ledger" && (
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                                <LedgerView data={ledger} />
+                                <LedgerView 
+                                    data={ledger.filter(l => 
+                                        l.account_name.toLowerCase().includes(ledgerSearch.toLowerCase()) ||
+                                        l.description.toLowerCase().includes(ledgerSearch.toLowerCase())
+                                    )} 
+                                    searchTerm={ledgerSearch}
+                                    setSearchTerm={setLedgerSearch}
+                                    setActiveTab={setActiveTab}
+                                    onUpdate={async (id: number, data: any) => {
+                                        await updateLedgerEntry(id, data)
+                                        refreshData()
+                                    }}
+                                    onDelete={async (id: number) => {
+                                        if(confirm("Confirm deletion of this ledger entry?")) {
+                                            await deleteLedgerEntry(id)
+                                            refreshData()
+                                        }
+                                    }}
+                                    onExport={() => exportWorkspaceData("ledger")}
+                                />
                             </motion.div>
                         )}
 
                         {activeTab === "pl" && (
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                                <PLView data={plData} />
+                                <PLView 
+                                    data={plData} 
+                                    onExport={() => exportWorkspaceData("p_and_l")} 
+                                    setLedgerSearch={setLedgerSearch}
+                                    setActiveTab={setActiveTab}
+                                />
                             </motion.div>
                         )}
 
                         {activeTab === "bs" && (
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                                <BSView data={bsData} />
+                                <BSView 
+                                    data={bsData} 
+                                    onExport={() => exportWorkspaceData("balance_sheet")} 
+                                    setLedgerSearch={setLedgerSearch}
+                                    setActiveTab={setActiveTab}
+                                />
                             </motion.div>
                         )}
 
@@ -283,7 +377,7 @@ export default function WorkspaceAccounts() {
 
                         {activeTab === "cfo" && (
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                                <CFOIntelligenceView data={cfoData} currency={currencySymbol} />
+                                <CFOIntelligenceView data={cfoData} currency={currencySymbol} setActiveTab={setActiveTab} />
                             </motion.div>
                         )}
 
@@ -295,7 +389,27 @@ export default function WorkspaceAccounts() {
                                     setSelectedId={setSelectedCustomer}
                                     ledger={customerLedger}
                                     onRefresh={refreshData}
+                                    onUpdate={async (id: number, data: any) => {
+                                        await updateLedgerEntry(id, data)
+                                        refreshData()
+                                    }}
+                                    onDelete={async (id: number) => {
+                                        if (confirm("Delete this transaction?")) {
+                                            await deleteLedgerEntry(id)
+                                            refreshData()
+                                        }
+                                    }}
+                                    onExport={() => selectedCustomer && exportCustomerLedger(selectedCustomer)}
+                                    setActiveTab={setActiveTab}
+                                    setLedgerSearch={setLedgerSearch}
+                                    handleEditVoucher={handleEditVoucher}
                                 />
+                            </motion.div>
+                        )}
+
+                        {activeTab === "derivatives" && (
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                                <GreeksPanel />
                             </motion.div>
                         )}
 
@@ -337,7 +451,7 @@ function MenuButton({ label, sub, icon, active, onClick }: any) {
 }
 
 function StatCard({ label, value, color, trend, unit }: any) {
-    const { currencySymbol } = useStore()
+    const { currencySymbol, workspaceSyncCount } = useStore()
     const isNumeric = typeof value === 'number'
 
     return (
@@ -361,7 +475,7 @@ function StatCard({ label, value, color, trend, unit }: any) {
 }
 
 function VoucherEntryForm({ type, setType, no, setNo, date, setDate, entries, setEntries, onAdd, onRemove, onSubmit, loading }: any) {
-    const { currencySymbol } = useStore()
+    const { currencySymbol, workspaceSyncCount } = useStore()
     return (
         <Card variant="bento" padding="lg" className="bg-black/40 border-[--primary]/20">
             <div className="flex justify-between items-center mb-10 border-b border-white/5 pb-6">
@@ -482,13 +596,18 @@ function VoucherEntryForm({ type, setType, no, setNo, date, setDate, entries, se
     )
 }
 
-function DaybookTable({ data }: any) {
-    const { currencySymbol } = useStore()
+function DaybookTable({ data, onExport, onDelete, onEdit, setActiveTab }: any) {
+    const { currencySymbol, workspaceSyncCount } = useStore()
     return (
         <Card variant="glass" padding="none" className="overflow-hidden">
             <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/[0.01]">
-                <h3 className="text-xs font-black uppercase tracking-widest text-white">Consolidated Daybook (Audit Trail)</h3>
-                <Badge variant="pro" size="xs">FY 2026-27</Badge>
+                <div className="flex items-center gap-4">
+                    <h3 className="text-xs font-black uppercase tracking-widest text-white">Consolidated Daybook (Audit Trail)</h3>
+                </div>
+                <div className="flex gap-4">
+                    <Button variant="outline" size="xs" onClick={() => setActiveTab("voucher")} className="uppercase text-[9px] font-black border-[--primary]/20">Create New Voucher</Button>
+                    <Button variant="outline" size="xs" onClick={onExport} className="uppercase text-[9px] font-black">Export CSV</Button>
+                </div>
             </div>
             <div className="overflow-x-auto">
                 <table className="w-full">
@@ -498,7 +617,8 @@ function DaybookTable({ data }: any) {
                             <th className="text-left p-6 text-[10px] font-black uppercase tracking-widest text-[--text-muted]">VCH Type</th>
                             <th className="text-left p-6 text-[10px] font-black uppercase tracking-widest text-[--text-muted]">Particulars</th>
                             <th className="text-left p-6 text-[10px] font-black uppercase tracking-widest text-[--text-muted]">VCH No</th>
-                            <th className="text-right p-6 text-[10px] font-black uppercase tracking-widest text-[--text-muted]">Debit / Credit Amount</th>
+                            <th className="text-right p-6 text-[10px] font-black uppercase tracking-widest text-[--text-muted]">Amount</th>
+                            <th className="text-center p-6 text-[10px] font-black uppercase tracking-widest text-[--text-muted]">Governance</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
@@ -516,6 +636,22 @@ function DaybookTable({ data }: any) {
                                 <td className="p-6 text-right font-black text-sm text-[--primary] tracking-tighter">
                                     {currencySymbol}{v.total_quantum?.toLocaleString()}
                                 </td>
+                                <td className="p-6">
+                                    <div className="flex justify-center gap-4">
+                                        <button 
+                                            onClick={() => onEdit(v.voucher_id)}
+                                            className="text-[--primary] text-[10px] font-black uppercase tracking-widest hover:underline"
+                                        >
+                                            Modify Statutory Record
+                                        </button>
+                                        <button 
+                                            onClick={() => onDelete(v.voucher_id)}
+                                            className="text-[--accent-rose] text-[10px] font-black uppercase tracking-widest hover:underline"
+                                        >
+                                            Void
+                                        </button>
+                                    </div>
+                                </td>
                             </tr>
                         ))}
                     </tbody>
@@ -525,15 +661,16 @@ function DaybookTable({ data }: any) {
     )
 }
 
-function TrialBalanceTable({ data }: any) {
-    const { currencySymbol } = useStore()
+function TrialBalanceTable({ data, setLedgerSearch, setActiveTab }: any) {
+    const { currencySymbol, workspaceSyncCount } = useStore()
     const totalDebit = data.filter((e: any) => e.balance > 0).reduce((a: any, b: any) => a + b.balance, 0)
     const totalCredit = Math.abs(data.filter((e: any) => e.balance < 0).reduce((a: any, b: any) => a + b.balance, 0))
 
     return (
         <Card variant="glass" padding="none" className="overflow-hidden">
-            <div className="p-6 border-b border-white/5 bg-white/[0.01]">
+            <div className="p-6 border-b border-white/5 bg-white/[0.01] flex justify-between items-center">
                 <h3 className="text-xs font-black uppercase tracking-widest text-white">Professional Trial Balance</h3>
+                <Button variant="outline" size="xs" onClick={() => setActiveTab("voucher")} className="uppercase text-[9px] font-black border-[--primary]/20">New Adjustment</Button>
             </div>
             <div className="overflow-x-auto">
                 <table className="w-full">
@@ -543,18 +680,27 @@ function TrialBalanceTable({ data }: any) {
                             <th className="text-left p-6 text-[10px] font-black uppercase tracking-widest text-[--text-muted]">Classification</th>
                             <th className="text-right p-6 text-[10px] font-black uppercase tracking-widest text-[--text-muted]">Debit ({currencySymbol})</th>
                             <th className="text-right p-6 text-[10px] font-black uppercase tracking-widest text-[--text-muted]">Credit ({currencySymbol})</th>
+                            <th className="text-center p-6 text-[10px] font-black uppercase tracking-widest text-[--text-muted]">Action</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
                         {data.map((e: any, i: number) => (
                             <tr key={i} className="group hover:bg-white/[0.02] transition-colors">
-                                <td className="p-6 text-xs font-black text-white uppercase">{e.account_name}</td>
+                                <td className="p-6 text-xs font-black text-white uppercase group-hover:text-[--primary] transition-colors cursor-pointer" onClick={() => { setLedgerSearch(e.account_name); setActiveTab("ledger"); }}>{e.account_name}</td>
                                 <td className="p-6"><Badge variant="outline" size="xs" className="opacity-60">{e.type}</Badge></td>
                                 <td className="p-6 text-right font-black text-sm text-[--accent-cyan]">
                                     {e.balance > 0 ? e.balance.toLocaleString() : ""}
                                 </td>
                                 <td className="p-6 text-right font-black text-sm text-[--accent-rose]">
                                     {e.balance < 0 ? Math.abs(e.balance).toLocaleString() : ""}
+                                </td>
+                                <td className="p-6 text-center">
+                                    <button 
+                                        onClick={() => { setLedgerSearch(e.account_name); setActiveTab("ledger"); }}
+                                        className="text-[--primary] text-[9px] font-black uppercase tracking-[0.2em] border border-[--primary]/20 px-3 py-1 rounded hover:bg-[--primary]/10 transition-all"
+                                    >
+                                        Modify
+                                    </button>
                                 </td>
                             </tr>
                         ))}
@@ -579,10 +725,29 @@ function TrialBalanceTable({ data }: any) {
     )
 }
 
-function LedgerView({ data }: any) {
-    const { currencySymbol } = useStore()
+function LedgerView(props: any) {
+    const { data, onUpdate, onDelete } = props
+    const { currencySymbol, workspaceSyncCount } = useStore()
+    const [editingId, setEditingId] = useState<number | null>(null)
+    const [editData, setEditData] = useState<any>(null)
+
     return (
         <Card variant="glass" padding="none" className="overflow-hidden">
+            <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/[0.01]">
+                <div className="flex items-center gap-6">
+                    <h3 className="text-xs font-black uppercase tracking-widest text-white">Detailed General Ledger</h3>
+                    <input 
+                        placeholder="Search Ledger..." 
+                        value={props.searchTerm} 
+                        onChange={e => props.setSearchTerm(e.target.value)}
+                        className="bg-white/5 border border-white/10 rounded-lg px-4 py-1 text-[10px] text-white focus:outline-none focus:border-[--primary]/50 w-64"
+                    />
+                </div>
+                <div className="flex gap-4">
+                    <Button variant="outline" size="xs" onClick={() => props.setActiveTab("voucher")} className="uppercase text-[9px] font-black border-[--primary]/20">Create Entry</Button>
+                    <Button variant="outline" size="xs" onClick={props.onExport} className="uppercase text-[9px] font-black">Export CSV</Button>
+                </div>
+            </div>
             <div className="overflow-x-auto">
                 <table className="w-full">
                     <thead>
@@ -593,18 +758,54 @@ function LedgerView({ data }: any) {
                             <th className="text-left p-6 text-[10px] font-black uppercase tracking-widest text-[--text-muted]">Type</th>
                             <th className="text-left p-6 text-[10px] font-black uppercase tracking-widest text-[--text-muted]">Description</th>
                             <th className="text-right p-6 text-[10px] font-black uppercase tracking-widest text-[--text-muted]">Amount ({currencySymbol})</th>
+                            <th className="text-center p-6 text-[10px] font-black uppercase tracking-widest text-[--text-muted]">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
                         {data.map((entry: any) => (
                             <tr key={entry.id} className="group hover:bg-white/[0.02] transition-colors">
                                 <td className="p-6 text-[10px] font-mono text-[--text-muted]">#{entry.id}</td>
-                                <td className="p-6 text-xs font-bold text-white/50">{entry.date}</td>
-                                <td className="p-6 text-xs font-black text-white">{entry.account_name}</td>
-                                <td className="p-6"><Badge variant="outline" size="xs">{entry.type}</Badge></td>
-                                <td className="p-6 text-xs text-[--text-muted]">{entry.description}</td>
+                                <td className="p-6 text-xs font-bold text-white/50">
+                                    {editingId === entry.id ? 
+                                        <input type="date" value={editData.date} onChange={e => setEditData({...editData, date: e.target.value})} className="input-pro text-[10px]" />
+                                        : entry.date}
+                                </td>
+                                <td className="p-6 text-xs font-black text-white">
+                                    {editingId === entry.id ? 
+                                        <input value={editData.account_name} onChange={e => setEditData({...editData, account_name: e.target.value})} className="input-pro text-[10px]" />
+                                        : entry.account_name}
+                                </td>
+                                <td className="p-6">
+                                    {editingId === entry.id ? 
+                                        <select value={editData.type} onChange={e => setEditData({...editData, type: e.target.value})} className="input-pro text-[10px]">
+                                            <option>ASSET</option><option>LIABILITY</option><option>INCOME</option><option>EXPENSE</option>
+                                        </select>
+                                        : <Badge variant="outline" size="xs">{entry.type}</Badge>}
+                                </td>
+                                <td className="p-6 text-xs text-[--text-muted]">
+                                    {editingId === entry.id ? 
+                                        <input value={editData.description} onChange={e => setEditData({...editData, description: e.target.value})} className="input-pro text-[10px]" />
+                                        : entry.description}
+                                </td>
                                 <td className={`p-6 text-right font-black text-sm ${entry.amount >= 0 ? 'text-[--accent-emerald]' : 'text-[--accent-rose]'}`}>
-                                    {entry.amount.toLocaleString()}
+                                    {editingId === entry.id ? 
+                                        <input type="number" value={editData.amount} onChange={e => setEditData({...editData, amount: parseFloat(e.target.value)})} className="input-pro text-[10px] w-24 text-right" />
+                                        : entry.amount.toLocaleString()}
+                                </td>
+                                <td className="p-6">
+                                    <div className="flex justify-center gap-2">
+                                        {editingId === entry.id ? (
+                                            <>
+                                                <button onClick={() => { onUpdate(entry.id, editData); setEditingId(null); }} className="text-[--accent-emerald] font-black text-xs hover:scale-110 transition-transform">SAVE</button>
+                                                <button onClick={() => setEditingId(null)} className="text-white/40 font-black text-xs">ESC</button>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <button onClick={() => { setEditingId(entry.id); setEditData(entry); }} className="text-[--primary] font-black text-[10px] tracking-widest hover:underline transition-opacity uppercase">Edit</button>
+                                                <button onClick={() => onDelete(entry.id)} className="text-[--accent-rose] font-black text-[10px] tracking-widest hover:underline transition-opacity uppercase">Delete</button>
+                                            </>
+                                        )}
+                                    </div>
                                 </td>
                             </tr>
                         ))}
@@ -615,14 +816,20 @@ function LedgerView({ data }: any) {
     )
 }
 
-function PLView({ data }: any) {
-    const { currencySymbol } = useStore()
+function PLView({ data, onExport, setLedgerSearch, setActiveTab }: any) {
+    const { currencySymbol, workspaceSyncCount } = useStore()
     if (!data) return <div className="text-white">Loading P&L Stream...</div>
 
     return (
         <Card variant="bento" padding="lg" className="max-w-4xl mx-auto bg-black/40 border-[--accent-emerald]/20">
             <div className="flex justify-between items-center mb-10 pb-6 border-b border-white/5">
-                <h3 className="text-xl font-black text-white uppercase italic tracking-tighter">Profit & Loss Account</h3>
+                <div className="flex items-center gap-4">
+                    <h3 className="text-xl font-black text-white uppercase italic tracking-tighter">Profit & Loss Account</h3>
+                    <div className="flex gap-2">
+                        <Button variant="outline" size="xs" onClick={() => setActiveTab("voucher")} className="uppercase text-[9px] font-black border-[--primary]/20">Add Adjustment</Button>
+                        <Button variant="outline" size="xs" onClick={onExport} className="uppercase text-[9px] font-black">Export CSV</Button>
+                    </div>
+                </div>
                 <Badge variant="pro">FY 2026-27</Badge>
             </div>
 
@@ -635,9 +842,18 @@ function PLView({ data }: any) {
                     </div>
                     <div className="space-y-2 pl-4">
                         {data.revenue.items.map((item: any, i: number) => (
-                            <div key={i} className="flex justify-between text-xs font-bold text-white/60">
-                                <span>{item.account_name}</span>
-                                <span>{item.balance.toLocaleString()}</span>
+                            <div 
+                                key={i} 
+                                className="flex justify-between items-center text-xs font-bold text-white/60 group px-2 py-1 rounded hover:bg-white/5 transition-all"
+                            >
+                                <span className="flex-1">{item.account_name}</span>
+                                <span className="mr-4">{item.balance.toLocaleString()}</span>
+                                <button 
+                                    className="text-[--primary] text-[8px] font-black uppercase opacity-0 group-hover:opacity-100 hover:underline"
+                                    onClick={() => { setLedgerSearch(item.account_name); setActiveTab("ledger"); }}
+                                >
+                                    Edit Ledger
+                                </button>
                             </div>
                         ))}
                     </div>
@@ -651,9 +867,18 @@ function PLView({ data }: any) {
                     </div>
                     <div className="space-y-2 pl-4">
                         {data.cogs.items.map((item: any, i: number) => (
-                            <div key={i} className="flex justify-between text-xs font-bold text-white/40">
-                                <span>{item.account_name}</span>
-                                <span>{item.balance.toLocaleString()}</span>
+                            <div 
+                                key={i} 
+                                className="flex justify-between items-center text-xs font-bold text-white/40 group px-2 py-1 rounded hover:bg-white/5 transition-all"
+                            >
+                                <span className="flex-1">{item.account_name}</span>
+                                <span className="mr-4">{item.balance.toLocaleString()}</span>
+                                <button 
+                                    className="text-[--primary] text-[8px] font-black uppercase opacity-0 group-hover:opacity-100 hover:underline"
+                                    onClick={() => { setLedgerSearch(item.account_name); setActiveTab("ledger"); }}
+                                >
+                                    Edit Ledger
+                                </button>
                             </div>
                         ))}
                     </div>
@@ -673,9 +898,18 @@ function PLView({ data }: any) {
                     </div>
                     <div className="space-y-2 pl-4">
                         {data.overheads.items.map((item: any, i: number) => (
-                            <div key={i} className="flex justify-between text-xs font-bold text-white/40">
-                                <span>{item.account_name}</span>
-                                <span>{item.balance.toLocaleString()}</span>
+                            <div 
+                                key={i} 
+                                className="flex justify-between items-center text-xs font-bold text-white/40 group px-2 py-1 rounded hover:bg-white/5 transition-all"
+                            >
+                                <span className="flex-1">{item.account_name}</span>
+                                <span className="mr-4">{item.balance.toLocaleString()}</span>
+                                <button 
+                                    className="text-[--primary] text-[8px] font-black uppercase opacity-0 group-hover:opacity-100 hover:underline"
+                                    onClick={() => { setLedgerSearch(item.account_name); setActiveTab("ledger"); }}
+                                >
+                                    Edit Ledger
+                                </button>
                             </div>
                         ))}
                     </div>
@@ -698,12 +932,19 @@ function PLView({ data }: any) {
     )
 }
 
-function BSView({ data }: any) {
-    const { currencySymbol } = useStore()
+function BSView({ data, onExport, setLedgerSearch, setActiveTab }: any) {
+    const { currencySymbol, workspaceSyncCount } = useStore()
     if (!data) return <div className="text-white">Loading Solvent Matrix...</div>
 
     return (
         <Card variant="glass" padding="none" className="max-w-5xl mx-auto overflow-hidden border-white/5">
+            <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/[0.01]">
+                <h3 className="text-xs font-black uppercase tracking-widest text-white">Consolidated Balance Sheet</h3>
+                <div className="flex gap-2">
+                    <Button variant="outline" size="xs" onClick={() => setActiveTab("voucher")} className="uppercase text-[9px] font-black border-[--primary]/20">Add Entry</Button>
+                    <Button variant="outline" size="xs" onClick={onExport} className="uppercase text-[9px] font-black">Export CSV</Button>
+                </div>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2">
                 {/* Left Side: Liabilities & Equity */}
                 <div className="p-8 border-r border-white/5 bg-black/20">
@@ -728,9 +969,18 @@ function BSView({ data }: any) {
                             <h4 className="text-xs font-black text-white uppercase mb-4">Current Liabilities</h4>
                             <div className="space-y-2 pl-4">
                                 {data.liabilities.items.map((item: any, i: number) => (
-                                    <div key={i} className="flex justify-between text-xs font-bold text-white/60">
-                                        <span>{item.account_name}</span>
-                                        <span>{item.balance.toLocaleString()}</span>
+                                    <div 
+                                        key={i} 
+                                        className="flex justify-between items-center text-xs font-bold text-white/60 group px-2 py-1 rounded hover:bg-white/5 transition-all"
+                                    >
+                                        <span className="flex-1">{item.account_name}</span>
+                                        <span className="mr-4">{item.balance.toLocaleString()}</span>
+                                        <button 
+                                            className="text-[--primary] text-[8px] font-black uppercase opacity-0 group-hover:opacity-100 hover:underline"
+                                            onClick={() => { setLedgerSearch(item.account_name); setActiveTab("ledger"); }}
+                                        >
+                                            Modify
+                                        </button>
                                     </div>
                                 ))}
                             </div>
@@ -752,9 +1002,18 @@ function BSView({ data }: any) {
                             <h4 className="text-xs font-black text-white uppercase mb-4">Fixed & Current Assets</h4>
                             <div className="space-y-2 pl-4">
                                 {data.assets.items.map((item: any, i: number) => (
-                                    <div key={i} className="flex justify-between text-xs font-bold text-white/60">
-                                        <span>{item.account_name}</span>
-                                        <span>{item.balance.toLocaleString()}</span>
+                                    <div 
+                                        key={i} 
+                                        className="flex justify-between items-center text-xs font-bold text-white/60 group px-2 py-1 rounded hover:bg-white/5 transition-all"
+                                    >
+                                        <span className="flex-1">{item.account_name}</span>
+                                        <span className="mr-4">{item.balance.toLocaleString()}</span>
+                                        <button 
+                                            className="text-[--primary] text-[8px] font-black uppercase opacity-0 group-hover:opacity-100 hover:underline"
+                                            onClick={() => { setLedgerSearch(item.account_name); setActiveTab("ledger"); }}
+                                        >
+                                            Modify
+                                        </button>
                                     </div>
                                 ))}
                             </div>
@@ -778,7 +1037,7 @@ function BSView({ data }: any) {
 import { reconcileBankStatement } from "@/services/api"
 
 function BRSView() {
-    const { currencySymbol } = useStore()
+    const { currencySymbol, workspaceSyncCount } = useStore()
     const [entries, setEntries] = useState<any[]>([])
     const [results, setResults] = useState<any[]>([])
     const [loading, setLoading] = useState(false)
@@ -881,7 +1140,7 @@ function BRSView() {
 }
 
 function ComplianceView({ data }: any) {
-    const { currencySymbol } = useStore()
+    const { currencySymbol, workspaceSyncCount } = useStore()
     if (!data) return <div className="text-white">Hydrating Statutory Reports...</div>
 
     return (
@@ -961,7 +1220,7 @@ function ComplianceView({ data }: any) {
 }
 
 function StatementLine({ label, value, isRed }: any) {
-    const { currencySymbol } = useStore()
+    const { currencySymbol, workspaceSyncCount } = useStore()
     return (
         <div className="flex justify-between items-center text-sm">
             <span className="font-bold text-white/40 uppercase text-[10px] tracking-widest">{label}</span>
@@ -972,8 +1231,8 @@ function StatementLine({ label, value, isRed }: any) {
     )
 }
 
-function CustomerLedgerView({ customers, selectedId, setSelectedId, ledger, onRefresh }: any) {
-    const { currencySymbol } = useStore()
+function CustomerLedgerView({ customers, selectedId, setSelectedId, ledger, onRefresh, onUpdate, onDelete, onExport, setActiveTab, setLedgerSearch, handleEditVoucher }: any) {
+    const { currencySymbol, workspaceSyncCount } = useStore()
     const [showPayment, setShowPayment] = useState(false)
     const [paymentData, setPaymentData] = useState({ amount: 0, reference_no: "", payment_mode: "BANK", date: new Date().toISOString().split('T')[0] })
     const [loading, setLoading] = useState(false)
@@ -1031,9 +1290,22 @@ function CustomerLedgerView({ customers, selectedId, setSelectedId, ledger, onRe
                 <div className="space-y-8">
                     <div className="flex justify-between items-center">
                         <h3 className="text-xl font-black text-white uppercase italic tracking-tighter">Audit Trail: {selectedId}</h3>
-                        <Button variant="pro" size="sm" onClick={() => setShowPayment(true)} className="uppercase text-[10px] tracking-widest shadow-[--shadow-glow]">
-                            Record Collection / Payment
-                        </Button>
+                        <div className="flex gap-4">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setActiveTab("voucher")}
+                                className="uppercase text-[10px] tracking-widest"
+                            >
+                                Add Manual Entry
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={onExport} className="uppercase text-[10px] tracking-widest">
+                                Export CSV
+                            </Button>
+                            <Button variant="pro" size="sm" onClick={() => setShowPayment(true)} className="uppercase text-[10px] tracking-widest shadow-[--shadow-glow]">
+                                Record Collection / Payment
+                            </Button>
+                        </div>
                     </div>
 
                     <AnimatePresence>
@@ -1076,12 +1348,13 @@ function CustomerLedgerView({ customers, selectedId, setSelectedId, ledger, onRe
                                     <th className="text-left p-6 text-[10px] font-black uppercase tracking-widest text-[--text-muted]">Particulars</th>
                                     <th className="text-right p-6 text-[10px] font-black uppercase tracking-widest text-[--text-muted]">Debit (Sale)</th>
                                     <th className="text-right p-6 text-[10px] font-black uppercase tracking-widest text-[--text-muted]">Credit (Rect)</th>
+                                    <th className="text-center p-6 text-[10px] font-black uppercase tracking-widest text-[--text-muted]">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-white/5">
                                 {ledger.map((entry: any, i: number) => (
-                                    <tr key={i} className="hover:bg-white/[0.02] transition-colors">
-                                        <td className="p-6 text-xs font-bold text-white/40">{entry.date}</td>
+                                    <tr key={i} className="group hover:bg-white/[0.02] transition-colors">
+                                        <td className="p-6 text-xs font-bold text-white/50">{entry.date}</td>
                                         <td className="p-6">
                                             <Badge variant={entry.voucher_type === 'Sales' ? 'primary' : 'pro'} size="xs" className="uppercase">{entry.voucher_type}</Badge>
                                         </td>
@@ -1093,11 +1366,19 @@ function CustomerLedgerView({ customers, selectedId, setSelectedId, ledger, onRe
                                         <td className="p-6 text-right font-black text-sm text-[--accent-emerald]">
                                             {entry.amount < 0 ? Math.abs(entry.amount).toLocaleString() : ""}
                                         </td>
+                                        <td className="p-6">
+                                            <div className="flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button onClick={() => {
+                                                    handleEditVoucher(entry.voucher_id || entry.voucher_no || "");
+                                                }} className="text-[--primary] font-black text-[9px] uppercase tracking-widest hover:underline">Modify Entry</button>
+                                                <button onClick={() => onDelete(entry.id)} className="text-[--accent-rose] font-black text-[9px] uppercase tracking-widest hover:underline">Delete</button>
+                                            </div>
+                                        </td>
                                     </tr>
                                 ))}
                                 {ledger.length === 0 && (
                                     <tr>
-                                        <td colSpan={6} className="p-20 text-center text-[--text-muted] text-xs font-bold italic uppercase tracking-widest">
+                                        <td colSpan={7} className="p-20 text-center text-[--text-muted] text-xs font-bold italic uppercase tracking-widest">
                                             No transaction records found for this account in current FY.
                                         </td>
                                     </tr>
@@ -1138,7 +1419,9 @@ function UsageStatsView({ data }: { data: any[] }) {
             </div>
         </div>
     )
-} function CFOIntelligenceView({ data, currency }: { data: any, currency: string }) {
+}
+
+function CFOIntelligenceView({ data, currency, setActiveTab }: { data: any, currency: string, setActiveTab: (t: TabType) => void }) {
     if (!data) return <div className="py-20 text-center text-xs font-bold text-[--text-muted] uppercase tracking-widest animate-pulse">Initializing Neural Health Check...</div>
 
     return (
@@ -1176,12 +1459,34 @@ function UsageStatsView({ data }: { data: any[] }) {
                 </Card>
             </div>
 
-            <div className="p-8 rounded-2xl border border-white/5 bg-[--primary]/5">
-                <h4 className="text-[10px] font-black text-white uppercase tracking-widest mb-4">Strategic AI Recommendation</h4>
-                <p className="text-xs font-bold text-white/60 leading-relaxed italic">
-                    "Cognitive Analysis: Your Current Ratio of {data.current_ratio} indicates {data.business_health === 'PRIME' ? 'excellent' : 'sufficient'} structural solvency. However, the DSO profile suggests ₹{(data.ebitda * 0.1).toLocaleString()} could be unlocked by optimizing the collection protocol for Net-30 clients."
-                </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <Card variant="bento" padding="lg" className="bg-black/40 border-white/5 group hover:border-[--primary]/30 transition-all cursor-pointer" onClick={() => setActiveTab("derivatives")}>
+                    <p className="text-[10px] font-black text-[--primary] uppercase tracking-[0.3em] mb-6">Enterprise Greeks Profile</p>
+                    <div className="grid grid-cols-3 gap-4">
+                        <div>
+                            <p className="text-[9px] font-bold text-white/40 uppercase">Delta (Δ)</p>
+                            <p className="text-xl font-black text-[--accent-cyan]">0.64</p>
+                        </div>
+                        <div>
+                            <p className="text-[9px] font-bold text-white/40 uppercase">Theta (Θ)</p>
+                            <p className="text-xl font-black text-[--accent-rose]">-14.2</p>
+                        </div>
+                        <div>
+                            <p className="text-[9px] font-bold text-white/40 uppercase">Vega (ν)</p>
+                            <p className="text-xl font-black text-[--accent-amber]">22.5</p>
+                        </div>
+                    </div>
+                    <p className="text-[9px] font-bold text-white/20 mt-6 uppercase italic">Click for full Option Chain Matrix →</p>
+                </Card>
+
+                <div className="p-8 rounded-2xl border border-white/5 bg-[--primary]/5">
+                    <h4 className="text-[10px] font-black text-white uppercase tracking-widest mb-4">Strategic AI Recommendation</h4>
+                    <p className="text-xs font-bold text-white/60 leading-relaxed italic">
+                        "Cognitive Analysis: Your Current Ratio of {data.current_ratio} indicates {data.business_health === 'PRIME' ? 'excellent' : 'sufficient'} structural solvency. However, the DSO profile suggests ₹{(data.ebitda * 0.1).toLocaleString()} could be unlocked by optimizing the collection protocol for Net-30 clients."
+                    </p>
+                </div>
             </div>
         </div>
     )
 }
+

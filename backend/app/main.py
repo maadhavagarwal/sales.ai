@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 import time
 import math
 import uuid
@@ -21,7 +22,7 @@ from app.core.database_manager import store_data, create_user_record, get_user_r
 from app.utils.data_loader import load_data_robustly, get_excel_sheets
 import bcrypt
 import jwt
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse, PlainTextResponse
 import io
 from app.utils.pdf_generator import create_pdf_from_text
 from app.engines.workspace_engine import WorkspaceEngine
@@ -642,6 +643,22 @@ async def get_invoices():
     """Retrieves all historical business invoices."""
     return WorkspaceEngine.get_invoices()
 
+@app.put("/workspace/invoices/{invoice_id}")
+async def update_invoice(invoice_id: str, data: dict = Body(...)):
+    """Updates an existing invoice."""
+    res = WorkspaceEngine.update_invoice(invoice_id, data)
+    if res.get("status") == "error":
+        raise HTTPException(status_code=500, detail=res.get("message"))
+    return res
+
+@app.delete("/workspace/invoices/{invoice_id}")
+async def delete_invoice(invoice_id: str):
+    """Deletes an invoice."""
+    res = WorkspaceEngine.delete_invoice(invoice_id)
+    if res.get("status") == "error":
+        raise HTTPException(status_code=500, detail=res.get("message"))
+    return res
+
 @app.post("/workspace/customers")
 async def add_customer(data: dict = Body(...)):
     """Adds a new client to the Enterprise CRM."""
@@ -654,6 +671,22 @@ async def add_customer(data: dict = Body(...)):
 async def get_customers():
     """Retrieves the full Enterprise Customer Directory."""
     return WorkspaceEngine.get_customers()
+
+@app.put("/workspace/customers/{customer_id}")
+async def update_customer(customer_id: int, data: dict = Body(...)):
+    """Updates an existing customer record."""
+    res = WorkspaceEngine.update_customer(customer_id, data)
+    if res.get("status") == "error":
+        raise HTTPException(status_code=500, detail=res.get("message"))
+    return res
+
+@app.delete("/workspace/customers/{customer_id}")
+async def delete_customer(customer_id: int):
+    """Deletes a customer record."""
+    res = WorkspaceEngine.delete_customer(customer_id)
+    if res.get("status") == "error":
+        raise HTTPException(status_code=500, detail=res.get("message"))
+    return res
 
 @app.get("/workspace/inventory")
 async def get_inventory():
@@ -673,6 +706,22 @@ async def add_inventory_item(data: dict = Body(...)):
         raise HTTPException(status_code=500, detail=res.get("message"))
     return res
 
+@app.put("/workspace/inventory/{item_id}")
+async def update_inventory_item(item_id: int, data: dict = Body(...)):
+    """Updates an existing inventory item."""
+    res = WorkspaceEngine.update_inventory_item(item_id, data)
+    if res.get("status") == "error":
+        raise HTTPException(status_code=500, detail=res.get("message"))
+    return res
+
+@app.delete("/workspace/inventory/{item_id}")
+async def delete_inventory_item(item_id: int):
+    """Deletes an inventory item."""
+    res = WorkspaceEngine.delete_inventory_item(item_id)
+    if res.get("status") == "error":
+        raise HTTPException(status_code=500, detail=res.get("message"))
+    return res
+
 @app.post("/workspace/marketing/campaigns")
 async def create_marketing_campaign(data: dict = Body(...)):
     """Deploys a new campaign and logs spend as an expense."""
@@ -681,10 +730,42 @@ async def create_marketing_campaign(data: dict = Body(...)):
         raise HTTPException(status_code=500, detail=res.get("message"))
     return res
 
+@app.put("/workspace/marketing/campaigns/{campaign_id}")
+async def update_marketing_campaign(campaign_id: int, data: dict = Body(...)):
+    """Updates an existing marketing campaign."""
+    res = WorkspaceEngine.update_marketing_campaign(campaign_id, data)
+    if res.get("status") == "error":
+        raise HTTPException(status_code=500, detail=res.get("message"))
+    return res
+
+@app.delete("/workspace/marketing/campaigns/{campaign_id}")
+async def delete_marketing_campaign(campaign_id: int):
+    """Deletes a marketing campaign."""
+    res = WorkspaceEngine.delete_marketing_campaign(campaign_id)
+    if res.get("status") == "error":
+        raise HTTPException(status_code=500, detail=res.get("message"))
+    return res
+
 @app.post("/workspace/expenses")
 async def add_expense(data: dict = Body(...)):
     """Logs a new business expense for internal bookkeeping."""
     res = WorkspaceEngine.add_expense(data)
+    if res.get("status") == "error":
+        raise HTTPException(status_code=500, detail=res.get("message"))
+    return res
+
+@app.put("/workspace/expenses/{expense_id}")
+async def update_expense(expense_id: int, data: dict = Body(...)):
+    """Updates an existing expense record."""
+    res = WorkspaceEngine.update_expense(expense_id, data)
+    if res.get("status") == "error":
+        raise HTTPException(status_code=500, detail=res.get("message"))
+    return res
+
+@app.delete("/workspace/expenses/{expense_id}")
+async def delete_expense(expense_id: int):
+    """Deletes an expense record."""
+    res = WorkspaceEngine.delete_expense(expense_id)
     if res.get("status") == "error":
         raise HTTPException(status_code=500, detail=res.get("message"))
     return res
@@ -699,6 +780,22 @@ async def add_ledger_entry(data: dict = Body(...)):
     """Adds a validated entry to the general ledger."""
     return WorkspaceEngine.add_ledger_entry(data)
 
+@app.put("/workspace/ledger/{entry_id}")
+async def update_ledger_entry(entry_id: int, data: dict = Body(...)):
+    """Updates an existing ledger entry."""
+    res = WorkspaceEngine.update_ledger_entry(entry_id, data)
+    if res.get("status") == "error":
+        raise HTTPException(status_code=500, detail=res.get("message"))
+    return res
+
+@app.delete("/workspace/ledger/{entry_id}")
+async def delete_ledger_entry(entry_id: int):
+    """Deletes a ledger entry."""
+    res = WorkspaceEngine.delete_ledger_entry(entry_id)
+    if res.get("status") == "error":
+        raise HTTPException(status_code=500, detail=res.get("message"))
+    return res
+
 @app.get("/workspace/accounting/notes")
 async def get_accounting_notes():
     """Retrieves statutory Debit and Credit notes."""
@@ -707,7 +804,26 @@ async def get_accounting_notes():
 @app.post("/workspace/accounting/notes")
 async def add_accounting_note(data: dict = Body(...)):
     """Records a new Debit or Credit correction note."""
-    return WorkspaceEngine.add_accounting_note(data)
+    res = WorkspaceEngine.add_accounting_note(data)
+    if res.get("status") == "error":
+        raise HTTPException(status_code=500, detail=res.get("message"))
+    return res
+
+@app.put("/workspace/accounting/notes/{note_id}")
+async def update_accounting_note(note_id: int, data: dict = Body(...)):
+    """Updates an existing accounting note."""
+    res = WorkspaceEngine.update_accounting_note(note_id, data)
+    if res.get("status") == "error":
+        raise HTTPException(status_code=500, detail=res.get("message"))
+    return res
+
+@app.delete("/workspace/accounting/notes/{note_id}")
+async def delete_accounting_note(note_id: int):
+    """Deletes an accounting note."""
+    res = WorkspaceEngine.delete_accounting_note(note_id)
+    if res.get("status") == "error":
+        raise HTTPException(status_code=500, detail=res.get("message"))
+    return res
 
 @app.get("/workspace/accounting/statements")
 async def get_financial_statements():
@@ -737,7 +853,7 @@ async def get_trial_balance():
 @app.get("/workspace/accounting/pl")
 async def get_pl_statement():
     """Generates a structured Profit & Loss statement."""
-    return WorkspaceEngine.get_profit_and_loss()
+    return WorkspaceEngine.get_pl_statement()
 
 @app.get("/workspace/accounting/balance-sheet")
 async def get_balance_sheet():
@@ -833,6 +949,46 @@ async def send_invoice_reminder(invoice_id: str):
     """Triggers an autonomous payment reminder for a specific invoice."""
     return WorkspaceEngine.send_payment_reminder(invoice_id)
 
+@app.get("/workspace/export/{table_name}")
+async def export_workspace_data(table_name: str):
+    """Generates and streams a CSV version of the requested business table."""
+    valid_tables = ["invoices", "customers", "inventory", "expenses", "ledger", "marketing_campaigns", "notes"]
+    
+    # Map 'marketing' alias to 'marketing_campaigns' table
+    if table_name == "marketing":
+        table_name = "marketing_campaigns"
+
+    if table_name not in valid_tables:
+        # Check if it's a report instead of a raw table
+        if table_name == "trial_balance":
+            csv_data = WorkspaceEngine.export_trial_balance()
+        elif table_name == "daybook":
+            csv_data = WorkspaceEngine.export_daybook()
+        elif table_name == "p_and_l":
+            csv_data = WorkspaceEngine.export_p_and_l()
+        elif table_name == "balance_sheet":
+            csv_data = WorkspaceEngine.export_balance_sheet()
+        else:
+            raise HTTPException(status_code=400, detail="Invalid table name or report for export.")
+    else:
+        csv_data = WorkspaceEngine.export_to_csv(table_name)
+
+    return StreamingResponse(
+        iter([csv_data]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={table_name}_export_{datetime.now().strftime('%Y%m%d')}.csv"}
+    )
+
+@app.get("/workspace/export/customer-ledger/{customer_id}")
+async def export_customer_ledger(customer_id: str):
+    """Generates and streams a CSV version of a specific customer's ledger."""
+    csv_data = WorkspaceEngine.export_customer_ledger(customer_id)
+    return StreamingResponse(
+        iter([csv_data]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=ledger_{customer_id}_{datetime.now().strftime('%Y%m%d')}.csv"}
+    )
+
 @app.get("/workspace/business-report/download")
 async def download_consolidated_report():
     """Generates and streams a unified business performance report."""
@@ -853,25 +1009,83 @@ async def copilot_chat(request: Request):
     dataset_id = body.get("dataset_id") # Optional: specific context
     
     if not query:
-        return {"response": "I'm listening. How can I assist with your business operations today?"}
+        return {
+            "response": "I'm listening. Ask about totals, trends, top performers, risks, margins, or customer and inventory patterns.",
+            "answer": "I'm listening. Ask about totals, trends, top performers, risks, margins, or customer and inventory patterns.",
+            "suggested_questions": [
+                "Summarize the current data",
+                "What are the top contributors?",
+                "Show the main risks in the data",
+            ],
+        }
     
     # 1. Get Context
     context_df = None
+    analytics = {}
+    pipeline = None
     if dataset_id and dataset_id in _sessions:
-        context_df = _sessions[dataset_id].get("df")
+        session = _sessions[dataset_id]
+        context_df = session.get("df")
+        analytics = session.get("analytics", {})
+        pipeline = session.get("pipeline")
     else:
         # Fallback: Live Workspace Data
         context_df = WorkspaceEngine.get_enterprise_analytics_df()
+        if context_df is not None and not context_df.empty:
+            numeric_cols = context_df.select_dtypes(include=[np.number]).columns.tolist()
+            if numeric_cols:
+                primary_metric = "revenue" if "revenue" in numeric_cols else numeric_cols[0]
+                analytics["total_revenue"] = float(context_df[primary_metric].sum())
+                analytics["average_revenue"] = float(context_df[primary_metric].mean())
+            if "product" in context_df.columns and numeric_cols:
+                metric = "revenue" if "revenue" in context_df.columns else numeric_cols[0]
+                analytics["top_products"] = (
+                    context_df.groupby("product")[metric].sum().sort_values(ascending=False).head(5).to_dict()
+                )
+            if "region" in context_df.columns and numeric_cols:
+                metric = "revenue" if "revenue" in context_df.columns else numeric_cols[0]
+                analytics["region_sales"] = context_df.groupby("region")[metric].sum().to_dict()
         
     # 2. Query Logic (Heuristic for now, can be LLM-powered)
     try:
-        from app.engines.nlbi_engine import run_nl_query
         # Log the usage
         WorkspaceEngine.log_usage("Copilot", f"Query: {query[:50]}...")
-        result = run_nl_query(query, context_df)
-        return {"response": result}
+        if context_df is None or context_df.empty:
+            msg = "No active dataset or synced workspace context is available. Upload a dataset or sync workspace data first."
+            return {
+                "response": msg,
+                "answer": msg,
+                "suggested_questions": [
+                    "Summarize the current data",
+                    "What are the top products?",
+                    "Show revenue trends",
+                ],
+            }
+
+        result = handle_question(query, context_df, analytics, {}, pipeline)
+        if not result:
+            from app.engines.nlbi_engine import run_nl_query
+            result = run_nl_query(query, context_df)
+
+        suggestions = [
+            "Summarize the current data",
+            "What are the top 5 contributors?",
+            "Show trend over time",
+        ]
+        if "product" in context_df.columns:
+            suggestions[1] = "What are the top 5 products?"
+        elif "customer" in " ".join(map(str.lower, context_df.columns)):
+            suggestions[1] = "Which customers contribute the most?"
+
+        return {
+            "response": result,
+            "answer": result,
+            "context_rows": int(len(context_df)),
+            "suggested_questions": suggestions,
+        }
     except Exception as e:
-        return {"response": f"Neural Link Error: {str(e)}"}
+        msg = f"Neural Link Error: {str(e)}"
+        return {"response": msg, "answer": msg, "suggested_questions": []}
 
 @app.get("/workspace/accounting/cfo-report")
 async def get_cfo_report():

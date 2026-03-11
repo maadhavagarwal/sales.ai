@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { createInvoice, getInvoices, getCustomers, getInventory, sendInvoiceReminder } from "@/services/api"
+import { createInvoice, getInvoices, updateInvoice, deleteInvoice, exportWorkspaceData, sendInvoiceReminder, getCustomers, getInventory } from "@/services/api"
 import { useStore } from "@/store/useStore"
 import { Card, Button, Badge, Modal } from "@/components/ui"
 
@@ -13,14 +13,19 @@ export default function WorkspaceInvoicing() {
     const [inventory, setInventory] = useState<any[]>([])
     const [showCreate, setShowCreate] = useState(false)
     const [viewingInvoice, setViewingInvoice] = useState<any>(null)
+    const [editingInvoice, setEditingInvoice] = useState<any>(null)
+    const [editForm, setEditForm] = useState({ status: "PAID", due_date: "", notes: "" })
     const [loading, setLoading] = useState(false)
+    const [reminderLoadingId, setReminderLoadingId] = useState<string | null>(null)
 
     // Form state (GST Compliant)
     const [selectedCustomer, setSelectedCustomer] = useState<any>(null)
     const [items, setItems] = useState([{ inventory_id: "", desc: "", qty: 1, price: 0, hsn: "", taxRate: 18 }])
     const [notes, setNotes] = useState("")
     const [isInterState, setIsInterState] = useState(false)
-    const [paymentTerms, setPaymentTerms] = useState("Net 30")
+    const [paymentTimeline, setPaymentTimeline] = useState("LATER")
+    const [paymentDays, setPaymentDays] = useState(30)
+    const [promptedReminderIds, setPromptedReminderIds] = useState<string[]>([])
 
     useEffect(() => {
         refreshData()
@@ -41,7 +46,7 @@ export default function WorkspaceInvoicing() {
 
     const updateItem = (index: number, field: string, value: any) => {
         const newItems = [...items]
-            ; (newItems[index] as any)[field] = value
+        ;(newItems[index] as any)[field] = value
 
         if (field === 'inventory_id' && value) {
             const stock = inventory.find(i => i.sku === value)
@@ -52,6 +57,77 @@ export default function WorkspaceInvoicing() {
             }
         }
         setItems(newItems)
+    }
+
+    const getDueDateFromPlan = () => {
+        const days = paymentTimeline === "IMMEDIATE" ? 0 : Math.max(paymentDays || 0, 1)
+        return new Date(Date.now() + days * 86400000).toISOString().split('T')[0]
+    }
+
+    const getPaymentTermsLabel = () => {
+        if (paymentTimeline === "IMMEDIATE") return "Immediate Payment"
+        return `Net ${Math.max(paymentDays || 0, 1)} Days`
+    }
+
+    const parseInvoiceItems = (invoice: any) => {
+        try {
+            return JSON.parse(invoice.items_json || "[]")
+        } catch {
+            return []
+        }
+    }
+
+    const findCustomerForInvoice = (invoice: any) => {
+        return customers.find(c => c.name === invoice.customer_id || String(c.id) === String(invoice.customer_id)) || null
+    }
+
+    const getDaysToDue = (dueDate?: string) => {
+        if (!dueDate) return null
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+        const due = new Date(dueDate)
+        due.setHours(0, 0, 0, 0)
+        return Math.round((due.getTime() - today.getTime()) / 86400000)
+    }
+
+    const getReminderEmailDraft = (invoice: any) => {
+        const customer = findCustomerForInvoice(invoice)
+        const dueDate = invoice.due_date || getDueDateFromPlan()
+        const subject = `Payment reminder for invoice ${invoice.invoice_number || invoice.id}`
+        const body = [
+            `Dear ${invoice.customer_id},`,
+            ``,
+            `This is a payment reminder for invoice ${invoice.invoice_number || invoice.id}.`,
+            `Invoice amount: ${currencySymbol}${Number(invoice.grand_total || 0).toLocaleString()}`,
+            `Payment timeline: ${invoice.payment_terms || getPaymentTermsLabel()}`,
+            `Due date: ${dueDate}`,
+            ``,
+            `Please confirm the payment timeline or share the remittance details at the earliest convenience.`,
+            ``,
+            `Regards,`,
+            `Accounts Receivable Team`,
+        ].join("\n")
+
+        return {
+            email: customer?.email || "",
+            subject,
+            body,
+        }
+    }
+
+    const openReminderEmailDraft = async (invoice: any) => {
+        const draft = getReminderEmailDraft(invoice)
+        if (draft.email) {
+            window.location.href = `mailto:${encodeURIComponent(draft.email)}?subject=${encodeURIComponent(draft.subject)}&body=${encodeURIComponent(draft.body)}`
+            return
+        }
+
+        try {
+            await navigator.clipboard.writeText(`Subject: ${draft.subject}\n\n${draft.body}`)
+            alert("Customer email is not available. The reminder email draft has been copied to your clipboard.")
+        } catch {
+            alert("Customer email is not available, and the reminder draft could not be copied automatically.")
+        }
     }
 
     const calculateTotals = () => {
@@ -80,6 +156,7 @@ export default function WorkspaceInvoicing() {
         if (!selectedCustomer) return
         setLoading(true)
         const totals = calculateTotals()
+        const dueDate = getDueDateFromPlan()
         try {
             const res = await createInvoice({
                 customer_id: selectedCustomer.name,
@@ -96,23 +173,29 @@ export default function WorkspaceInvoicing() {
                 grand_total: totals.grandTotal,
                 notes,
                 currency: currencySymbol,
-                payment_terms: paymentTerms,
-                due_date: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]
+                payment_terms: getPaymentTermsLabel(),
+                payment_timeline: paymentTimeline,
+                payment_days: paymentTimeline === "IMMEDIATE" ? 0 : Math.max(paymentDays || 0, 1),
+                due_date: dueDate
             })
             setShowCreate(false)
             setItems([{ inventory_id: "", desc: "", qty: 1, price: 0, hsn: "", taxRate: 18 }])
+            setPaymentTimeline("LATER")
+            setPaymentDays(30)
             refreshData()
 
             // Auto open for printing
             const newInvoice = {
                 id: res.invoice_id,
                 customer_id: selectedCustomer.name,
-                client_gstin: selectedCustomer.gstin,
+                customer_gstin: selectedCustomer.gstin,
                 items_json: JSON.stringify(items),
                 subtotal: totals.subtotal,
                 total_tax: totals.totalTax,
                 grand_total: totals.grandTotal,
-                date: new Date().toISOString().split('T')[0]
+                date: new Date().toISOString().split('T')[0],
+                due_date: dueDate,
+                payment_terms: getPaymentTermsLabel(),
             }
             setViewingInvoice(newInvoice)
         } catch (e) {
@@ -126,6 +209,33 @@ export default function WorkspaceInvoicing() {
         window.print()
     }
 
+    const handleEditInvoice = (inv: any) => {
+        setEditingInvoice(inv)
+        setEditForm({
+            status: inv.status || "PENDING",
+            due_date: inv.due_date || new Date().toISOString().split('T')[0],
+            notes: inv.notes || ""
+        })
+    }
+
+    const handleUpdateInvoice = async () => {
+        if (!editingInvoice) return
+        setLoading(true)
+        try {
+            await updateInvoice(editingInvoice.id, {
+                ...editForm,
+                grand_total: editingInvoice.grand_total,
+                subtotal: editingInvoice.subtotal
+            })
+            setEditingInvoice(null)
+            refreshData()
+        } catch (e) {
+            console.error(e)
+        } finally {
+            setLoading(false)
+        }
+    }
+
     const handleShare = () => {
         if (!viewingInvoice) return
         const text = `Invoice #${viewingInvoice.id} for ${viewingInvoice.customer_id}. Amount: ${currencySymbol}${viewingInvoice.grand_total}.`
@@ -137,7 +247,66 @@ export default function WorkspaceInvoicing() {
         }
     }
 
+    const handleSendReminder = async (invoice: any, autoOpenEmail = false) => {
+        const invoiceId = invoice.id
+        setReminderLoadingId(invoiceId)
+        try {
+            const res = await sendInvoiceReminder(invoiceId)
+            if (res?.status === "error") {
+                alert(res.message || "Failed to send reminder.")
+                return
+            }
+            await refreshData()
+            const customer = findCustomerForInvoice(invoice)
+            const promptMessage = customer?.email
+                ? `Reminder logged for invoice ${res?.invoice_id || invoiceId}. Do you want to open a formatted reminder email to ${customer.email}?`
+                : "Reminder logged. Customer email is missing. Do you want a formatted reminder draft copied instead?"
+
+            if (autoOpenEmail || confirm(promptMessage)) {
+                await openReminderEmailDraft(invoice)
+            }
+
+            alert(`Reminder sent for invoice ${res?.invoice_id || invoiceId}${res?.timestamp ? ` on ${res.timestamp}` : ""}.`)
+        } catch (e: any) {
+            alert(e?.response?.data?.detail || e?.message || "Failed to send reminder.")
+        } finally {
+            setReminderLoadingId(null)
+        }
+    }
+
+    useEffect(() => {
+        const nextCandidate = invoices.find((inv) => {
+            const dueInDays = getDaysToDue(inv.due_date)
+            return (
+                inv.status === "PENDING" &&
+                dueInDays !== null &&
+                dueInDays <= 3 &&
+                !promptedReminderIds.includes(inv.id)
+            )
+        })
+
+        if (!nextCandidate) return
+
+        setPromptedReminderIds((prev) => [...prev, nextCandidate.id])
+
+        const dueInDays = getDaysToDue(nextCandidate.due_date)
+        const promptText = dueInDays !== null && dueInDays < 0
+            ? `Invoice ${nextCandidate.id} is overdue by ${Math.abs(dueInDays)} day(s). Send a reminder email now?`
+            : `Invoice ${nextCandidate.id} is due in ${dueInDays} day(s). Send a reminder email now?`
+
+        if (confirm(promptText)) {
+            handleSendReminder(nextCandidate, true)
+        }
+    }, [invoices, promptedReminderIds])
+
     const totals = calculateTotals()
+    const dueDatePreview = getDueDateFromPlan()
+    const syncedCustomers = invoices.filter(inv => !!findCustomerForInvoice(inv)).length
+    const syncedInventoryInvoices = invoices.filter(inv =>
+        parseInvoiceItems(inv).every((item: any) => !item.inventory_id || inventory.some(stock => stock.sku === item.inventory_id))
+    ).length
+    const dueDateReadyInvoices = invoices.filter(inv => !!inv.due_date).length
+    const nearDueInvoices = invoices.filter((inv) => inv.status === "PENDING" && (getDaysToDue(inv.due_date) ?? 999) <= 3)
 
     return (
         <div className="space-y-16">
@@ -165,6 +334,56 @@ export default function WorkspaceInvoicing() {
                 ))}
             </div>
 
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                <Card variant="glass" padding="md" className="border-[--primary]/20">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-[--text-muted]">Customer Sync</p>
+                    <p className="text-2xl font-black text-white mt-2">{syncedCustomers}/{invoices.length || 0}</p>
+                    <p className="text-[10px] text-[--text-muted] mt-2">Invoices mapped to known CRM entities.</p>
+                </Card>
+                <Card variant="glass" padding="md" className="border-[--accent-cyan]/20">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-[--text-muted]">Inventory Sync</p>
+                    <p className="text-2xl font-black text-white mt-2">{syncedInventoryInvoices}/{invoices.length || 0}</p>
+                    <p className="text-[10px] text-[--text-muted] mt-2">Invoice lines linked to valid stock masters.</p>
+                </Card>
+                <Card variant="glass" padding="md" className="border-[--accent-amber]/20">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-[--text-muted]">Due-Date Sync</p>
+                    <p className="text-2xl font-black text-white mt-2">{dueDateReadyInvoices}/{invoices.length || 0}</p>
+                    <p className="text-[10px] text-[--text-muted] mt-2">Invoices carrying payment timeline metadata.</p>
+                </Card>
+                <Card variant="glass" padding="md" className="border-[--accent-rose]/20">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-[--text-muted]">Reminder Queue</p>
+                    <p className="text-2xl font-black text-white mt-2">{nearDueInvoices.length}</p>
+                    <p className="text-[10px] text-[--text-muted] mt-2">Invoices due within 3 days or overdue.</p>
+                </Card>
+            </div>
+
+            {nearDueInvoices.length > 0 && (
+                <Card variant="bento" padding="md" className="border-[--accent-amber]/20 bg-[--accent-amber]/5">
+                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                        <div>
+                            <p className="text-[10px] font-black uppercase tracking-[0.25em] text-[--accent-amber]">Reminder Activation Queue</p>
+                            <p className="text-sm font-bold text-white mt-2">
+                                Pending invoices are nearing maturity. Trigger the reminder and open a formatted email draft from here.
+                            </p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            {nearDueInvoices.slice(0, 3).map((inv) => (
+                                <Button
+                                    key={inv.id}
+                                    variant="outline"
+                                    size="xs"
+                                    onClick={() => handleSendReminder(inv, true)}
+                                    loading={reminderLoadingId === inv.id}
+                                    className="uppercase text-[9px] font-black tracking-widest border-[--accent-amber]/30"
+                                >
+                                    Send {inv.id}
+                                </Button>
+                            ))}
+                        </div>
+                    </div>
+                </Card>
+            )}
+
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
                 <div>
                     <h2 className="text-3xl font-black text-[--text-primary] tracking-tight">Tax Invoicing Engine</h2>
@@ -172,9 +391,14 @@ export default function WorkspaceInvoicing() {
                         Generate professional, audit-ready Indian Statutory Tax Invoices.
                     </p>
                 </div>
-                <Button variant="pro" size="lg" onClick={() => setShowCreate(true)} icon={<span>+</span>} className="shadow-[--shadow-glow]">
-                    Initialize Tax Invoice
-                </Button>
+                <div className="flex gap-4">
+                    <Button variant="outline" size="lg" onClick={() => exportWorkspaceData("invoices")} className="uppercase text-[10px] font-black tracking-widest">
+                        Export CSV
+                    </Button>
+                    <Button variant="pro" size="lg" onClick={() => setShowCreate(true)} icon={<span>+</span>} className="shadow-[--shadow-glow]">
+                        Initialize Tax Invoice
+                    </Button>
+                </div>
             </div>
 
             <AnimatePresence>
@@ -282,13 +506,24 @@ export default function WorkspaceInvoicing() {
                                     <div className="flex-1 space-y-4">
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="space-y-4">
-                                                <label className="text-[10px] font-black uppercase tracking-widest text-[--text-muted]">Payment Terms Matrix</label>
-                                                <select value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)} className="input-pro w-full font-black text-white">
-                                                    <option value="Net 30">Net 30 Days</option>
-                                                    <option value="Net 15">Net 15 Days</option>
-                                                    <option value="Due on Receipt">Due on Receipt</option>
-                                                    <option value="Advanced Balance">Advanced Balance</option>
+                                                <label className="text-[10px] font-black uppercase tracking-widest text-[--text-muted]">Payment Timeline</label>
+                                                <select value={paymentTimeline} onChange={(e) => setPaymentTimeline(e.target.value)} className="input-pro w-full font-black text-white">
+                                                    <option value="IMMEDIATE">Immediate</option>
+                                                    <option value="LATER">Later</option>
                                                 </select>
+                                                {paymentTimeline === "LATER" && (
+                                                    <input
+                                                        type="number"
+                                                        min={1}
+                                                        value={paymentDays}
+                                                        onChange={(e) => setPaymentDays(parseInt(e.target.value) || 1)}
+                                                        className="input-pro w-full font-black text-white"
+                                                        placeholder="Payment days"
+                                                    />
+                                                )}
+                                                <p className="text-[10px] text-[--primary] font-bold uppercase tracking-widest">
+                                                    Due Date Preview: {dueDatePreview}
+                                                </p>
                                             </div>
                                             <div className="space-y-4">
                                                 <label className="text-[10px] font-black uppercase tracking-widest text-[--text-muted]">Terms & Strategic Notes</label>
@@ -303,7 +538,7 @@ export default function WorkspaceInvoicing() {
 
                                         {/* AI Cognitive Suggestion */}
                                         {items.some(it => inventory.find(stock => stock.sku === it.inventory_id)?.quantity > 20) && (
-                                            <div className="mt-8 p-6 rounded-2xl border border-[--accent-amber]/20 bg-[--accent-amber]/5 animate-pulse-slow">
+                                            <div className="mt-8 p-6 rounded-2xl border border-[--accent-amber]/20 bg-[--accent-amber]/5">
                                                 <div className="flex items-center gap-3 mb-2">
                                                     <span className="text-lg">🧠</span>
                                                     <p className="text-[10px] font-black text-[--accent-amber] uppercase tracking-widest">Cognitive Strategy Alert</p>
@@ -354,11 +589,66 @@ export default function WorkspaceInvoicing() {
                                     </Button>
                                 </div>
                             </div>
-                        </Card >
-                    </motion.div >
-                )
-                }
-            </AnimatePresence >
+                        </Card>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {editingInvoice && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 20 }}
+                        className="mb-12"
+                    >
+                        <Card variant="bento" padding="lg" className="border-[--primary]/30 bg-[--primary]/5">
+                            <h3 className="text-xs font-black uppercase tracking-[0.3em] text-[--primary] mb-8">Update Statutory Instrument Status</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-[--text-muted]">Collection Status</label>
+                                    <select 
+                                        value={editForm.status} 
+                                        onChange={(e) => setEditForm({ ...editForm, status: e.target.value })} 
+                                        className="input-pro w-full font-bold bg-black/40"
+                                    >
+                                        <option value="PENDING">PENDING (Unpaid)</option>
+                                        <option value="PAID">PAID (Settled)</option>
+                                        <option value="CANCELLED">VOID/CANCELLED</option>
+                                        <option value="PARTIAL">PARTIAL PAYMENT</option>
+                                    </select>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-[--text-muted]">Maturity Date (Due)</label>
+                                    <input 
+                                        type="date" 
+                                        value={editForm.due_date} 
+                                        onChange={(e) => setEditForm({ ...editForm, due_date: e.target.value })} 
+                                        className="input-pro w-full font-bold bg-black/40" 
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-[--text-muted]">Amendment Notes</label>
+                                    <input 
+                                        placeholder="Internal audit notes..." 
+                                        value={editForm.notes} 
+                                        onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} 
+                                        className="input-pro w-full font-bold bg-black/40" 
+                                    />
+                                </div>
+                            </div>
+                            <div className="flex gap-4">
+                                <Button variant="pro" size="sm" onClick={handleUpdateInvoice} loading={loading} className="uppercase text-[10px] tracking-widest px-8">
+                                    Commit Status Update
+                                </Button>
+                                <Button variant="outline" size="sm" onClick={() => setEditingInvoice(null)} className="uppercase text-[10px] tracking-widest opacity-60 px-8">
+                                    Cancel
+                                </Button>
+                            </div>
+                        </Card>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             <Card variant="glass" padding="lg">
                 <div className="flex justify-between items-center mb-8">
@@ -382,7 +672,7 @@ export default function WorkspaceInvoicing() {
                         <tbody className="divide-y divide-white/5">
                             {invoices.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} className="py-24 text-center">
+                                    <td colSpan={7} className="py-24 text-center">
                                         <p className="text-xs font-bold text-[--text-muted] italic">Quantum records empty. Authorize your first instrument to begin.</p>
                                     </td>
                                 </tr>
@@ -391,12 +681,15 @@ export default function WorkspaceInvoicing() {
                                     <td className="py-5 font-black text-[--primary] text-xs">#{inv.id.toString().padStart(6, '0')}</td>
                                     <td className="py-5">
                                         <p className="text-xs font-bold text-[--text-primary]">{inv.customer_id}</p>
+                                        <p className="text-[10px] text-[--text-muted] mt-1 uppercase tracking-wide">
+                                            {inv.payment_terms || "Due on Receipt"} | Due {inv.due_date || "TBD"}
+                                        </p>
                                     </td>
                                     <td className="py-5">
-                                        <span className="text-[10px] font-mono text-[--text-muted] bg-black/30 px-2 py-0.5 rounded">{inv.client_gstin || 'N/A'}</span>
+                                        <span className="text-[10px] font-mono text-[--text-muted] bg-black/30 px-2 py-0.5 rounded">{inv.customer_gstin || inv.client_gstin || 'N/A'}</span>
                                     </td>
                                     <td className="py-5 text-right font-bold text-[--accent-amber] text-xs">
-                                        {currencySymbol}{(inv.tax_totals?.total || 0).toLocaleString()}
+                                        {currencySymbol}{(inv.total_tax || inv.tax_totals?.total || 0).toLocaleString()}
                                     </td>
                                     <td className="py-5 text-right font-black text-white text-sm">
                                         {currencySymbol}{inv.grand_total.toLocaleString()}
@@ -414,17 +707,49 @@ export default function WorkspaceInvoicing() {
                                             <Button
                                                 variant="ghost"
                                                 size="xs"
-                                                onClick={() => sendInvoiceReminder(inv.id)}
+                                                onClick={() => handleSendReminder(inv)}
+                                                loading={reminderLoadingId === inv.id}
+                                                disabled={reminderLoadingId === inv.id || inv.status === "PAID"}
                                                 className="text-[9px] font-black uppercase tracking-widest text-[--accent-rose] border border-[--accent-rose]/20 hover:bg-[--accent-rose]/10"
                                             >
-                                                Remind
+                                                {inv.status === "PAID" ? "Settled" : ((getDaysToDue(inv.due_date) ?? 999) <= 3 ? "Due Soon" : "Remind")}
                                             </Button>
                                         </div>
                                     </td>
                                     <td className="py-5 text-right">
-                                        <Button variant="ghost" size="xs" className="opacity-0 group-hover:opacity-100 transition-opacity uppercase text-[9px] font-black tracking-widest">
-                                            View IRN →
-                                        </Button>
+                                        <div className="flex flex-wrap justify-end gap-2">
+                                            <Badge variant={inv.status === "PAID" ? "success" : (getDaysToDue(inv.due_date) ?? 999) < 0 ? "danger" : "warning"} size="xs">
+                                                {inv.status === "PAID"
+                                                    ? "PAID"
+                                                    : (getDaysToDue(inv.due_date) ?? 999) < 0
+                                                        ? `OVERDUE ${Math.abs(getDaysToDue(inv.due_date) || 0)}D`
+                                                        : `DUE ${getDaysToDue(inv.due_date) ?? "--"}D`}
+                                            </Badge>
+                                            <Button 
+                                                variant="ghost" 
+                                                size="xs" 
+                                                className="uppercase text-[9px] font-black tracking-widest text-[--accent-cyan]"
+                                                onClick={() => handleEditInvoice(inv)}
+                                            >
+                                                Edit Status
+                                            </Button>
+                                            <Button variant="ghost" size="xs" className="uppercase text-[9px] font-black tracking-widest">
+                                                View IRN →
+                                            </Button>
+                                            <Button 
+                                                variant="ghost" 
+                                                size="xs" 
+                                                className="text-[--accent-rose] hover:bg-[--accent-rose]/10 uppercase text-[9px] font-black tracking-widest"
+                                                onClick={async () => {
+                                                    if(confirm("Confirm deletion of this invoice?")) {
+                                                        await deleteInvoice(inv.id)
+                                                        refreshData()
+                                                    }
+                                                }}
+                                            >
+                                                Delete
+                                            </Button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
@@ -458,7 +783,9 @@ export default function WorkspaceInvoicing() {
                                 <div>
                                     <p className="font-black uppercase text-slate-400 mb-2">Bill To:</p>
                                     <p className="text-lg font-black">{viewingInvoice.customer_id}</p>
-                                    <p className="mt-1 font-medium">{viewingInvoice.client_gstin ? `GSTIN: ${viewingInvoice.client_gstin}` : 'GST-Exempt Entity'}</p>
+                                    <p className="mt-1 font-medium">{(viewingInvoice.customer_gstin || viewingInvoice.client_gstin) ? `GSTIN: ${viewingInvoice.customer_gstin || viewingInvoice.client_gstin}` : 'GST-Exempt Entity'}</p>
+                                    <p className="mt-1 font-medium text-slate-500">Payment Timeline: {viewingInvoice.payment_terms || "Due on Receipt"}</p>
+                                    <p className="mt-1 font-medium text-slate-500">Due Date: {viewingInvoice.due_date || "TBD"}</p>
                                 </div>
                                 <div className="text-right">
                                     <p className="font-black uppercase text-slate-400 mb-2">Compliance Ref:</p>

@@ -27,6 +27,17 @@ def _analyze_with_pandas(q, df, analytics, ml_results, pipeline):
     numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
     cat_cols = df.select_dtypes(include=["object"]).columns.tolist()
     all_cols = df.columns.tolist()
+    date_col = _find_date_column(df)
+
+    if any(w in q for w in ["columns", "fields", "schema"]):
+        return "Available columns: " + ", ".join(all_cols)
+
+    if any(w in q for w in ["missing", "null", "blank", "empty"]):
+        null_counts = df.isna().sum().sort_values(ascending=False)
+        lines = ["Missing-value summary:"]
+        for col, val in null_counts.head(10).items():
+            lines.append(f"  - {col}: {int(val)}")
+        return "\n".join(lines)
 
     # ---- TOP / BEST / HIGHEST ----
     if any(w in q for w in ["top", "best", "highest", "most", "largest", "greatest"]):
@@ -111,6 +122,12 @@ def _analyze_with_pandas(q, df, analytics, ml_results, pipeline):
             return "\n".join(lines)
         return f"Total rows: {len(df):,}"
 
+    if any(w in q for w in ["unique", "distinct"]):
+        target_col = _find_column_in_question(q, all_cols)
+        if target_col:
+            values = df[target_col].dropna().astype(str).unique().tolist()[:15]
+            return f"{target_col} has {df[target_col].nunique()} unique values: " + ", ".join(values)
+
     # ---- COMPARE ----
     if any(w in q for w in ["compare", "comparison", "versus", "vs"]):
         target_cat = _find_column_in_question(q, cat_cols)
@@ -126,16 +143,27 @@ def _analyze_with_pandas(q, df, analytics, ml_results, pipeline):
 
     # ---- TREND / OVER TIME ----
     if any(w in q for w in ["trend", "over time", "monthly", "yearly", "growth"]):
-        if "date" in df.columns and numeric_cols:
+        if date_col and numeric_cols:
             target_num = _find_column_in_question(q, numeric_cols) or numeric_cols[0]
             df_t = df.copy()
-            if pd.api.types.is_datetime64_any_dtype(df_t["date"]):
-                df_t["_period"] = df_t["date"].dt.to_period("M").astype(str)
+            df_t[date_col] = pd.to_datetime(df_t[date_col], errors="coerce")
+            if pd.api.types.is_datetime64_any_dtype(df_t[date_col]):
+                df_t = df_t.dropna(subset=[date_col])
+                df_t["_period"] = df_t[date_col].dt.to_period("M").astype(str)
                 trend = df_t.groupby("_period")[target_num].sum()
                 lines = [f"{target_num} trend over time:"]
                 for period, val in trend.items():
                     lines.append(f"  • {period}: {_fmt(val)}")
                 return "\n".join(lines)
+
+    if any(w in q for w in ["correlation", "correlate", "relationship"]):
+        if len(numeric_cols) >= 2:
+            col_a = _find_column_in_question(q, numeric_cols) or numeric_cols[0]
+            other_cols = [col for col in numeric_cols if col != col_a]
+            col_b = next((col for col in other_cols if col.lower() in q), other_cols[0] if other_cols else None)
+            if col_b:
+                corr = df[[col_a, col_b]].corr().iloc[0, 1]
+                return f"Correlation between {col_a} and {col_b}: {corr:.3f}"
 
     # ---- SUMMARY / OVERVIEW / DESCRIBE ----
     if any(w in q for w in ["summary", "summar", "overview", "describe", "tell me about", "info"]):
@@ -258,6 +286,20 @@ def _find_column_in_question(q, columns):
         col_parts = col.lower().replace("_", " ").split()
         if any(part in q_lower for part in col_parts if len(part) > 2):
             return col
+    return None
+
+def _find_date_column(df):
+    for col in df.columns:
+        col_lower = col.lower()
+        if "date" in col_lower or "time" in col_lower or "month" in col_lower:
+            return col
+    for col in df.columns:
+        try:
+            parsed = pd.to_datetime(df[col], errors="coerce")
+            if parsed.notna().mean() > 0.7:
+                return col
+        except Exception:
+            continue
     return None
 
 def _extract_number(q):

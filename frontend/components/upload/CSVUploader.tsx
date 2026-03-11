@@ -9,7 +9,7 @@ import { useToast } from "@/components/ui/Toast"
 export default function CSVUploader() {
     const fileRef = useRef<HTMLInputElement>(null)
     const [dragActive, setDragActive] = useState(false)
-    const { setResults, setIsUploading, setUploadProgress, setFileName, isUploading, uploadProgress } = useStore()
+    const { setResults, setIsUploading, setUploadProgress, setFileName, isUploading, uploadProgress, incrementSyncCount } = useStore()
     const [error, setError] = useState<string | null>(null)
     const { showToast } = useToast()
 
@@ -40,6 +40,7 @@ export default function CSVUploader() {
             }
 
             setResults(data)
+            incrementSyncCount()
             setUploadProgress(100)
             showToast("success", "Dataset Loaded", `${file.name} · ${data.analytics?.rows ?? data.rows ?? "?"} rows processed`)
         } catch (err: any) {

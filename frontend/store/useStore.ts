@@ -145,6 +145,8 @@ interface AppState {
     removeWidget: (id: string) => void
     setEditingWidget: (id: string | null) => void
     setWidgets: (widgets: DashboardWidget[]) => void
+    workspaceSyncCount: number
+    incrementSyncCount: () => void
     fetchForecast: (datasetId: string, periods?: number) => Promise<void>
 }
 
@@ -179,6 +181,8 @@ export const useStore = create<AppState>((set) => ({
         }
         return { theme: next }
     }),
+    workspaceSyncCount: 0,
+    incrementSyncCount: () => set((state: any) => ({ workspaceSyncCount: (state.workspaceSyncCount || 0) + 1 })),
     clearResults: () => set({ results: null, datasetId: null, fileName: null, uploadProgress: 0, widgets: [] }),
     setCurrency: (code, symbol) => set({ currencyCode: code, currencySymbol: symbol }),
 

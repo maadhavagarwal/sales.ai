@@ -1,9 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   /* config options here */
-  experimental: {
-    outputFileTracingRoot: process.cwd(),
-  },
+  outputFileTracingRoot: process.cwd(),
   eslint: {
     // Warning: This allows production builds to successfully complete even if
     // your project has ESLint errors.
