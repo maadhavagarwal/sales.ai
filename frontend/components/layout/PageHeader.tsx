@@ -18,10 +18,10 @@ export default function PageHeader({ title, subtitle, actions }: PageHeaderProps
                         {title}
                     </h1>
                     {subtitle && (
-                        <p className="text-sm font-medium text-[--text-muted] mt-1.5 flex items-center gap-2">
+                        <div className="text-sm font-medium text-[--text-muted] mt-1.5 flex items-center gap-2">
                             <span className="w-1 h-3 bg-[--primary]/40 rounded-full" />
                             {subtitle}
-                        </p>
+                        </div>
                     )}
                 </div>
 
