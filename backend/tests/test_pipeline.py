@@ -9,6 +9,7 @@ from app.services.pipeline_controller import run_pipeline
 from app.engines.copilot_engine import handle_question
 from app.engines.nlbi_engine import generate_chart_from_question
 
+
 def create_test_data():
     """Create a realistic sample sales dataset."""
     np.random.seed(42)
@@ -37,13 +38,12 @@ def test_pipeline():
     print("=" * 60)
 
     df = create_test_data()
-    print(f"\n✅ Created test dataset: {len(df)} rows, {list(df.columns)}")
+    print(f"\nCreated test dataset: {len(df)} rows, {list(df.columns)}")
 
-    # Test pipeline
     print("\n--- Running Pipeline ---")
     try:
         result = run_pipeline(df)
-        print(f"✅ Pipeline completed successfully!")
+        print("Pipeline completed successfully!")
         print(f"   Dataset type: {result.get('dataset_type')}")
         print(f"   Analytics keys: {list(result.get('analytics', {}).keys())}")
         print(f"   ML predictions: {list(result.get('ml_predictions', {}).keys())}")
@@ -56,7 +56,6 @@ def test_pipeline():
         analyst = result.get("analyst_report", {})
         print(f"   Analyst report keys: {list(analyst.keys())}")
 
-        # Print some details
         analytics = result.get("analytics", {})
         if "total_revenue" in analytics:
             print(f"\n   Total Revenue: ${analytics['total_revenue']:,.2f}")
@@ -66,12 +65,11 @@ def test_pipeline():
             print(f"   Regions: {list(analytics['region_sales'].keys())}")
 
     except Exception as e:
-        print(f"❌ Pipeline failed: {e}")
+        print(f"Pipeline failed: {e}")
         import traceback
         traceback.print_exc()
         return
 
-    # Test copilot
     print("\n--- Testing Copilot ---")
     analytics = result.get("analytics", {})
     ml_results = result.get("ml_predictions", {})
@@ -86,11 +84,10 @@ def test_pipeline():
     for q in questions:
         try:
             answer = handle_question(q, processed_df, analytics, ml_results)
-            print(f"✅ Q: '{q}' -> {answer[:80]}...")
+            print(f"Q: '{q}' -> {answer[:80]}...")
         except Exception as e:
-            print(f"❌ Q: '{q}' -> Error: {e}")
+            print(f"Q: '{q}' -> Error: {e}")
 
-    # Test NLBI
     print("\n--- Testing NLBI Charts ---")
     nlbi_questions = [
         "Show revenue by region",
@@ -101,13 +98,12 @@ def test_pipeline():
         try:
             chart = generate_chart_from_question(q, processed_df)
             if "error" in chart:
-                print(f"⚠️  Q: '{q}' -> {chart['error']}")
+                print(f"Q: '{q}' -> {chart['error']}")
             else:
-                print(f"✅ Q: '{q}' -> {chart['chart']} chart, {len(chart.get('data', []))} data points")
+                print(f"Q: '{q}' -> {chart['chart']} chart, {len(chart.get('data', []))} data points")
         except Exception as e:
-            print(f"❌ Q: '{q}' -> Error: {e}")
+            print(f"Q: '{q}' -> Error: {e}")
 
-    # Validate the response shape matches what the frontend expects
     print("\n--- Validating Response Shape ---")
     expected_keys = ["rows", "analytics", "ml_predictions", "simulation_results",
                      "recommendations", "strategy", "insights", "explanations", "analyst_report"]
@@ -129,29 +125,27 @@ def test_pipeline():
         if key in response:
             val_type = type(response[key]).__name__
             if isinstance(response[key], list):
-                print(f"   ✅ {key}: list ({len(response[key])} items)")
+                print(f"   OK {key}: list ({len(response[key])} items)")
             elif isinstance(response[key], dict):
-                print(f"   ✅ {key}: dict ({len(response[key])} keys)")
+                print(f"   OK {key}: dict ({len(response[key])} keys)")
             else:
-                print(f"   ✅ {key}: {val_type} = {response[key]}")
+                print(f"   OK {key}: {val_type} = {response[key]}")
         else:
-            print(f"   ❌ {key}: MISSING!")
+            print(f"   MISSING {key}")
             all_present = False
 
     if all_present:
-        print("\n🎉 ALL TESTS PASSED! Backend is fully functional.")
+        print("\nALL TESTS PASSED! Backend is fully functional.")
     else:
-        print("\n⚠️  Some fields are missing from the response.")
+        print("\nSome fields are missing from the response.")
 
-    # Try JSON serialization (catches numpy/datetime issues)
     print("\n--- Testing JSON Serialization ---")
     try:
-        # Remove _df as it's not serialized
         serializable = {k: v for k, v in response.items()}
         json_str = json.dumps(serializable, default=str)
-        print(f"   ✅ Response is JSON serializable ({len(json_str)} chars)")
+        print(f"   OK Response is JSON serializable ({len(json_str)} chars)")
     except Exception as e:
-        print(f"   ❌ JSON serialization failed: {e}")
+        print(f"   JSON serialization failed: {e}")
 
 
 if __name__ == "__main__":

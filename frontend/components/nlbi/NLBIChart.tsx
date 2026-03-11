@@ -124,7 +124,7 @@ export default function NLBIChart() {
                     name: d[chartData.x],
                     value: d[chartData.y],
                 })),
-                itemStyle: { borderRadius: 8, borderColor: "var(--surface-0)", borderWidth: 2 },
+                itemStyle: { borderRadius: 8, borderColor: "#020617", borderWidth: 2 },
                 label: { color: "#9ca3af", fontSize: 11, fontFamily: "Inter" },
             }],
         }

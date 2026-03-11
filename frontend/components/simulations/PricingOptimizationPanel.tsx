@@ -6,6 +6,24 @@ import { getPricingOptimization } from "@/services/api"
 import { useStore } from "@/store/useStore"
 import ReactECharts from "echarts-for-react"
 
+function getRlWebSocketUrl() {
+    const configuredUrl = process.env.NEXT_PUBLIC_WS_URL?.trim()
+    if (configuredUrl) {
+        return configuredUrl.replace(/\/$/, "") + "/ws/stream-rl"
+    }
+
+    if (typeof window === "undefined") {
+        return null
+    }
+
+    const hostname = window.location.hostname
+    if (hostname === "localhost" || hostname === "127.0.0.1") {
+        return "ws://127.0.0.1:8000/ws/stream-rl"
+    }
+
+    return null
+}
+
 export default function PricingOptimizationPanel() {
     const { datasetId, currencySymbol } = useStore()
     const [loading, setLoading] = useState(false)
@@ -21,8 +39,16 @@ export default function PricingOptimizationPanel() {
         setStrategyApplied(false)
 
         try {
+            const wsUrl = getRlWebSocketUrl()
+            if (!wsUrl) {
+                const res = await getPricingOptimization(datasetId as string)
+                setResult(res)
+                setLoading(false)
+                return
+            }
+
             // Enterprise Feature: Real-time WebSocket Streaming
-            const ws = new WebSocket(`ws://localhost:8000/ws/stream-rl`)
+            const ws = new WebSocket(wsUrl)
 
             ws.onopen = () => {
                 ws.send(JSON.stringify({ dataset_id: datasetId }))

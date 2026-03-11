@@ -63,8 +63,8 @@ export default function GreeksPanel() {
                 data: [{
                     value: data.factor_cards.map((card: any) => Math.abs(Number(card.value))),
                     name: "Risk Profile",
-                    itemStyle: { color: "var(--primary)" },
-                    areaStyle: { color: "rgba(var(--primary-rgb), 0.22)" },
+                    itemStyle: { color: "#6366f1" },
+                    areaStyle: { color: "rgba(99, 102, 241, 0.22)" },
                 }],
             }],
         }

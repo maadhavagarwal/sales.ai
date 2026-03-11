@@ -1,12 +1,7 @@
 # neural_forecasting.py
+from app.utils.torch_runtime import load_torch
 
-try:
-    import torch
-    import torch.nn as nn
-    HAS_TORCH = True
-except Exception as e:
-    print(f"⚠️ Neural Forecasting initialization failed: {e}. LSTM disabled.")
-    HAS_TORCH = False
+HAS_TORCH, torch, nn, _, TORCH_ERROR = load_torch("Neural forecasting")
 
 
 if HAS_TORCH:

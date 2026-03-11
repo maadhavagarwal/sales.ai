@@ -83,13 +83,26 @@ async def login(email: str = Body(...), password: str = Body(...)):
     return JSONResponse(status_code=401, content={"error": "Invalid email or password"})
 
 # Security: Configurable CORS rather than raw wildcard
-ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",")
+def _collect_allowed_origins():
+    raw_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000")
+    origins = [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
+
+    for env_key in ("FRONTEND_URL", "NEXT_PUBLIC_SITE_URL", "APP_URL"):
+        value = os.getenv(env_key, "").strip()
+        if value and value not in origins:
+            origins.append(value)
+
+    return origins
+
+
+ALLOWED_ORIGINS = _collect_allowed_origins()
+ALLOWED_ORIGIN_REGEX = os.getenv("ALLOWED_ORIGIN_REGEX", r"https?://(localhost|127\.0\.0\.1)(:\d+)?")
 DEBUG_MODE = os.getenv("DEBUG", "False").lower() == "true"
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
-    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?",
+    allow_origin_regex=ALLOWED_ORIGIN_REGEX,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
