@@ -242,52 +242,12 @@ def store_data(dataset_id, df):
     # Tagging all rows
     df['_enterprise_session_uuid'] = dataset_id
 
-    # SQLite append mode is schema-sensitive. Uploaded datasets can introduce
-    # new columns over time, so we widen the shared table before appending.
-    def _sqlite_type(series):
-        if pd.api.types.is_integer_dtype(series):
-            return "INTEGER"
-        if pd.api.types.is_float_dtype(series):
-            return "REAL"
-        if pd.api.types.is_bool_dtype(series):
-            return "INTEGER"
-        return "TEXT"
-
-    conn = None
     try:
         conn = sqlite3.connect(DB_PATH)
-        table_name = "enterprise_transactions"
-
-        existing = conn.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
-            (table_name,),
-        ).fetchone()
-
-        if not existing:
-            df.to_sql(table_name, conn, if_exists="append", index=False)
-            conn.close()
-            return
-
-        existing_cols = {
-            row[1] for row in conn.execute(f"PRAGMA table_info({table_name})").fetchall()
-        }
-
-        for col in df.columns:
-            if col not in existing_cols:
-                col_type = _sqlite_type(df[col])
-                conn.execute(f'ALTER TABLE {table_name} ADD COLUMN "{col}" {col_type}')
-
-        df = df.where(df.notna(), None)
-        for col in df.columns:
-            if pd.api.types.is_datetime64_any_dtype(df[col]):
-                df[col] = df[col].astype(str)
-
-        df.to_sql(table_name, conn, if_exists="append", index=False)
+        df.to_sql("enterprise_transactions", conn, if_exists="append", index=False)
+        conn.close()
     except Exception as e:
         print(f"SQL Storage Error: {e}")
-    finally:
-        if conn is not None:
-            conn.close()
 
 # --- USER MANAGEMENT ---
 def init_auth_db():

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect } from "react"
 import DashboardLayout from "@/components/layout/DashboardLayout"
 import MetricsCards from "@/components/dashboard/MetricsCards"
 import RevenueChart from "@/components/dashboard/RevenueChart"
@@ -18,76 +18,7 @@ import { motion } from "framer-motion"
 import ReactECharts from "echarts-for-react"
 import { Card, Button, Badge } from "@/components/ui"
 
-function useThemeColor(token: string, fallback: string) {
-    const [color, setColor] = useState(fallback)
-
-    useEffect(() => {
-        const readColor = () => {
-            const value = getComputedStyle(document.documentElement)
-                .getPropertyValue(token)
-                .trim()
-            setColor(value || fallback)
-        }
-
-        readColor()
-        window.addEventListener("resize", readColor)
-        return () => window.removeEventListener("resize", readColor)
-    }, [token, fallback])
-
-    return color
-}
-
 function MLResultsPanel({ ml }: { ml: Record<string, any> }) {
-    const primaryColor = useThemeColor("--primary", "#6366f1")
-    const primaryDarkColor = useThemeColor("--primary-dark", "#4338ca")
-
-    const chartOption = useMemo(() => {
-        if (!ml?.automl_results?.model_scores) {
-            return null
-        }
-
-        return {
-            backgroundColor: "transparent",
-            tooltip: {
-                trigger: "axis",
-                backgroundColor: "rgba(10,15,30,0.95)",
-                borderColor: "rgba(99,102,241,0.3)",
-                borderWidth: 1,
-                textStyle: { color: "#f9fafb", fontSize: 13, fontFamily: "Geist Mono, JetBrains Mono, monospace" },
-            },
-            grid: { left: "0%", right: "2%", bottom: "5%", top: "5%", containLabel: true },
-            xAxis: {
-                type: "category",
-                data: Object.keys(ml.automl_results.model_scores),
-                axisLine: { lineStyle: { color: "rgba(255,255,255,0.06)" } },
-                axisLabel: { color: "#9ca3af", fontSize: 10, fontWeight: 700, rotate: 0 },
-                axisTick: { show: false },
-            },
-            yAxis: {
-                type: "value",
-                splitLine: { lineStyle: { color: "rgba(255,255,255,0.03)" } },
-                axisLabel: { color: "#6b7280", fontSize: 10, fontWeight: 700 },
-            },
-            series: [{
-                type: "pictorialBar",
-                symbol: "path://M0,10 L10,10 C5.5,10 5.5,0 0,0 z",
-                data: Object.values(ml.automl_results.model_scores),
-                itemStyle: {
-                    color: {
-                        type: "linear", x: 0, y: 0, x2: 0, y2: 1,
-                        colorStops: [
-                            { offset: 0, color: primaryColor },
-                            { offset: 1, color: primaryDarkColor },
-                        ],
-                    },
-                    opacity: 0.8
-                },
-            }],
-            animationEasing: "cubicOut",
-            animationDuration: 1500,
-        }
-    }, [ml, primaryColor, primaryDarkColor])
-
     if (!ml) return null
 
     return (
@@ -147,7 +78,46 @@ function MLResultsPanel({ ml }: { ml: Record<string, any> }) {
                             {ml.automl_results.model_scores && (
                                 <ReactECharts
                                     style={{ height: "300px" }}
-                                    option={chartOption ?? {}}
+                                    option={{
+                                        backgroundColor: "transparent",
+                                        tooltip: {
+                                            trigger: "axis",
+                                            backgroundColor: "rgba(10,15,30,0.95)",
+                                            borderColor: "rgba(99,102,241,0.3)",
+                                            borderWidth: 1,
+                                            textStyle: { color: "#f9fafb", fontSize: 13, fontFamily: 'var(--font-geist-mono)' },
+                                        },
+                                        grid: { left: "0%", right: "2%", bottom: "5%", top: "5%", containLabel: true },
+                                        xAxis: {
+                                            type: "category",
+                                            data: Object.keys(ml.automl_results.model_scores),
+                                            axisLine: { lineStyle: { color: "rgba(255,255,255,0.06)" } },
+                                            axisLabel: { color: "#9ca3af", fontSize: 10, fontWeight: 700, rotate: 0 },
+                                            axisTick: { show: false },
+                                        },
+                                        yAxis: {
+                                            type: "value",
+                                            splitLine: { lineStyle: { color: "rgba(255,255,255,0.03)" } },
+                                            axisLabel: { color: "#6b7280", fontSize: 10, fontWeight: 700 },
+                                        },
+                                        series: [{
+                                            type: "pictorialBar",
+                                            symbol: 'path://M0,10 L10,10 C5.5,10 5.5,0 0,0 z',
+                                            data: Object.values(ml.automl_results.model_scores),
+                                            itemStyle: {
+                                                color: {
+                                                    type: "linear", x: 0, y: 0, x2: 0, y2: 1,
+                                                    colorStops: [
+                                                        { offset: 0, color: "var(--primary)" },
+                                                        { offset: 1, color: "var(--primary-dark)" },
+                                                    ],
+                                                },
+                                                opacity: 0.8
+                                            },
+                                        }],
+                                        animationEasing: "cubicOut",
+                                        animationDuration: 1500,
+                                    }}
                                 />
                             )}
                         </div>

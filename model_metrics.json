@@ -3,10 +3,5 @@
         "model": "RandomForest",
         "mae": 288.0082622316522,
         "drift_detected": false
-    },
-    {
-        "model": "RandomForest",
-        "mae": 1417.924687103046,
-        "drift_detected": true
     }
 ]

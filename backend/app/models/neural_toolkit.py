@@ -2,9 +2,14 @@
 
 import numpy as np
 
-from app.utils.torch_runtime import load_torch
-
-HAS_TORCH, torch, nn, optim, TORCH_ERROR = load_torch("Neural toolkit")
+try:
+    import torch
+    import torch.nn as nn
+    import torch.optim as optim
+    HAS_TORCH = True
+except Exception as e:
+    print(f"⚠️ Neural Toolkit initialization failed: {e}. Model training disabled.")
+    HAS_TORCH = False
 
 
 if HAS_TORCH:
@@ -29,7 +34,6 @@ def train_neural_model(X, y, epochs=50):
     """Train a neural model if torch is available."""
 
     if not HAS_TORCH:
-        print(TORCH_ERROR or "Neural toolkit disabled because PyTorch is unavailable.")
         return None
 
     X = torch.FloatTensor(np.array(X))

@@ -2,16 +2,9 @@ import { NextRequest, NextResponse } from "next/server"
 
 export const runtime = "nodejs"
 
-function getBackendUrl() {
-  return (
-    process.env.BACKEND_INTERNAL_URL ||
-    process.env.NEXT_PUBLIC_BACKEND_INTERNAL_URL ||
-    (process.env.NODE_ENV === "production" ? "http://backend:8000" : "http://127.0.0.1:8000")
-  )
-}
+const BACKEND_URL = process.env.BACKEND_INTERNAL_URL || process.env.NEXT_PUBLIC_BACKEND_INTERNAL_URL || "http://127.0.0.1:8000"
 
 async function proxy(request: NextRequest, path: string[]) {
-  const BACKEND_URL = getBackendUrl()
   const targetUrl = new URL(`${BACKEND_URL}/${path.join("/")}`)
   request.nextUrl.searchParams.forEach((value, key) => {
     targetUrl.searchParams.set(key, value)
