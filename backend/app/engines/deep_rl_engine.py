@@ -9,7 +9,7 @@ try:
     import torch.optim as optim
     HAS_TORCH = True
 except Exception as e:
-    print(f"Torch initialization failed: {e}. Falling back to simple RL.")
+    print(f"⚠️ Torch initialization failed: {e}. Falling back to simple RL.")
     HAS_TORCH = False
 
 class ReplayMemory:

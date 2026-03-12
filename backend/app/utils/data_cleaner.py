@@ -77,6 +77,7 @@ def clean_data(df, detected_columns):
 
     # Final fillna for numeric columns
     for col in df.select_dtypes(include=[np.number]).columns:
+        df[col] = df[col].replace([np.inf, -np.inf], 0)
         df[col] = df[col].fillna(0)
     
     # Fillna for object columns

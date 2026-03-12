@@ -1,29 +1,25 @@
+# Next.js
+.next/
+out/
+build/
+node_modules/
+
 # Python
 __pycache__/
 *.py[cod]
 *$py.class
-.env
 venv/
 .venv/
 env/
-.env/
+.env
 
-# Data & Cache
-backend/.llm_cache/
-backend/.vector_db/
-backend/data/*.db
+# Database/Cache
 *.db
-*.sqlite3
-*.log
+*.db-shm
+*.db-wal
+.llm_cache/
+.vector_db/
 
-# Node & Next.js
-node_modules/
-frontend/node_modules/
-frontend/.next/
-out/
-build/
-dist/
-
-# System
+# OS
 .DS_Store
 Thumbs.db
