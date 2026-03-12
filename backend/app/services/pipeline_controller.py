@@ -1,3 +1,4 @@
+import pandas as pd
 from app.utils.dataset_intelligence import detect_dataset_type
 from app.utils.schema_mapper import map_schema
 from app.utils.data_cleaner import clean_data
