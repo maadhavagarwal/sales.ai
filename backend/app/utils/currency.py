@@ -1,11 +1,11 @@
 # currency.py — Central currency formatting for all backend output
-# The default symbol is ₹ (Indian Rupee). It can be overridden per-request.
+# The default symbol is Rs. (Indian Rupee). It can be overridden per-request.
 
-DEFAULT_CURRENCY_SYMBOL = "₹"
+DEFAULT_CURRENCY_SYMBOL = "Rs."
 
 
 def fmt(val: float, symbol: str = DEFAULT_CURRENCY_SYMBOL) -> str:
-    """Format a numeric value as a currency string (e.g. ₹1.25M, ₹34.5K)."""
+    """Format a numeric value as a currency string (e.g. Rs.1.25M, Rs.34.5K)."""
     if val is None:
         return "N/A"
     try:

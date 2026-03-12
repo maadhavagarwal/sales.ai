@@ -83,13 +83,30 @@ async def login(email: str = Body(...), password: str = Body(...)):
     return JSONResponse(status_code=401, content={"error": "Invalid email or password"})
 
 # Security: Configurable CORS rather than raw wildcard
-ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",")
+def _collect_allowed_origins():
+    # Load from environment variables (comma-separated strings) or use local defaults.
+    raw_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000")
+    origins = [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
+
+    # Proactively include common deployment domains if environments vary.
+    # Note: Regex allows *.vercel.app and *.onrender.com below.
+    for env_key in ("FRONTEND_URL", "NEXT_PUBLIC_SITE_URL", "APP_URL"):
+        value = os.getenv(env_key, "").strip()
+        if value and value not in origins:
+            origins.append(value)
+
+    return origins
+
+ALLOWED_ORIGINS = _collect_allowed_origins()
 DEBUG_MODE = os.getenv("DEBUG", "False").lower() == "true"
+
+# Allow all origins matching the pattern below for Vercel/Render preview/prod deployments.
+ALLOWED_ORIGIN_REGEX = os.getenv("ALLOWED_ORIGIN_REGEX", r"https?://(localhost|127\.0\.0\.1|.*\.vercel\.app|.*\.onrender\.com)(:\d+)?")
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
-    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?",
+    allow_origin_regex=ALLOWED_ORIGIN_REGEX,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -214,7 +231,7 @@ def generate_master_report_text(dataset_id: str):
     if "top_products" in analytics:
         report_io.write(f"\nTOP PRODUCTS PERFORMANCE:\n")
         for prod, rev in sorted(analytics["top_products"].items(), key=lambda x: x[1], reverse=True)[:10]:
-            report_io.write(f"- {prod}: ₹{rev:,.2f}\n")
+            report_io.write(f"- {prod}: Rs.{rev:,.2f}\n")
 
     report_io.write(f"\n========================================================================\n")
     report_io.write(f"                 END OF NEURAL BI CONSOLIDATED REPORT\n")

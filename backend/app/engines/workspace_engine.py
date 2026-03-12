@@ -1236,10 +1236,10 @@ class WorkspaceEngine:
         bs = WorkspaceEngine.get_balance_sheet()
         report_io.write("PART I: CONSOLIDATED FINANCIAL HEALTH\n")
         report_io.write("-------------------------------------\n")
-        report_io.write(f"Total Revenue Realized: ₹ {pl.get('revenue', {}).get('total', 0):,.2f}\n")
-        report_io.write(f"Net Operating Margin: ₹ {pl.get('net_profit', 0):,.2f}\n")
-        report_io.write(f"Current Assets Position: ₹ {bs.get('assets', {}).get('total', 0):,.2f}\n")
-        report_io.write(f"Business Equity Position: ₹ {bs.get('equity', {}).get('total', 0):,.2f}\n\n")
+        report_io.write(f"Total Revenue Realized: Rs. {pl.get('revenue', {}).get('total', 0):,.2f}\n")
+        report_io.write(f"Net Operating Margin: Rs. {pl.get('net_profit', 0):,.2f}\n")
+        report_io.write(f"Current Assets Position: Rs. {bs.get('assets', {}).get('total', 0):,.2f}\n")
+        report_io.write(f"Business Equity Position: Rs. {bs.get('equity', {}).get('total', 0):,.2f}\n\n")
 
         # 2. Inventory Intelligence
         inv = WorkspaceEngine.get_inventory()
@@ -1265,7 +1265,7 @@ class WorkspaceEngine:
             report_io.write("\nPART IV: TOP RECEIVABLE RECOVERY TARGETS\n")
             report_io.write("----------------------------------------\n")
             for ov in overdue:
-                report_io.write(f"!! {ov['invoice_number']} | Client: {ov['customer_id']} | O/S: ₹{ov['grand_total']:,.2f} | Due: {ov['due_date']}\n")
+                report_io.write(f"!! {ov['invoice_number']} | Client: {ov['customer_id']} | O/S: Rs.{ov['grand_total']:,.2f} | Due: {ov['due_date']}\n")
 
         report_io.write("\n========================================================================\n")
         report_io.write("                  END OF CONSOLIDATED ENTERPRISE REPORT\n")

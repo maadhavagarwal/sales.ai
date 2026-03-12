@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+venv/
+.venv/
+env/
+.env/
+
+# Data & Cache
+backend/.llm_cache/
+backend/.vector_db/
+backend/data/*.db
+*.db
+*.sqlite3
+*.log
+
+# Node & Next.js
+node_modules/
+frontend/node_modules/
+frontend/.next/
+out/
+build/
+dist/
+
+# System
+.DS_Store
+Thumbs.db
