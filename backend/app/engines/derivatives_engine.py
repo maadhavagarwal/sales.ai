@@ -162,11 +162,26 @@ class DerivativesEngine:
         chain = []
         seed = int(sum(ord(ch) for ch in underlying) + center)
         rng = np.random.default_rng(seed)
+        # Realistic OI/Volume skew generation
+        # Adding a drift towards put-buying or call-buying depending on the seed to simulate market regimes
+        skew_bias = (seed % 100) / 100.0  # value 0.0 to 1.0
+        
         for idx, strike in enumerate(strikes):
             call = DerivativesEngine._black_scholes(spot, strike, time_to_expiry, rate, sigma, "call")
             put = DerivativesEngine._black_scholes(spot, strike, time_to_expiry, rate, sigma, "put")
-            call_oi = int(max(12000 + rng.integers(0, 70000) - idx * 1200, 1500))
-            put_oi = int(max(15000 + rng.integers(0, 70000) + idx * 900, 1500))
+            
+            # Real options chains often have heavy put OI low down (hedging) and heavy call OI up high (speculation/covered calls)
+            # Below ATM: Puts dominate. Above ATM: Calls dominate.
+            is_otm_call = strike > spot
+            is_otm_put = strike < spot
+            
+            call_base = 15000 if is_otm_call else 4000
+            put_base = 18000 if is_otm_put else 5000
+            
+            # Apply overall market skew
+            call_oi = int(call_base + (rng.integers(0, 50000) * (1.5 if skew_bias > 0.6 else 1.0)))
+            put_oi = int(put_base + (rng.integers(0, 50000) * (1.5 if skew_bias < 0.4 else 1.0)))
+            
             note = DerivativesEngine._hedge_note(strike, spot)
             chain.append({
                 "strike": strike,

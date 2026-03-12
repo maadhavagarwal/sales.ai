@@ -7,7 +7,7 @@ import { useStore } from "@/store/useStore"
 import { Card, Button, Badge } from "@/components/ui"
 
 export default function WorkspaceInventory() {
-    const { currencySymbol } = useStore()
+    const { currencySymbol, workspaceSyncCount } = useStore()
     const [items, setItems] = useState<any[]>([])
     const [health, setHealth] = useState<any[]>([])
     const [showAdd, setShowAdd] = useState(false)
@@ -27,7 +27,7 @@ export default function WorkspaceInventory() {
 
     useEffect(() => {
         refreshData()
-    }, [])
+    }, [workspaceSyncCount])
 
     const refreshData = async () => {
         try {

@@ -1,15 +1,14 @@
-"use client"
+﻿"use client"
 
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
     getLedger, addLedgerEntry, updateLedgerEntry, deleteLedgerEntry,
-    getAccountingNotes, addAccountingNote, updateAccountingNote, deleteAccountingNote,
-    getFinancialStatements, getExpenses, addExpense, getDaybook, getTrialBalance,
+    getDaybook, getTrialBalance,
     getPLStatement, getBalanceSheet, getGSTReports,
     getCustomers, getCustomerLedger, recordPayment,
     downloadBusinessReport, getUsageStats, getCFOHealthReport,
-    exportWorkspaceData, exportCustomerLedger
+    exportWorkspaceData, exportCustomerLedger, reconcileBankStatement
 } from "@/services/api"
 import { useStore } from "@/store/useStore"
 import { Card, Button, Badge } from "@/components/ui"
@@ -26,7 +25,6 @@ export default function WorkspaceAccounts() {
     const [plData, setPlData] = useState<any>(null)
     const [bsData, setBsData] = useState<any>(null)
     const [gstData, setGstData] = useState<any>(null)
-    const [statements, setStatements] = useState<any>(null)
     const [customers, setCustomers] = useState<any[]>([])
     const [selectedCustomer, setSelectedCustomer] = useState<string>("")
     const [customerLedger, setCustomerLedger] = useState<any[]>([])
@@ -44,29 +42,41 @@ export default function WorkspaceAccounts() {
         { account_name: "", type: "INCOME", amount: 0, description: "", isDebit: false }
     ])
 
+    // Refresh on tab, customer, or workspace sync changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => { refreshData() }, [activeTab, selectedCustomer, workspaceSyncCount])
 
     const refreshData = async () => {
         setLoading(true)
         try {
-            const [dbData, tbData, lgData, stData, plRes, bsRes, gstRes, custRes] = await Promise.all([
-                getDaybook(),
-                getTrialBalance(),
-                getLedger(),
-                getFinancialStatements(),
+            const [plRes, bsRes, custRes] = await Promise.all([
                 getPLStatement(),
                 getBalanceSheet(),
-                getGSTReports(),
                 getCustomers()
             ])
-            setDaybook(dbData)
-            setTrialBalance(tbData)
-            setLedger(lgData)
-            setStatements(stData)
             setPlData(plRes)
             setBsData(bsRes)
-            setGstData(gstRes)
             setCustomers(custRes)
+
+            if (activeTab === "gateway" || activeTab === "daybook") {
+                const dbData = await getDaybook()
+                setDaybook(dbData)
+            }
+
+            if (activeTab === "gateway" || activeTab === "trial-balance") {
+                const tbData = await getTrialBalance()
+                setTrialBalance(tbData)
+            }
+
+            if (activeTab === "ledger" || activeTab === "daybook" || activeTab === "voucher") {
+                const lgData = await getLedger()
+                setLedger(lgData)
+            }
+
+            if (activeTab === "compliance") {
+                const gstRes = await getGSTReports()
+                setGstData(gstRes)
+            }
 
             if (activeTab === "usage") {
                 const uRes = await getUsageStats()
@@ -199,31 +209,31 @@ export default function WorkspaceAccounts() {
                         <section className="space-y-4">
                             <h3 className="menu-heading">Transactions</h3>
                             <div className="flex flex-col gap-2">
-                                <MenuButton label="Add/Edit Transaction" sub="Dual-Entry Orchestration" icon="⌨️" active onClick={() => setActiveTab("voucher")} />
-                                <MenuButton label="Daybook" sub="Chronological Audit Trail" icon="📋" onClick={() => setActiveTab("daybook")} />
+                                <MenuButton label="Add/Edit Transaction" sub="Dual-Entry Orchestration" icon="TX" active onClick={() => setActiveTab("voucher")} />
+                                <MenuButton label="Daybook" sub="Chronological Audit Trail" icon="DB" onClick={() => setActiveTab("daybook")} />
                             </div>
                         </section>
 
                         <section className="space-y-4">
                             <h3 className="menu-heading">Reports</h3>
                             <div className="flex flex-col gap-2">
-                                <MenuButton label="Balance Sheet" sub="Enterprise Solvent Matrix" icon="🏛️" onClick={() => setActiveTab("bs")} />
-                                <MenuButton label="Profit & Loss" sub="Revenue Realization" icon="📈" onClick={() => setActiveTab("pl")} />
-                                <MenuButton label="Trial Balance" sub="Aggregate Ledger Health" icon="⚖️" onClick={() => setActiveTab("trial-balance")} />
-                                <MenuButton label="General Ledger" sub="Deep-Dive Accounts" icon="📚" onClick={() => setActiveTab("ledger")} />
-                                <MenuButton label="Customer Ledger" sub="Individual Client Matrix" icon="👤" onClick={() => setActiveTab("customer-ledger")} />
-                                <MenuButton label="Derivatives Matrix" sub="Option Chain & Greeks" icon="📉" onClick={() => setActiveTab("derivatives")} />
-                                <MenuButton label="CFO Intelligence" sub="Predictive Fiscal Health" icon="⚖️" onClick={() => setActiveTab("cfo")} />
-                                <MenuButton label="Consolidated Report" sub="Download Performance Master" icon="📄" onClick={() => downloadBusinessReport()} />
+                                <MenuButton label="Balance Sheet" sub="Enterprise Solvent Matrix" icon="BS" onClick={() => setActiveTab("bs")} />
+                                <MenuButton label="Profit & Loss" sub="Revenue Realization" icon="PL" onClick={() => setActiveTab("pl")} />
+                                <MenuButton label="Trial Balance" sub="Aggregate Ledger Health" icon="TB" onClick={() => setActiveTab("trial-balance")} />
+                                <MenuButton label="General Ledger" sub="Deep-Dive Accounts" icon="GL" onClick={() => setActiveTab("ledger")} />
+                                <MenuButton label="Customer Ledger" sub="Individual Client Matrix" icon="CL" onClick={() => setActiveTab("customer-ledger")} />
+                                <MenuButton label="Derivatives Matrix" sub="Option Chain & Greeks" icon="GR" onClick={() => setActiveTab("derivatives")} />
+                                <MenuButton label="CFO Intelligence" sub="Predictive Fiscal Health" icon="CF" onClick={() => setActiveTab("cfo")} />
+                                <MenuButton label="Consolidated Report" sub="Download Performance Master" icon="RP" onClick={() => downloadBusinessReport()} />
                             </div>
                         </section>
 
                          <section className="space-y-4">
                             <h3 className="menu-heading">Treasury & Risk</h3>
                             <div className="flex flex-col gap-2">
-                                <MenuButton label="Bank Reconciliation" sub="AI Statement Matcher" icon="🏦" onClick={() => setActiveTab("reconcile")} />
-                                <MenuButton label="GST Compliance" sub="Statutory Tax Offset" icon="🛡️" onClick={() => setActiveTab("compliance")} />
-                                <MenuButton label="System Governance" sub="Software Usage Audit" icon="⚙️" onClick={() => setActiveTab("usage")} />
+                                <MenuButton label="Bank Reconciliation" sub="AI Statement Matcher" icon="BR" onClick={() => setActiveTab("reconcile")} />
+                                <MenuButton label="GST Compliance" sub="Statutory Tax Offset" icon="GS" onClick={() => setActiveTab("compliance")} />
+                                <MenuButton label="System Governance" sub="Software Usage Audit" icon="SG" onClick={() => setActiveTab("usage")} />
                             </div>
                         </section>
                     </div>
@@ -238,7 +248,7 @@ export default function WorkspaceAccounts() {
                                 <StatCard label="Net Receivables" value={trialBalance.find(a => a.account_name.includes("Receivable"))?.balance || 0} color="var(--accent-amber)" trend="O/S Debt" />
                             </div>
                             <div className="cursor-pointer" onClick={() => setActiveTab("derivatives")}>
-                                <StatCard label="Hedge Risk (Δ)" value="0.64" color="var(--accent-cyan)" trend="PROTECTED" />
+                                <StatCard label="Hedge Risk (Delta)" value="0.64" color="var(--accent-cyan)" trend="PROTECTED" />
                             </div>
                             <StatCard label="Compliance Score" value="98.4" unit="%" color="var(--accent-cyan)" trend="AA+" />
                         </div>
@@ -274,7 +284,7 @@ export default function WorkspaceAccounts() {
                         onClick={() => setActiveTab("gateway")}
                         className="text-[10px] font-black uppercase tracking-[0.3em] text-[--text-muted] hover:text-[--primary] transition-colors flex items-center gap-2"
                     >
-                        <span>← Escape to Gateway</span>
+                        <span>{"<-"} Escape to Gateway</span>
                     </button>
 
                     <AnimatePresence mode="wait">
@@ -451,7 +461,7 @@ function MenuButton({ label, sub, icon, active, onClick }: any) {
 }
 
 function StatCard({ label, value, color, trend, unit }: any) {
-    const { currencySymbol, workspaceSyncCount } = useStore()
+    const { currencySymbol } = useStore()
     const isNumeric = typeof value === 'number'
 
     return (
@@ -475,7 +485,7 @@ function StatCard({ label, value, color, trend, unit }: any) {
 }
 
 function VoucherEntryForm({ type, setType, no, setNo, date, setDate, entries, setEntries, onAdd, onRemove, onSubmit, loading }: any) {
-    const { currencySymbol, workspaceSyncCount } = useStore()
+    const { currencySymbol } = useStore()
     return (
         <Card variant="bento" padding="lg" className="bg-black/40 border-[--primary]/20">
             <div className="flex justify-between items-center mb-10 border-b border-white/5 pb-6">
@@ -576,7 +586,7 @@ function VoucherEntryForm({ type, setType, no, setNo, date, setDate, entries, se
                             />
                         </div>
                         <div className="col-span-1">
-                            <button onClick={() => onRemove(i)} className="text-white/20 hover:text-[--accent-rose] transition-colors font-black text-lg">×</button>
+                            <button onClick={() => onRemove(i)} className="text-white/20 hover:text-[--accent-rose] transition-colors font-black text-lg">x</button>
                         </div>
                     </div>
                 ))}
@@ -597,7 +607,7 @@ function VoucherEntryForm({ type, setType, no, setNo, date, setDate, entries, se
 }
 
 function DaybookTable({ data, onExport, onDelete, onEdit, setActiveTab }: any) {
-    const { currencySymbol, workspaceSyncCount } = useStore()
+    const { currencySymbol } = useStore()
     return (
         <Card variant="glass" padding="none" className="overflow-hidden">
             <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/[0.01]">
@@ -662,7 +672,7 @@ function DaybookTable({ data, onExport, onDelete, onEdit, setActiveTab }: any) {
 }
 
 function TrialBalanceTable({ data, setLedgerSearch, setActiveTab }: any) {
-    const { currencySymbol, workspaceSyncCount } = useStore()
+    const { currencySymbol } = useStore()
     const totalDebit = data.filter((e: any) => e.balance > 0).reduce((a: any, b: any) => a + b.balance, 0)
     const totalCredit = Math.abs(data.filter((e: any) => e.balance < 0).reduce((a: any, b: any) => a + b.balance, 0))
 
@@ -718,7 +728,7 @@ function TrialBalanceTable({ data, setLedgerSearch, setActiveTab }: any) {
             </div>
             {Math.abs(totalDebit - totalCredit) > 1 && (
                 <div className="p-4 bg-[--accent-rose]/10 text-[--accent-rose] text-[10px] font-black uppercase tracking-widest text-center animate-pulse">
-                    ⚠️ Error: Difference in Opening Balances Detected! (Delta: {(totalDebit - totalCredit).toLocaleString()})
+                    Alert: Difference in Opening Balances Detected! (Delta: {(totalDebit - totalCredit).toLocaleString()})
                 </div>
             )}
         </Card>
@@ -727,7 +737,7 @@ function TrialBalanceTable({ data, setLedgerSearch, setActiveTab }: any) {
 
 function LedgerView(props: any) {
     const { data, onUpdate, onDelete } = props
-    const { currencySymbol, workspaceSyncCount } = useStore()
+    const { currencySymbol } = useStore()
     const [editingId, setEditingId] = useState<number | null>(null)
     const [editData, setEditData] = useState<any>(null)
 
@@ -817,7 +827,7 @@ function LedgerView(props: any) {
 }
 
 function PLView({ data, onExport, setLedgerSearch, setActiveTab }: any) {
-    const { currencySymbol, workspaceSyncCount } = useStore()
+    const { currencySymbol } = useStore()
     if (!data) return <div className="text-white">Loading P&L Stream...</div>
 
     return (
@@ -933,7 +943,7 @@ function PLView({ data, onExport, setLedgerSearch, setActiveTab }: any) {
 }
 
 function BSView({ data, onExport, setLedgerSearch, setActiveTab }: any) {
-    const { currencySymbol, workspaceSyncCount } = useStore()
+    const { currencySymbol } = useStore()
     if (!data) return <div className="text-white">Loading Solvent Matrix...</div>
 
     return (
@@ -1034,10 +1044,9 @@ function BSView({ data, onExport, setLedgerSearch, setActiveTab }: any) {
     )
 }
 
-import { reconcileBankStatement } from "@/services/api"
 
 function BRSView() {
-    const { currencySymbol, workspaceSyncCount } = useStore()
+    const { currencySymbol } = useStore()
     const [entries, setEntries] = useState<any[]>([])
     const [results, setResults] = useState<any[]>([])
     const [loading, setLoading] = useState(false)
@@ -1131,7 +1140,7 @@ function BRSView() {
                 </div>
             ) : (
                 <div className="py-20 text-center border-2 border-dashed border-white/5 rounded-3xl">
-                    <p className="text-xl grayscale mb-4">📂</p>
+                    <p className="text-xl grayscale mb-4">CSV</p>
                     <p className="text-xs font-bold text-white/40 italic">Drop your statutory bank export (.csv) here to begin neural reconciliation.</p>
                 </div>
             )}
@@ -1140,7 +1149,7 @@ function BRSView() {
 }
 
 function ComplianceView({ data }: any) {
-    const { currencySymbol, workspaceSyncCount } = useStore()
+    const { currencySymbol } = useStore()
     if (!data) return <div className="text-white">Hydrating Statutory Reports...</div>
 
     return (
@@ -1219,20 +1228,8 @@ function ComplianceView({ data }: any) {
     )
 }
 
-function StatementLine({ label, value, isRed }: any) {
-    const { currencySymbol, workspaceSyncCount } = useStore()
-    return (
-        <div className="flex justify-between items-center text-sm">
-            <span className="font-bold text-white/40 uppercase text-[10px] tracking-widest">{label}</span>
-            <span className={`font-black ${isRed ? "text-[--accent-rose]" : "text-white"}`}>
-                {currencySymbol}{(value || 0).toLocaleString()}
-            </span>
-        </div>
-    )
-}
-
-function CustomerLedgerView({ customers, selectedId, setSelectedId, ledger, onRefresh, onUpdate, onDelete, onExport, setActiveTab, setLedgerSearch, handleEditVoucher }: any) {
-    const { currencySymbol, workspaceSyncCount } = useStore()
+function CustomerLedgerView({ customers, selectedId, setSelectedId, ledger, onRefresh, onDelete, onExport, setActiveTab, handleEditVoucher }: any) {
+    const { currencySymbol } = useStore()
     const [showPayment, setShowPayment] = useState(false)
     const [paymentData, setPaymentData] = useState({ amount: 0, reference_no: "", payment_mode: "BANK", date: new Date().toISOString().split('T')[0] })
     const [loading, setLoading] = useState(false)
@@ -1438,21 +1435,21 @@ function CFOIntelligenceView({ data, currency, setActiveTab }: { data: any, curr
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <Card variant="bento" padding="lg" className="bg-black/40 border-white/5 relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-4 text-4xl opacity-10 grayscale group-hover:grayscale-0 transition-all">📈</div>
+                    <div className="absolute top-0 right-0 p-4 text-4xl opacity-10 grayscale group-hover:grayscale-0 transition-all">EB</div>
                     <p className="text-[10px] font-black text-[--text-muted] uppercase tracking-widest mb-2">EBITDA Projection</p>
                     <p className="text-4xl font-black text-white italic tracking-tighter">{currency}{data.ebitda?.toLocaleString()}</p>
-                    <p className="text-[9px] font-bold text-[--accent-emerald] mt-4 uppercase">↑ Neural Optimization suggestions active</p>
+                    <p className="text-[9px] font-bold text-[--accent-emerald] mt-4 uppercase">Uptrend: Neural optimization suggestions active</p>
                 </Card>
 
                 <Card variant="bento" padding="lg" className="bg-black/40 border-white/5 relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-4 text-4xl opacity-10 grayscale group-hover:grayscale-0 transition-all">⚖️</div>
+                    <div className="absolute top-0 right-0 p-4 text-4xl opacity-10 grayscale group-hover:grayscale-0 transition-all">CR</div>
                     <p className="text-[10px] font-black text-[--text-muted] uppercase tracking-widest mb-2">Current Ratio (Liquidity)</p>
                     <p className="text-4xl font-black text-white italic tracking-tighter">{data.current_ratio}</p>
                     <p className="text-[9px] font-bold text-[--accent-amber] mt-4 uppercase">Target: &gt; 1.50 for Optimal Growth</p>
                 </Card>
 
                 <Card variant="bento" padding="lg" className="bg-black/40 border-white/5 relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-4 text-4xl opacity-10 grayscale group-hover:grayscale-0 transition-all">⏳</div>
+                    <div className="absolute top-0 right-0 p-4 text-4xl opacity-10 grayscale group-hover:grayscale-0 transition-all">DS</div>
                     <p className="text-[10px] font-black text-[--text-muted] uppercase tracking-widest mb-2">Days Sales O/S (DSO)</p>
                     <p className="text-4xl font-black text-white italic tracking-tighter">{data.days_sales_outstanding}d</p>
                     <p className="text-[9px] font-bold text-[--accent-rose] mt-4 uppercase">Action: Trigger automated reminders</p>
@@ -1464,29 +1461,31 @@ function CFOIntelligenceView({ data, currency, setActiveTab }: { data: any, curr
                     <p className="text-[10px] font-black text-[--primary] uppercase tracking-[0.3em] mb-6">Enterprise Greeks Profile</p>
                     <div className="grid grid-cols-3 gap-4">
                         <div>
-                            <p className="text-[9px] font-bold text-white/40 uppercase">Delta (Δ)</p>
+                            <p className="text-[9px] font-bold text-white/40 uppercase">Delta (D)</p>
                             <p className="text-xl font-black text-[--accent-cyan]">0.64</p>
                         </div>
                         <div>
-                            <p className="text-[9px] font-bold text-white/40 uppercase">Theta (Θ)</p>
+                            <p className="text-[9px] font-bold text-white/40 uppercase">Theta (Th)</p>
                             <p className="text-xl font-black text-[--accent-rose]">-14.2</p>
                         </div>
                         <div>
-                            <p className="text-[9px] font-bold text-white/40 uppercase">Vega (ν)</p>
+                            <p className="text-[9px] font-bold text-white/40 uppercase">Vega (V)</p>
                             <p className="text-xl font-black text-[--accent-amber]">22.5</p>
                         </div>
                     </div>
-                    <p className="text-[9px] font-bold text-white/20 mt-6 uppercase italic">Click for full Option Chain Matrix →</p>
+                    <p className="text-[9px] font-bold text-white/20 mt-6 uppercase italic">Click for full Option Chain Matrix {"->"}</p>
                 </Card>
 
                 <div className="p-8 rounded-2xl border border-white/5 bg-[--primary]/5">
                     <h4 className="text-[10px] font-black text-white uppercase tracking-widest mb-4">Strategic AI Recommendation</h4>
                     <p className="text-xs font-bold text-white/60 leading-relaxed italic">
-                        "Cognitive Analysis: Your Current Ratio of {data.current_ratio} indicates {data.business_health === 'PRIME' ? 'excellent' : 'sufficient'} structural solvency. However, the DSO profile suggests ₹{(data.ebitda * 0.1).toLocaleString()} could be unlocked by optimizing the collection protocol for Net-30 clients."
+                        "Cognitive Analysis: Your Current Ratio of {data.current_ratio} indicates {data.business_health === 'PRIME' ? 'excellent' : 'sufficient'} structural solvency. However, the DSO profile suggests Rs {(data.ebitda * 0.1).toLocaleString()} could be unlocked by optimizing the collection protocol for Net-30 clients."
                     </p>
                 </div>
             </div>
         </div>
     )
 }
+
+
 

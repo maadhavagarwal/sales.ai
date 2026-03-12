@@ -1,14 +1,19 @@
+import type { Metadata, Viewport } from "next"
 import "./globals.css"
+import ThemeInitializer from "@/components/ThemeInitializer"
 import { ToastProvider } from "@/components/ui/Toast"
 
-export const metadata = {
-  title: "NeuralBI — AI Decision Intelligence Platform",
+export const metadata: Metadata = {
+  title: "NeuralBI - AI Decision Intelligence Platform",
   description: "Advanced AI-powered business analytics, ML predictions, and strategic insights platform",
-  viewport: "width=device-width, initial-scale=1, maximum-scale=1",
-  themeColor: "#030712",
 }
 
-import ThemeInitializer from "@/components/ThemeInitializer"
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  themeColor: "#030712",
+}
 
 export default function RootLayout({
   children,
@@ -29,9 +34,7 @@ export default function RootLayout({
       </head>
       <body className="bg-[--background] text-[--text-primary] antialiased selection:bg-[--primary]/30 font-jakarta">
         <ThemeInitializer />
-        <ToastProvider>
-          {children}
-        </ToastProvider>
+        <ToastProvider>{children}</ToastProvider>
       </body>
     </html>
   )

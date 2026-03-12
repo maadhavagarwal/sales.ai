@@ -14,14 +14,15 @@ export default function CSVUploader() {
     const { showToast } = useToast()
 
     const handleFile = async (file: File) => {
-        const isExcel = file.name.endsWith(".xlsx") || file.name.endsWith(".xls");
-        const isCSV = file.name.endsWith(".csv");
+        const isExcel = file.name.endsWith(".xlsx") || file.name.endsWith(".xls")
+        const isCSV = file.name.endsWith(".csv")
         if (!isCSV && !isExcel) {
             const msg = "Please upload a CSV or Excel file"
             setError(msg)
             showToast("warning", "Invalid File", msg)
             return
         }
+
         setError(null)
         setIsUploading(true)
         setUploadProgress(0)
@@ -42,7 +43,7 @@ export default function CSVUploader() {
             setResults(data)
             incrementSyncCount()
             setUploadProgress(100)
-            showToast("success", "Dataset Loaded", `${file.name} · ${data.analytics?.rows ?? data.rows ?? "?"} rows processed`)
+            showToast("success", "Dataset Loaded", `${file.name} · ${data.rows ?? "?"} rows processed`)
         } catch (err: any) {
             const msg = err?.response?.data?.detail || "Failed to process dataset. Please try again."
             setError(msg)
@@ -131,7 +132,7 @@ export default function CSVUploader() {
                                     fontSize: "1.5rem",
                                 }}
                             >
-                                📁
+                                Files
                             </div>
                             <p style={{ fontSize: "1rem", fontWeight: 600, color: "var(--text-primary)" }}>
                                 Drop your dataset here
@@ -164,7 +165,7 @@ export default function CSVUploader() {
                             fontSize: "0.85rem",
                         }}
                     >
-                        ⚠️ {error}
+                        Warning: {error}
                     </motion.div>
                 )}
             </AnimatePresence>

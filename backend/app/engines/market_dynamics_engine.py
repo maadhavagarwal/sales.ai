@@ -17,16 +17,21 @@ class MarketDynamicsEngine:
         if price_col not in df.columns:
             return df
             
-        # 1. RSI (Relative Strength Index)
+        df = df.copy()
+        
+        # 1. RSI (Relative Strength Index) Wilder's Smoothing
         delta = df[price_col].diff()
-        gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
-        loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
-        rs = gain / loss
+        gain = delta.clip(lower=0)
+        loss = -delta.clip(upper=0)
+        avg_gain = gain.ewm(com=13, adjust=False).mean()
+        avg_loss = loss.ewm(com=13, adjust=False).mean()
+        rs = avg_gain / avg_loss.replace(0, np.nan)
         df['rsi'] = 100 - (100 / (1 + rs))
+        df['rsi'] = df['rsi'].fillna(50.0)
 
         # 2. Bollinger Bands (20-day SMA +/- 2 Std Dev)
-        df['sma_20'] = df[price_col].rolling(window=20).mean()
-        df['std_20'] = df[price_col].rolling(window=20).std()
+        df['sma_20'] = df[price_col].rolling(window=20, min_periods=1).mean()
+        df['std_20'] = df[price_col].rolling(window=20, min_periods=1).std().fillna(0)
         df['bb_upper'] = df['sma_20'] + (df['std_20'] * 2)
         df['bb_lower'] = df['sma_20'] - (df['std_20'] * 2)
 
@@ -70,35 +75,47 @@ class MarketDynamicsEngine:
         S: Spot Price, K: Strike Price, T: Time to Expiry (years), r: Risk-free rate, sigma: Implied Volatility
         """
         try:
+            # Enforce bounds
+            T = max(T, 1e-4)
+            sigma = max(sigma, 1e-4)
+            S = max(S, 1e-4)
+            K = max(K, 1e-4)
+            
             d1 = (math.log(S / K) + (r + 0.5 * sigma**2) * T) / (sigma * math.sqrt(T))
             d2 = d1 - sigma * math.sqrt(T)
             
+            # Options calculations
+            pdf_d1 = norm.pdf(d1)
+            cdf_d1 = norm.cdf(d1)
+            cdf_d2 = norm.cdf(d2)
+            cdf_neg_d1 = norm.cdf(-d1)
+            cdf_neg_d2 = norm.cdf(-d2)
+            
             # 1. Delta
             if option_type == 'call':
-                delta = norm.cdf(d1)
+                delta = cdf_d1
+                rho = (K * T * math.exp(-r * T) * cdf_d2) / 100
+                theta = (-S * pdf_d1 * sigma / (2 * math.sqrt(T)) - r * K * math.exp(-r * T) * cdf_d2) / 365
             else:
-                delta = norm.cdf(d1) - 1
+                delta = cdf_d1 - 1
+                rho = (-K * T * math.exp(-r * T) * cdf_neg_d2) / 100
+                theta = (-S * pdf_d1 * sigma / (2 * math.sqrt(T)) + r * K * math.exp(-r * T) * cdf_neg_d2) / 365
                 
             # 2. Gamma (Same for Call/Put)
-            gamma = norm.pdf(d1) / (S * sigma * math.sqrt(T))
+            gamma = pdf_d1 / (S * sigma * math.sqrt(T))
             
             # 3. Vega (Same for Call/Put)
-            vega = S * norm.pdf(d1) * math.sqrt(T) / 100 # per 1% change in IV
-            
-            # 4. Theta (Decay)
-            if option_type == 'call':
-                theta = (-S * norm.pdf(d1) * sigma / (2 * math.sqrt(T)) - r * K * math.exp(-r * T) * norm.cdf(d2)) / 365
-            else:
-                theta = (-S * norm.pdf(d1) * sigma / (2 * math.sqrt(T)) + r * K * math.exp(-r * T) * norm.cdf(-d2)) / 365
+            vega = (S * pdf_d1 * math.sqrt(T)) / 100 # per 1% change in IV
 
             return {
-                "delta": round(delta, 4),
-                "gamma": round(gamma, 4),
-                "vega": round(vega, 4),
-                "theta": round(theta, 4)
+                "delta": round(delta, 5),
+                "gamma": round(gamma, 5),
+                "vega": round(vega, 5),
+                "theta": round(theta, 5),
+                "rho": round(rho, 5)
             }
         except Exception:
-            return {"delta": 0, "gamma": 0, "vega": 0, "theta": 0}
+            return {"delta": 0.0, "gamma": 0.0, "vega": 0.0, "theta": 0.0, "rho": 0.0}
 
     @staticmethod
     def analyze_option_chain(chain_df: pd.DataFrame, spot_price: float, risk_free_rate=0.07):

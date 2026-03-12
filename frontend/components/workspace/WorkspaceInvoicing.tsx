@@ -1,13 +1,13 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { createInvoice, getInvoices, updateInvoice, deleteInvoice, exportWorkspaceData, sendInvoiceReminder, getCustomers, getInventory } from "@/services/api"
 import { useStore } from "@/store/useStore"
 import { Card, Button, Badge, Modal } from "@/components/ui"
 
 export default function WorkspaceInvoicing() {
-    const { currencySymbol } = useStore()
+    const { currencySymbol, workspaceSyncCount } = useStore()
     const [invoices, setInvoices] = useState<any[]>([])
     const [customers, setCustomers] = useState<any[]>([])
     const [inventory, setInventory] = useState<any[]>([])
@@ -29,7 +29,7 @@ export default function WorkspaceInvoicing() {
 
     useEffect(() => {
         refreshData()
-    }, [])
+    }, [workspaceSyncCount])
 
     const refreshData = async () => {
         try {
@@ -247,7 +247,7 @@ export default function WorkspaceInvoicing() {
         }
     }
 
-    const handleSendReminder = async (invoice: any, autoOpenEmail = false) => {
+    const handleSendReminder = useCallback(async (invoice: any, autoOpenEmail = false) => {
         const invoiceId = invoice.id
         setReminderLoadingId(invoiceId)
         try {
@@ -272,7 +272,7 @@ export default function WorkspaceInvoicing() {
         } finally {
             setReminderLoadingId(null)
         }
-    }
+    }, [findCustomerForInvoice, openReminderEmailDraft, refreshData])
 
     useEffect(() => {
         const nextCandidate = invoices.find((inv) => {
@@ -297,7 +297,7 @@ export default function WorkspaceInvoicing() {
         if (confirm(promptText)) {
             handleSendReminder(nextCandidate, true)
         }
-    }, [invoices, promptedReminderIds])
+    }, [handleSendReminder, invoices, promptedReminderIds])
 
     const totals = calculateTotals()
     const dueDatePreview = getDueDateFromPlan()
@@ -817,7 +817,7 @@ export default function WorkspaceInvoicing() {
                                                     </td>
                                                 </tr>
                                             ))
-                                        } catch (e) {
+                                        } catch {
                                             return <tr><td colSpan={4} className="py-4 text-center text-slate-400 italic">Items mapping failed.</td></tr>
                                         }
                                     })()}

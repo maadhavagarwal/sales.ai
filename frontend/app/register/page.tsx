@@ -40,7 +40,7 @@ export default function Register() {
             } else {
                 setError(data.error || "Registration failed")
             }
-        } catch (err) {
+        } catch {
             setError("Cannot connect to server")
         } finally {
             setLoading(false)

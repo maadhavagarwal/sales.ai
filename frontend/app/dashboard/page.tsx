@@ -392,7 +392,7 @@ function CopilotFloating({ datasetId }: { datasetId?: string }) {
     try {
       const res = await getCopilotResponse(currentQuery, datasetId)
       setHistory(h => [...h, { type: "ai", text: res.response }])
-    } catch (e) {
+    } catch {
       setHistory(h => [...h, { type: "ai", text: "Neural Link Error: System recalibrating..." }])
     } finally {
       setLoading(false)

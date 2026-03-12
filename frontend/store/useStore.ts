@@ -58,7 +58,6 @@ export interface UploadResults {
     insights: string[]
     explanations: string[]
     analyst_report: AnalystReport
-    // New: for editable dashboard
     dataset_summary?: DatasetSummary
     raw_data?: Record<string, any>[]
     columns?: string[]
@@ -87,7 +86,7 @@ export interface UploadResults {
     }
 }
 
-// Dashboard widget configuration  
+// Dashboard widget configuration
 export interface DashboardWidget {
     id: string
     type: "bar" | "line" | "pie" | "area" | "scatter" | "donut" | "kpi" | "table"
@@ -145,8 +144,11 @@ interface AppState {
     removeWidget: (id: string) => void
     setEditingWidget: (id: string | null) => void
     setWidgets: (widgets: DashboardWidget[]) => void
+
+    // Workspace sync – persisted so cross-page uploads trigger re-fetch
     workspaceSyncCount: number
     incrementSyncCount: () => void
+
     fetchForecast: (datasetId: string, periods?: number) => Promise<void>
 }
 
@@ -154,6 +156,12 @@ const CHART_COLORS = [
     "#6366f1", "#8b5cf6", "#06b6d4", "#10b981", "#f59e0b",
     "#f43f5e", "#ec4899", "#14b8a6", "#a855f7", "#3b82f6",
 ]
+
+// Read persisted sync count from localStorage (safe for SSR)
+const _initSyncCount = (): number => {
+    if (typeof window === "undefined") return 0
+    return Number(localStorage.getItem("ws_sync_count") || "0")
+}
 
 export const useStore = create<AppState>((set) => ({
     results: null,
@@ -164,9 +172,10 @@ export const useStore = create<AppState>((set) => ({
     currencySymbol: "₹",
     currencyCode: "INR",
     sidebarCollapsed: false,
-    theme: "dark", // Default to dark, will be updated on client
+    theme: "dark",
     widgets: [],
     editingWidget: null,
+    workspaceSyncCount: _initSyncCount(),
 
     setResults: (results) => set({ results, datasetId: results.dataset_id || null }),
     setIsUploading: (isUploading) => set({ isUploading }),
@@ -175,14 +184,12 @@ export const useStore = create<AppState>((set) => ({
     toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
     toggleTheme: () => set((state) => {
         const next = state.theme === "dark" ? "light" : "dark"
-        if (typeof window !== 'undefined') {
-            localStorage.setItem('nb-enterprise-theme', next)
-            document.documentElement.setAttribute('data-theme', next)
+        if (typeof window !== "undefined") {
+            localStorage.setItem("nb-enterprise-theme", next)
+            document.documentElement.setAttribute("data-theme", next)
         }
         return { theme: next }
     }),
-    workspaceSyncCount: 0,
-    incrementSyncCount: () => set((state: any) => ({ workspaceSyncCount: (state.workspaceSyncCount || 0) + 1 })),
     clearResults: () => set({ results: null, datasetId: null, fileName: null, uploadProgress: 0, widgets: [] }),
     setCurrency: (code, symbol) => set({ currencyCode: code, currencySymbol: symbol }),
 
@@ -195,12 +202,19 @@ export const useStore = create<AppState>((set) => ({
     })),
     setEditingWidget: (editingWidget) => set({ editingWidget }),
     setWidgets: (widgets) => set({ widgets }),
+
+    incrementSyncCount: () => set((state) => {
+        const next = state.workspaceSyncCount + 1
+        if (typeof window !== "undefined") localStorage.setItem("ws_sync_count", String(next))
+        return { workspaceSyncCount: next }
+    }),
+
     fetchForecast: async (datasetId, periods = 12) => {
         try {
             const apiBase = process.env.NEXT_PUBLIC_API_URL || "/api/backend"
             const response = await fetch(`${apiBase}/forecast/${datasetId}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ periods })
             })
             const data = await response.json()
@@ -209,7 +223,7 @@ export const useStore = create<AppState>((set) => ({
                 results: state.results ? { ...state.results, forecast: data } : null
             }))
         } catch (error) {
-            console.error('Forecast fetch failed:', error)
+            console.error("Forecast fetch failed:", error)
         }
     }
 }))

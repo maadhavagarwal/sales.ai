@@ -7,7 +7,7 @@ import { useStore } from "@/store/useStore"
 import { Card, Button, Badge } from "@/components/ui"
 
 export default function WorkspaceCRM() {
-    const { currencySymbol } = useStore()
+    const { currencySymbol, workspaceSyncCount } = useStore()
     const [customers, setCustomers] = useState<any[]>([])
     const [showAdd, setShowAdd] = useState(false)
     const [loading, setLoading] = useState(false)
@@ -24,7 +24,7 @@ export default function WorkspaceCRM() {
 
     useEffect(() => {
         refreshData()
-    }, [])
+    }, [workspaceSyncCount])
 
     const refreshData = async () => {
         try {

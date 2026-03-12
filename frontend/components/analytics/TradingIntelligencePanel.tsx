@@ -143,7 +143,12 @@ export default function TradingIntelligencePanel({ marketIntelligence, report }:
                         maxHeight: "300px",
                         overflowY: "auto"
                     }}
-                    dangerouslySetInnerHTML={{ __html: report.replace(/\n/g, '<br/>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }}
+                    dangerouslySetInnerHTML={{ 
+                        __html: report
+                            .replace(/\n/g, '<br/>')
+                            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') 
+                            .replace(/> (.*?)(<br\/>|$)/g, '<div style="border-left: 3px solid #8b5cf6; padding-left: 12px; margin: 8px 0; color: #a78bfa; background: rgba(139,92,246,0.1); border-radius: 4px; padding: 10px;">$1</div>')
+                    }}
                 />
 
                 <div style={{ marginTop: "2rem", borderTop: "1px solid var(--border-subtle)", paddingTop: "1.5rem" }}>
@@ -165,7 +170,11 @@ export default function TradingIntelligencePanel({ marketIntelligence, report }:
                         </div>
                         <div className="greek-box">
                             <span className="greek-label">Theta (Θ)</span>
-                            <span className="greek-value" style={{ color: "#f43f5e" }}>{latestIndicator?.theta?.toFixed(2) || "-0.08"}</span>
+                            <span className="greek-value" style={{ color: "#f43f5e" }}>{latestIndicator?.theta?.toFixed(3) || "-0.08"}</span>
+                        </div>
+                        <div className="greek-box">
+                            <span className="greek-label">Rho (ρ)</span>
+                            <span className="greek-value" style={{ color: "#10b981" }}>{latestIndicator?.rho?.toFixed(3) || "0.015"}</span>
                         </div>
                     </div>
                 </div>

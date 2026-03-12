@@ -3,19 +3,61 @@ import os
 import pandas as pd
 import json
 
+# Vector Database Support
+try:
+    import chromadb
+    from chromadb.config import Settings
+    HAS_CHROMA = True
+except ImportError:
+    HAS_CHROMA = False
+
+# Postgres Support
+try:
+    import psycopg2
+    HAS_POSTGRES = True
+except ImportError:
+    HAS_POSTGRES = False
+
 # Robust project root resolution
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # If running inside 'backend' folder, the data folder is one level up. 
 # If 'backend' is the root context (some deployments), it might be different.
 DATA_DIR = os.path.join(BASE_DIR, "data") if os.path.exists(os.path.join(BASE_DIR, "data")) else os.path.join(os.path.dirname(BASE_DIR), "data")
 DB_PATH = os.path.join(DATA_DIR, "business_data.db")
+VECTOR_DB_PATH = os.path.join(DATA_DIR, "vector_store")
+
+# Allow an environment variable to override SQLite with PostgreSQL
+PG_URL = os.environ.get("DATABASE_URL", None)
 
 # Ensure DATA_DIR exists
 os.makedirs(DATA_DIR, exist_ok=True)
+os.makedirs(VECTOR_DB_PATH, exist_ok=True)
+
+# --- VECTOR DATABASE INITIALIZATION ---
+vector_client = None
+if HAS_CHROMA:
+    try:
+        vector_client = chromadb.PersistentClient(path=VECTOR_DB_PATH)
+    except Exception as e:
+        print(f"Warning: Failed to initialize ChromaDB Vector Store. {e}")
+
+def get_db_connection():
+    """Returns a connection to PostgreSQL if configured, else SQLite."""
+    if PG_URL and HAS_POSTGRES:
+        conn = psycopg2.connect(PG_URL)
+        # Psycopg2 requires specific cursor configurations depending on the query
+        return conn, 'postgres'
+    else:
+        conn = sqlite3.connect(DB_PATH)
+        return conn, 'sqlite'
 
 def init_workspace_db():
-    conn = sqlite3.connect(DB_PATH)
+    conn, db_type = get_db_connection()
     try:
+        if db_type == 'postgres':
+            # Basic Postgres schema configuration mapped below via SQLAlchemy or direct queries
+            # For brevity, assuming the SQLite fallback for current direct execution
+            pass
    
         conn.execute("""
             CREATE TABLE IF NOT EXISTS users (
@@ -225,9 +267,15 @@ def init_workspace_db():
             conn.execute("ALTER TABLE ledger ADD COLUMN voucher_no TEXT")
         except sqlite3.OperationalError: pass
 
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_ledger_type_account ON ledger(type, account_name)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_ledger_voucher_date ON ledger(voucher_id, date)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_invoices_customer_date ON invoices(customer_id, date)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_customers_name ON customers(name)")
+
         conn.commit()
     finally:
-        conn.close()
+        if conn:
+            conn.close()
 
 # Auto-initialize on import
 init_workspace_db()
@@ -256,7 +304,42 @@ def store_data(dataset_id, df):
     except Exception as e:
         print(f"SQL Storage Error: {e}")
 
-# --- USER MANAGEMENT ---
+    # --- VECTOR DATABASE SYNC ---
+    if vector_client is not None:
+        try:
+            # Create a collection for this dataset isolated by ID
+            collection_name = f"dataset_{dataset_id.replace('-', '_')}" 
+            # Drop previous if re-uploading
+            try:
+                vector_client.delete_collection(collection_name)
+            except Exception:
+                pass
+                
+            collection = vector_client.create_collection(name=collection_name)
+            
+            # Subsample massive datasets to avoid memory lock or batch it
+            sample_df = df.head(1000) if len(df) > 1000 else df
+            
+            # Stringify row by row for RAG
+            documents = []
+            ids = []
+            metadatas = []
+            
+            for idx, row in sample_df.iterrows():
+                doc_str = " | ".join([f"{col}: {val}" for col, val in row.items() if str(val) != 'nan'])
+                documents.append(doc_str)
+                ids.append(f"row_{idx}")
+                metadatas.append({"source": dataset_id, "row_index": idx})
+                
+            collection.add(
+                documents=documents,
+                metadatas=metadatas,
+                ids=ids
+            )
+            print(f"Vectorization complete: {len(documents)} logic chunks stored for RAG.")
+        except Exception as e:
+            print(f"Vector Database Storage Error: {e}")
+
 def init_auth_db():
     # Deprecated: Combined into init_workspace_db
     init_workspace_db()

@@ -1,0 +1,4 @@
+date,customer_name,email,phone,product,region,revenue,quantity
+2026-01-01,Acme Retail,acme@example.com,9999999999,Laptop,North,1000,2
+2026-01-02,Acme Retail,acme@example.com,9999999999,Mouse,North,200,4
+2026-01-03,Beta Stores,beta@example.com,8888888888,Keyboard,South,500,1

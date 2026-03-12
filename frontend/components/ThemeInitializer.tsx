@@ -4,7 +4,7 @@ import { useEffect } from "react"
 import { useStore } from "@/store/useStore"
 
 export default function ThemeInitializer() {
-    const { theme, toggleTheme } = useStore()
+    const { theme } = useStore()
 
     useEffect(() => {
         // Only run on client side

@@ -82,6 +82,18 @@ async def health_check():
 # Corporate Data Session Caching
 _sessions = {}
 
+
+def _prepare_runtime_dataframe(df: pd.DataFrame, max_rows: int = 20000) -> pd.DataFrame:
+    """
+    Keep request-time analytics bounded for large uploads so the API remains stable.
+    Uses evenly spaced sampling to preserve broad trend coverage.
+    """
+    if len(df) <= max_rows:
+        return df
+
+    sample_idx = np.linspace(0, len(df) - 1, num=max_rows, dtype=int)
+    return df.iloc[sample_idx].copy()
+
 def _make_serializable(obj):
     if isinstance(obj, dict):
         return {k: _make_serializable(v) for k, v in obj.items()}
@@ -92,6 +104,54 @@ def _make_serializable(obj):
     if isinstance(obj, (datetime, np.datetime64)):
         return str(obj)
     return obj
+
+
+def _build_dashboard_response(
+    dataset_id: str,
+    df: pd.DataFrame,
+    pipeline: dict,
+    *,
+    filename: str | None = None,
+    is_live: bool = False,
+    available_sheets: list[str] | None = None,
+    total_rows: int | None = None,
+):
+    summary = get_dataset_summary(df)
+    sample_df = df.head(1000).copy()
+    for col in sample_df.columns:
+        if pd.api.types.is_datetime64_any_dtype(sample_df[col]):
+            sample_df[col] = sample_df[col].astype(str)
+    raw_data = sample_df.where(sample_df.notna(), None).to_dict(orient="records")
+
+    response = {
+        "dataset_id": dataset_id,
+        "filename": filename,
+        "is_live": is_live,
+        "rows": total_rows if total_rows is not None else len(df),
+        "analytics": pipeline.get("analytics", {}),
+        "ml_predictions": pipeline.get("ml_predictions", {}),
+        "insights": pipeline.get("insights", []),
+        "strategy": pipeline.get("strategy", []),
+        "analyst_report": pipeline.get("analyst_report", {}),
+        "strategic_plan": pipeline.get("strategic_plan", ""),
+        "recommendations": pipeline.get("recommendations", []),
+        "explanations": pipeline.get("explanations", []),
+        "simulation_results": pipeline.get("simulation_results", []),
+        "anomalies": pipeline.get("anomalies", []),
+        "clustering": pipeline.get("clustering", {}),
+        "data_quality": pipeline.get("data_quality", 1.0),
+        "confidence_score": pipeline.get("confidence_score", 0.7),
+        "summary": summary,
+        "dataset_summary": summary,
+        "raw_data": raw_data,
+        "columns": list(df.columns),
+        "numeric_columns": df.select_dtypes(include=[np.number]).columns.tolist(),
+        "categorical_columns": df.select_dtypes(include=["object"]).columns.tolist(),
+        "dataset_type": pipeline.get("dataset_type"),
+        "market_intelligence": pipeline.get("market_intelligence", {}),
+        "available_sheets": available_sheets or [],
+    }
+    return _make_serializable(response)
 
 # --- AUTH ENDPOINTS ---
 @app.post("/register")
@@ -184,25 +244,39 @@ async def upload_csv(file: UploadFile = File(...)):
         
         if df.empty:
             raise HTTPException(status_code=400, detail="The file is empty or corrupted.")
-            
+
+        runtime_df = _prepare_runtime_dataframe(df)
+        available_sheets = get_excel_sheets(file_io) if file.filename.lower().endswith((".xlsx", ".xls")) else []
+             
         res = WorkspaceEngine.sync_dataset_to_workspace(df)
         if res.get("status") == "error":
             raise HTTPException(status_code=500, detail=res.get("message"))
         
         # New Session ID for this Sync
         dataset_id = f"UPLOAD-{uuid.uuid4().hex[:6].upper()}"
+        pipeline = run_pipeline(runtime_df)
         _sessions[dataset_id] = {
-            "df": df,
+            "df": runtime_df,
             "filename": file.filename,
             "timestamp": time.time(),
-            "pipeline": run_pipeline(df)
+            "pipeline": pipeline,
+            "available_sheets": available_sheets,
         }
 
         # Index for RAG and persistent store
-        build_dataset_index(df)
+        build_dataset_index(runtime_df)
         store_data(dataset_id, df)
-        
-        return {**res, "dataset_id": dataset_id}
+
+        response = _build_dashboard_response(
+            dataset_id,
+            runtime_df,
+            pipeline,
+            filename=file.filename,
+            available_sheets=available_sheets,
+            total_rows=len(df),
+        )
+        response.update({"status": res.get("status", "success"), "message": res.get("message", "")})
+        return response
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
@@ -425,41 +499,17 @@ async def sync_workspace_to_dashboard():
             "df": processed_df,
             "filename": "Live ERP Stream",
             "timestamp": time.time(),
-            "pipeline": pipeline
+            "pipeline": pipeline,
+            "available_sheets": [],
         }
-
-        summary = get_dataset_summary(processed_df)
-        sample_df = processed_df.head(1000).copy()
-        for col in sample_df.columns:
-            if pd.api.types.is_datetime64_any_dtype(sample_df[col]):
-                sample_df[col] = sample_df[col].astype(str)
-        raw_data = sample_df.where(sample_df.notna(), None).to_dict(orient="records")
-
-        response = {
-            "dataset_id": dataset_id,
-            "is_live": True,
-            "rows": len(df),
-            "analytics": pipeline.get("analytics", {}),
-            "ml_predictions": pipeline.get("ml_predictions", {}),
-            "insights": pipeline.get("insights", []),
-            "strategy": pipeline.get("strategy", []),
-            "analyst_report": pipeline.get("analyst_report", {}),
-            "strategic_plan": pipeline.get("strategic_plan", ""),
-            "recommendations": pipeline.get("recommendations", []),
-            "explanations": pipeline.get("explanations", []),
-            "simulation_results": pipeline.get("simulation_results", []),
-            "anomalies": pipeline.get("anomalies", []),
-            "clustering": pipeline.get("clustering", {}),
-            "data_quality": pipeline.get("data_quality", 1.0),
-            "confidence_score": pipeline.get("confidence_score", 0.7),
-            "summary": summary,
-            "dataset_summary": summary,
-            "raw_data": raw_data,
-            "columns": list(processed_df.columns),
-            "numeric_columns": processed_df.select_dtypes(include=[np.number]).columns.tolist(),
-            "categorical_columns": processed_df.select_dtypes(include=["object"]).columns.tolist(),
-        }
-        return _make_serializable(response)
+        return _build_dashboard_response(
+            dataset_id,
+            processed_df,
+            pipeline,
+            filename="Live ERP Stream",
+            is_live=True,
+            total_rows=len(df),
+        )
     except Exception as e:
         traceback.print_exc()
         return JSONResponse(status_code=500, content={"error": f"Live Sync Failed: {str(e)}"})
@@ -638,6 +688,32 @@ async def ask_copilot(dataset_id: str, question: str = Body(...)):
     res = handle_question(question, df, analytics, session.get("pipeline", {}).get("ml_predictions", {}), session.get("pipeline"))
     return {"answer": res}
 
+
+@app.post("/copilot/agent/{dataset_id}")
+async def ask_copilot_agent(dataset_id: str, question: str = Body(...)):
+    if dataset_id not in _sessions:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    session = _sessions[dataset_id]
+    df = session["df"]
+    pipeline = session.get("pipeline", {})
+    analytics = pipeline.get("analytics", {})
+    answer = handle_question(question, df, analytics, pipeline.get("ml_predictions", {}), pipeline)
+
+    return {
+        "answer": answer,
+        "agent_outputs": [
+            "Loaded active dataset session context.",
+            "Queried analytics and ML signals for the current question.",
+            "Synthesized response from the enterprise copilot engine.",
+        ],
+        "suggested_questions": [
+            "Summarize the current data",
+            "What are the top contributors?",
+            "Show revenue trends",
+        ],
+    }
+
 @app.post("/nlbi/{dataset_id}")
 async def ask_nlbi(dataset_id: str, question: str = Body(...)):
     if dataset_id not in _sessions:
@@ -652,6 +728,31 @@ async def get_pricing_opt(dataset_id: str):
     pipeline = _sessions[dataset_id].get("pipeline", {})
     return pipeline.get("ml_predictions", {}).get("pricing_optimization", {})
 
+
+@app.post("/forecast/{dataset_id}")
+async def get_forecast(dataset_id: str, payload: dict = Body(default={})):
+    if dataset_id not in _sessions:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    periods = int(payload.get("periods", 30) or 30)
+    periods = max(1, min(periods, 365))
+    session = _sessions[dataset_id]
+    pipeline = session.get("pipeline", {})
+    forecast = pipeline.get("ml_predictions", {}).get("time_series_forecast")
+
+    if not forecast:
+        from app.models.time_series_forecaster import forecast_revenue
+
+        forecast = forecast_revenue(session["df"], days_ahead=periods)
+        pipeline.setdefault("ml_predictions", {})["time_series_forecast"] = forecast
+        session["pipeline"] = pipeline
+
+    return {
+        "forecast": forecast[:periods] if isinstance(forecast, list) else [],
+        "model_info": "RandomForest time-series forecast",
+        "r2_score": 0.0,
+    }
+
 @app.post("/dashboard-config/{dataset_id}")
 async def get_dashboard_config(dataset_id: str):
     if dataset_id not in _sessions:
@@ -664,6 +765,20 @@ async def download_report(dataset_id: str):
         raise HTTPException(status_code=404, detail="Session not found")
     report = _sessions[dataset_id].get("pipeline", {}).get("analyst_report", {}).get("report", "No report available.")
     return PlainTextResponse(str(report), headers={"Content-Disposition": f"attachment; filename=Report_{dataset_id}.txt"})
+
+
+@app.get("/download-strategic-plan-pdf/{dataset_id}")
+async def download_strategic_plan_pdf(dataset_id: str):
+    if dataset_id not in _sessions:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    plan = _sessions[dataset_id].get("pipeline", {}).get("strategic_plan", "No strategic plan available.")
+    pdf_bytes = create_pdf_from_text(str(plan))
+    return StreamingResponse(
+        iter([pdf_bytes]),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=StrategicPlan_{dataset_id}.pdf"},
+    )
 
 @app.get("/download-clean-data/{dataset_id}")
 async def download_clean_data(dataset_id: str):
@@ -680,8 +795,15 @@ async def reprocess_dataset(dataset_id: str, sheet_name: str = Body(None)):
     # This would require the original file content, which we'd need to store.
     # For now, just rerun pipeline on current DF.
     df = _sessions[dataset_id]["df"]
-    _sessions[dataset_id]["pipeline"] = run_pipeline(df)
-    return {"status": "success"}
+    pipeline = run_pipeline(df)
+    _sessions[dataset_id]["pipeline"] = pipeline
+    return _build_dashboard_response(
+        dataset_id,
+        df,
+        pipeline,
+        filename=_sessions[dataset_id].get("filename"),
+        available_sheets=_sessions[dataset_id].get("available_sheets", []),
+    )
 
 if __name__ == "__main__":
     import uvicorn

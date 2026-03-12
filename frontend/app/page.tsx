@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { motion, useScroll, useTransform } from "framer-motion"
-import { useState, useEffect, useRef } from "react"
+import { useRef } from "react"
 import { Button, Card, Container } from "@/components/ui"
 
 function NavItem({ href, children }: { href: string; children: React.ReactNode }) {
