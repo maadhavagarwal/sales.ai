@@ -3,8 +3,15 @@ import os
 import pandas as pd
 import json
 
-# Define a shared database location in the 'data' directory
-DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "data", "business_data.db")
+# Robust project root resolution
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# If running inside 'backend' folder, the data folder is one level up. 
+# If 'backend' is the root context (some deployments), it might be different.
+DATA_DIR = os.path.join(BASE_DIR, "data") if os.path.exists(os.path.join(BASE_DIR, "data")) else os.path.join(os.path.dirname(BASE_DIR), "data")
+DB_PATH = os.path.join(DATA_DIR, "business_data.db")
+
+# Ensure DATA_DIR exists
+os.makedirs(DATA_DIR, exist_ok=True)
 
 def init_workspace_db():
     conn = sqlite3.connect(DB_PATH)

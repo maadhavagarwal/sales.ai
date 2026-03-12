@@ -59,21 +59,24 @@ init_auth_db()
 
 SECRET_KEY = "neural_bi_enterprise_secret_2026"
 ALGORITHM = "HS256"
+
+@app.get("/")
+async def root():
+    return {"status": "Enterprise NeuralBI Backend Online", "timestamp": datetime.now().isoformat()}
+
 @app.get("/health")
 async def health_check():
-    from app.utils.torch_runtime import load_torch
-    has_torch, _, _, _, torch_err = load_torch("HealthCheck")
+    from app.models.neural_toolkit import HAS_TORCH
     from app.engines.rag_engine import HAS_RAG_DEPS
     
     return {
         "status": "online",
         "engines": {
-            "torch": "available" if has_torch else "fallback_mode_active",
+            "torch": "available" if HAS_TORCH else "fallback_mode_active",
             "rag": "neural" if HAS_RAG_DEPS else "text_matching_active",
             "workspace": "active",
             "financial": "active"
-        },
-        "neural_error": torch_err
+        }
     }
 
 # Corporate Data Session Caching
@@ -682,4 +685,5 @@ async def reprocess_dataset(dataset_id: str, sheet_name: str = Body(None)):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)

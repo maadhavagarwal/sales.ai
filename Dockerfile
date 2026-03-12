@@ -22,4 +22,5 @@ WORKDIR /app/backend
 EXPOSE 8000
 
 # Start server using the app package
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Start server and respect PORT env var for deployments
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
