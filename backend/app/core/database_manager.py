@@ -19,11 +19,23 @@ except ImportError:
     HAS_POSTGRES = False
 
 # Robust project root resolution
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-# If running inside 'backend' folder, the data folder is one level up. 
-# If 'backend' is the root context (some deployments), it might be different.
-DATA_DIR = os.path.join(BASE_DIR, "data") if os.path.exists(os.path.join(BASE_DIR, "data")) else os.path.join(os.path.dirname(BASE_DIR), "data")
-DB_PATH = os.path.join(DATA_DIR, "business_data.db")
+# BASE_DIR should be the project root where 'backend' and 'data' folders reside.
+# This assumes the script is in a structure like project_root/backend/some_dir/this_script.py
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+DATA_DIR = os.path.join(BASE_DIR, "data")
+
+if not os.path.exists(DATA_DIR):
+    try:
+        os.makedirs(DATA_DIR, exist_ok=True)
+    except Exception as e:
+        print(f"Warning: Could not create DATA_DIR at {DATA_DIR}: {e}")
+        # Fallback to current working directory if root is read-only or inaccessible
+        DATA_DIR = os.path.join(os.getcwd(), "data")
+        os.makedirs(DATA_DIR, exist_ok=True)
+        print(f"Attempting to use current working directory for DATA_DIR: {DATA_DIR}")
+
+DB_PATH = os.path.join(DATA_DIR, "enterprise.db")
+AUTH_DB_PATH = os.path.join(DATA_DIR, "auth.db")
 VECTOR_DB_PATH = os.path.join(DATA_DIR, "vector_store")
 
 # Allow an environment variable to override SQLite with PostgreSQL

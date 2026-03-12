@@ -1,21 +1,22 @@
 import os
-from datetime import datetime
+import uuid
 import time
 import math
-import uuid
+import io
 import traceback
+from datetime import datetime
+from collections import defaultdict
+
 import pandas as pd
 import numpy as np
 import sqlite3
 import bcrypt
 import jwt
-import io
-
 from fastapi import FastAPI, UploadFile, File, Body, HTTPException, Request, Response, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse, PlainTextResponse
-from collections import defaultdict
 
+# --- Enterprise Service Imports ---
 from app.services.pipeline_controller import run_pipeline
 from app.engines.nlbi_engine import generate_chart_from_question, run_nl_query as run_nlbi_pipeline
 from app.utils.dataset_intelligence import get_dataset_summary
@@ -29,17 +30,15 @@ from app.engines.workspace_engine import WorkspaceEngine
 from app.engines.derivatives_engine import DerivativesEngine
 from app.engines.rag_engine import build_dataset_index, search_dataset
 
-
+# --- TELEMETRY ---
 try:
     import sentry_sdk
-    # Enterprise Sentry Trace Tracking (Mock DSN for local)
     sentry_sdk.init(
         dsn="https://mock_public_key@mock_sentry.io/12345", 
         traces_sample_rate=1.0,
         environment="production"
     )
 except ImportError:
-    print("Sentry SDK not found. Skipping initialization.")
     sentry_sdk = None
 
 try:
@@ -47,81 +46,60 @@ try:
 except ImportError:
     Instrumentator = None
 
-app = FastAPI(title="NeuralBI Enterprise API", version="2.5.0")
+app = FastAPI(title="NeuralBI Enterprise API", version="3.7.0")
 
-# Enterprise Prometheus Telemetry
 if Instrumentator:
     Instrumentator().instrument(app).expose(app, endpoint="/metrics")
 
+# --- INITIALIZATION ---
+# Using the startup event for cleaner lifecycle management
+@app.on_event("startup")
+async def startup_event():
+    try:
+        init_auth_db()
+        print("Corporate Auth Database Initialized.")
+    except Exception as e:
+        print(f"Auth DB Init Error: {e}")
 
-# Init User DB on startup
-init_auth_db()
-
-SECRET_KEY = "neural_bi_enterprise_secret_2026"
+# --- GLOBAL & CONFIG ---
+SECRET_KEY = os.getenv("SECRET_KEY", "neural_bi_enterprise_secret_2026")
 ALGORITHM = "HS256"
-
-@app.get("/")
-async def root():
-    return {"status": "Enterprise NeuralBI Backend Online", "timestamp": datetime.now().isoformat()}
-
-@app.get("/health")
-async def health_check():
-    from app.models.neural_toolkit import HAS_TORCH
-    from app.engines.rag_engine import HAS_RAG_DEPS
-    
-    return {
-        "status": "online",
-        "engines": {
-            "torch": "available" if HAS_TORCH else "fallback_mode_active",
-            "rag": "neural" if HAS_RAG_DEPS else "text_matching_active",
-            "workspace": "active",
-            "financial": "active"
-        }
-    }
-
-# Corporate Data Session Caching
 _sessions = {}
 
+# --- HELPER: SERIALIZATION ---
+def _make_serializable(obj):
+    if isinstance(obj, dict):
+        return {str(k): _make_serializable(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple, np.ndarray)):
+        return [_make_serializable(v) for v in obj]
+    if isinstance(obj, (np.integer, int)):
+        return int(obj)
+    if isinstance(obj, (np.floating, float, complex)):
+        if not math.isfinite(obj.real): return None
+        return float(obj.real)
+    if isinstance(obj, (np.bool_, bool)):
+        return bool(obj)
+    if isinstance(obj, (datetime, np.datetime64, pd.Timestamp)):
+        return str(obj)
+    if pd.isna(obj):
+        return None
+    return obj
 
+# --- HELPER: SAMPLING ---
 def _prepare_runtime_dataframe(df: pd.DataFrame, max_rows: int = 20000) -> pd.DataFrame:
-    """
-    Keep request-time analytics bounded for large uploads so the API remains stable.
-    Uses evenly spaced sampling to preserve broad trend coverage.
-    """
-    if len(df) <= max_rows:
-        return df
-
+    if len(df) <= max_rows: return df
     sample_idx = np.linspace(0, len(df) - 1, num=max_rows, dtype=int)
     return df.iloc[sample_idx].copy()
 
-def _make_serializable(obj):
-    if isinstance(obj, dict):
-        return {k: _make_serializable(v) for k, v in obj.items()}
-    if isinstance(obj, list):
-        return [_make_serializable(v) for v in obj]
-    if isinstance(obj, (float, int)) and not math.isfinite(obj):
-        return None
-    if isinstance(obj, (datetime, np.datetime64)):
-        return str(obj)
-    return obj
-
-
-def _build_dashboard_response(
-    dataset_id: str,
-    df: pd.DataFrame,
-    pipeline: dict,
-    *,
-    filename: str | None = None,
-    is_live: bool = False,
-    available_sheets: list[str] | None = None,
-    total_rows: int | None = None,
-):
+# --- HELPER: DASHBOARD RESPONSE ---
+def _build_dashboard_response(dataset_id: str, df: pd.DataFrame, pipeline: dict, filename=None, is_live=False, available_sheets=None, total_rows=None):
     summary = get_dataset_summary(df)
-    sample_df = df.head(1000).copy()
+    
+    sample_df = df.head(100).copy()
     for col in sample_df.columns:
         if pd.api.types.is_datetime64_any_dtype(sample_df[col]):
             sample_df[col] = sample_df[col].astype(str)
-    raw_data = sample_df.where(sample_df.notna(), None).to_dict(orient="records")
+    raw_preview = sample_df.where(sample_df.notna(), None).to_dict(orient="records")
 
     response = {
         "dataset_id": dataset_id,
@@ -143,7 +121,7 @@ def _build_dashboard_response(
         "confidence_score": pipeline.get("confidence_score", 0.7),
         "summary": summary,
         "dataset_summary": summary,
-        "raw_data": raw_data,
+        "raw_data": raw_preview,
         "columns": list(df.columns),
         "numeric_columns": df.select_dtypes(include=[np.number]).columns.tolist(),
         "categorical_columns": df.select_dtypes(include=["object"]).columns.tolist(),
@@ -152,6 +130,66 @@ def _build_dashboard_response(
         "available_sheets": available_sheets or [],
     }
     return _make_serializable(response)
+
+# --- CORS ---
+def _collect_allowed_origins():
+    raw_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000")
+    origins = [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
+    for env_key in ("FRONTEND_URL", "NEXT_PUBLIC_SITE_URL", "APP_URL"):
+        value = os.getenv(env_key, "").strip()
+        if value and value not in origins: origins.append(value)
+    # Common NeuralBI deployment URLs
+    origins.extend(["https://sales-ai-two-omega.vercel.app", "https://neuralbi.vercel.app", "https://neuralbi-backend.onrender.com"])
+    return list(set(origins))
+
+ALLOWED_ORIGINS = _collect_allowed_origins()
+ALLOWED_ORIGIN_REGEX = os.getenv("ALLOWED_ORIGIN_REGEX", r"https?://(localhost|127\.0\.0\.1|.*\.vercel\.app|.*\.onrender\.com)(:\d+)?")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ALLOWED_ORIGINS,
+    allow_origin_regex=ALLOWED_ORIGIN_REGEX,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# --- RATE LIMITING ---
+_rate_limits = defaultdict(list)
+RATE_LIMIT_MAX_REQUESTS = 100
+RATE_LIMIT_WINDOW_SEC = 60
+
+@app.middleware("http")
+async def rate_limiter_middleware(request: Request, call_next):
+    client_ip = request.client.host if request.client else "127.0.0.1"
+    now = time.time()
+    if client_ip in {"127.0.0.1", "::1", "localhost"}:
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        return response
+    _rate_limits[client_ip] = [t for t in _rate_limits[client_ip] if now - t < RATE_LIMIT_WINDOW_SEC]
+    if len(_rate_limits[client_ip]) >= RATE_LIMIT_MAX_REQUESTS:
+        return JSONResponse(status_code=429, content={"error": "Too many requests. Please slow down."})
+    _rate_limits[client_ip].append(now)
+    return await call_next(request)
+
+# --- SYSTEM & ROOT ---
+@app.get("/")
+async def root():
+    return {"status": "Enterprise NeuralBI Backend Online", "timestamp": datetime.now().isoformat()}
+
+@app.get("/health")
+async def health_check():
+    return {
+        "status": "online",
+        "engines": {
+            "workspace": "active",
+            "financial": "active",
+            "ai_pipeline": "active"
+        }
+    }
 
 # --- AUTH ENDPOINTS ---
 @app.post("/register")
@@ -169,643 +207,261 @@ async def login(email: str = Body(...), password: str = Body(...)):
     user = get_user_record(email)
     if not user:
         return JSONResponse(status_code=401, content={"error": "Invalid email or password"})
-    
     stored_hash = user[1]
     if bcrypt.checkpw(password.encode('utf-8'), stored_hash.encode('utf-8')):
         token = jwt.encode({"email": email, "exp": time.time() + 86400}, SECRET_KEY, algorithm=ALGORITHM)
         return {"token": token}
-    
     return JSONResponse(status_code=401, content={"error": "Invalid email or password"})
 
-# Security: Configurable CORS rather than raw wildcard
-def _collect_allowed_origins():
-    raw_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000")
-    origins = [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
-
-    for env_key in ("FRONTEND_URL", "NEXT_PUBLIC_SITE_URL", "APP_URL"):
-        value = os.getenv(env_key, "").strip()
-        if value and value not in origins:
-            origins.append(value)
-
-    return origins
-
-
-ALLOWED_ORIGINS = _collect_allowed_origins()
-ALLOWED_ORIGIN_REGEX = os.getenv("ALLOWED_ORIGIN_REGEX", r"https?://(localhost|127\.0\.0\.1|.*\.vercel\.app|.*\.onrender\.com)(:\d+)?")
-DEBUG_MODE = os.getenv("DEBUG", "False").lower() == "true"
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
-    allow_origin_regex=ALLOWED_ORIGIN_REGEX,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Security: Basic In-Memory IP Rate Limiter for DDoS protection
-# In production, swap this with Redis Token Bucket
-_rate_limits = defaultdict(list)
-RATE_LIMIT_MAX_REQUESTS = 50
-RATE_LIMIT_WINDOW_SEC = 60
-
-@app.middleware("http")
-async def rate_limiter_middleware(request: Request, call_next):
-    client_ip = request.client.host if request.client else "127.0.0.1"
-    now = time.time()
-
-    # Do not rate-limit local development traffic proxied through Next.js.
-    if client_ip in {"127.0.0.1", "::1", "localhost"}:
-        response = await call_next(request)
-        response.headers["X-Content-Type-Options"] = "nosniff"
-        response.headers["X-Frame-Options"] = "DENY"
-        response.headers["X-XSS-Protection"] = "1; mode=block"
-        return response
-    
-    # Filter expired requests
-    _rate_limits[client_ip] = [t for t in _rate_limits[client_ip] if now - t < RATE_LIMIT_WINDOW_SEC]
-    
-    if len(_rate_limits[client_ip]) >= RATE_LIMIT_MAX_REQUESTS:
-        return JSONResponse(status_code=429, content={"error": "Too many requests. Please slow down."})
-    
-    _rate_limits[client_ip].append(now)
-    response = await call_next(request)
-    return response
-
-# --- WORKSPACE & DATA ENDPOINTS ---
-
+# --- DATA UPLOAD & PIPELINE ---
 @app.post("/upload-csv")
 async def upload_csv(file: UploadFile = File(...)):
-    """Accepts CSV/Excel and pumps it into the Workspace Core Engine."""
     try:
         content = await file.read()
         file_io = io.BytesIO(content)
         df = load_data_robustly(file_io, file.filename)
-        
-        if df.empty:
-            raise HTTPException(status_code=400, detail="The file is empty or corrupted.")
-
+        if df.empty: raise HTTPException(status_code=400, detail="The file is empty or corrupted.")
         runtime_df = _prepare_runtime_dataframe(df)
         available_sheets = get_excel_sheets(file_io) if file.filename.lower().endswith((".xlsx", ".xls")) else []
-             
         res = WorkspaceEngine.sync_dataset_to_workspace(df)
-        if res.get("status") == "error":
-            raise HTTPException(status_code=500, detail=res.get("message"))
-        
-        # New Session ID for this Sync
+        if res.get("status") == "error": raise HTTPException(status_code=500, detail=res.get("message"))
         dataset_id = f"UPLOAD-{uuid.uuid4().hex[:6].upper()}"
         pipeline = run_pipeline(runtime_df)
         _sessions[dataset_id] = {
-            "df": runtime_df,
-            "filename": file.filename,
-            "timestamp": time.time(),
-            "pipeline": pipeline,
-            "available_sheets": available_sheets,
+            "df": runtime_df, "filename": file.filename, "timestamp": time.time(),
+            "pipeline": pipeline, "available_sheets": available_sheets,
         }
-
-        # Index for RAG and persistent store
         build_dataset_index(runtime_df)
         store_data(dataset_id, df)
-
-        response = _build_dashboard_response(
-            dataset_id,
-            runtime_df,
-            pipeline,
-            filename=file.filename,
-            available_sheets=available_sheets,
-            total_rows=len(df),
-        )
+        response = _build_dashboard_response(dataset_id, runtime_df, pipeline, filename=file.filename, available_sheets=available_sheets, total_rows=len(df))
         response.update({"status": res.get("status", "success"), "message": res.get("message", "")})
         return response
     except Exception as e:
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+        traceback.print_exc(); raise HTTPException(status_code=500, detail=str(e))
 
+# --- WORKSPACE CORE ENDPOINTS ---
 @app.get("/workspace/invoices")
-async def get_invoices():
-    return WorkspaceEngine.get_invoices()
-
+async def get_invoices(): return WorkspaceEngine.get_invoices()
 @app.post("/workspace/invoices")
-async def create_invoice(data: dict = Body(...)):
-    return WorkspaceEngine.create_invoice(data)
-
+async def create_invoice(data: dict = Body(...)): return WorkspaceEngine.create_invoice(data)
 @app.put("/workspace/invoices/{invoice_id}")
-async def update_invoice(invoice_id: str, data: dict = Body(...)):
-    return WorkspaceEngine.update_invoice(invoice_id, data)
-
+async def update_invoice(invoice_id: str, data: dict = Body(...)): return WorkspaceEngine.update_invoice(invoice_id, data)
 @app.delete("/workspace/invoices/{invoice_id}")
-async def delete_invoice(invoice_id: str):
-    return WorkspaceEngine.delete_invoice(invoice_id)
+async def delete_invoice(invoice_id: str): return WorkspaceEngine.delete_invoice(invoice_id)
 
 @app.get("/workspace/customers")
-async def get_customers():
-    return WorkspaceEngine.get_customers()
-
+async def get_customers(): return WorkspaceEngine.get_customers()
 @app.post("/workspace/customers")
-async def add_customer(data: dict = Body(...)):
-    return WorkspaceEngine.add_customer(data)
-
+async def add_customer(data: dict = Body(...)): return WorkspaceEngine.add_customer(data)
 @app.put("/workspace/customers/{customer_id}")
-async def update_customer(customer_id: int, data: dict = Body(...)):
-    return WorkspaceEngine.update_customer(customer_id, data)
-
+async def update_customer(customer_id: int, data: dict = Body(...)): return WorkspaceEngine.update_customer(customer_id, data)
 @app.delete("/workspace/customers/{customer_id}")
-async def delete_customer(customer_id: int):
-    return WorkspaceEngine.delete_customer(customer_id)
+async def delete_customer(customer_id: int): return WorkspaceEngine.delete_customer(customer_id)
 
 @app.get("/workspace/inventory")
-async def get_inventory():
-    return WorkspaceEngine.get_inventory()
-
+async def get_inventory(): return WorkspaceEngine.get_inventory()
 @app.get("/workspace/inventory/health")
-async def get_inventory_health():
-    return WorkspaceEngine.get_inventory_health()
-
+async def get_inventory_health(): return WorkspaceEngine.get_inventory_health()
 @app.post("/workspace/inventory")
-async def add_inventory_item(data: dict = Body(...)):
-    return WorkspaceEngine.add_inventory_item(data)
-
+async def add_inventory_item(data: dict = Body(...)): return WorkspaceEngine.add_inventory_item(data)
 @app.put("/workspace/inventory/{item_id}")
-async def update_inventory_item(item_id: int, data: dict = Body(...)):
-    return WorkspaceEngine.update_inventory_item(item_id, data)
-
+async def update_inventory_item(item_id: int, data: dict = Body(...)): return WorkspaceEngine.update_inventory_item(item_id, data)
 @app.delete("/workspace/inventory/{item_id}")
-async def delete_inventory_item(item_id: int):
-    return WorkspaceEngine.delete_inventory_item(item_id)
+async def delete_inventory_item(item_id: int): return WorkspaceEngine.delete_inventory_item(item_id)
 
 @app.get("/workspace/expenses")
-async def get_expenses():
-    return WorkspaceEngine.get_expenses()
-
+async def get_expenses(): return WorkspaceEngine.get_expenses()
 @app.post("/workspace/expenses")
-async def add_expense_post(data: dict = Body(...)):
-    return WorkspaceEngine.add_expense(data)
-
+async def add_expense_post(data: dict = Body(...)): return WorkspaceEngine.add_expense(data)
 @app.put("/workspace/expenses/{expense_id}")
-async def update_expense(expense_id: int, data: dict = Body(...)):
-    return WorkspaceEngine.update_expense(expense_id, data)
-
+async def update_expense(expense_id: int, data: dict = Body(...)): return WorkspaceEngine.update_expense(expense_id, data)
 @app.delete("/workspace/expenses/{expense_id}")
-async def delete_expense(expense_id: int):
-    return WorkspaceEngine.delete_expense(expense_id)
+async def delete_expense(expense_id: int): return WorkspaceEngine.delete_expense(expense_id)
 
 @app.get("/workspace/ledger")
-async def get_ledger():
-    return WorkspaceEngine.get_ledger()
-
+async def get_ledger(): return WorkspaceEngine.get_ledger()
 @app.post("/workspace/ledger")
-async def add_ledger_entry(data: dict = Body(...)):
-    return WorkspaceEngine.add_ledger_entry(data)
-
+async def add_ledger_entry(data: dict = Body(...)): return WorkspaceEngine.add_ledger_entry(data)
 @app.put("/workspace/ledger/{entry_id}")
-async def update_ledger_entry(entry_id: int, data: dict = Body(...)):
-    return WorkspaceEngine.update_ledger_entry(entry_id, data)
-
+async def update_ledger_entry(entry_id: int, data: dict = Body(...)): return WorkspaceEngine.update_ledger_entry(entry_id, data)
 @app.delete("/workspace/ledger/{entry_id}")
-async def delete_ledger_entry(entry_id: int):
-    return WorkspaceEngine.delete_ledger_entry(entry_id)
+async def delete_ledger_entry(entry_id: int): return WorkspaceEngine.delete_ledger_entry(entry_id)
 
 @app.get("/workspace/accounting/notes")
-async def get_accounting_notes():
-    return WorkspaceEngine.get_accounting_notes()
-
+async def get_accounting_notes(): return WorkspaceEngine.get_accounting_notes()
 @app.post("/workspace/accounting/notes")
-async def add_accounting_note(data: dict = Body(...)):
-    """Records a new Debit or Credit correction note."""
-    res = WorkspaceEngine.add_accounting_note(data)
-    if res.get("status") == "error":
-        raise HTTPException(status_code=500, detail=res.get("message"))
-    return res
-
+async def add_accounting_note(data: dict = Body(...)): return WorkspaceEngine.add_accounting_note(data)
 @app.put("/workspace/accounting/notes/{note_id}")
-async def update_accounting_note(note_id: int, data: dict = Body(...)):
-    """Updates an existing accounting note."""
-    res = WorkspaceEngine.update_accounting_note(note_id, data)
-    if res.get("status") == "error":
-        raise HTTPException(status_code=500, detail=res.get("message"))
-    return res
-
+async def update_accounting_note(note_id: int, data: dict = Body(...)): return WorkspaceEngine.update_accounting_note(note_id, data)
 @app.delete("/workspace/accounting/notes/{note_id}")
-async def delete_accounting_note(note_id: int):
-    """Deletes an accounting note."""
-    res = WorkspaceEngine.delete_accounting_note(note_id)
-    if res.get("status") == "error":
-        raise HTTPException(status_code=500, detail=res.get("message"))
-    return res
+async def delete_accounting_note(note_id: int): return WorkspaceEngine.delete_accounting_note(note_id)
 
 @app.get("/workspace/accounting/statements")
-async def get_financial_statements():
-    """Generates real-time Balance Sheet and P&L statements."""
-    return WorkspaceEngine.get_financial_statements()
-
+async def get_financial_statements(): return WorkspaceEngine.get_financial_statements()
 @app.get("/workspace/marketing/campaigns")
-async def get_marketing_campaigns():
-    """Retrieves all marketing campaign ROI data."""
-    return WorkspaceEngine.get_marketing_campaigns()
-
+async def get_marketing_campaigns(): return WorkspaceEngine.get_marketing_campaigns()
 @app.post("/workspace/marketing/campaigns")
-async def create_marketing_campaign(data: dict = Body(...)):
-    return WorkspaceEngine.create_marketing_campaign(data)
-
-@app.put("/workspace/marketing/campaigns/{campaign_id}")
-async def update_marketing_campaign(campaign_id: int, data: dict = Body(...)):
-    return WorkspaceEngine.update_marketing_campaign(campaign_id, data)
-
-@app.delete("/workspace/marketing/campaigns/{campaign_id}")
-async def delete_marketing_campaign(campaign_id: int):
-    return WorkspaceEngine.delete_marketing_campaign(campaign_id)
+async def create_marketing_campaign(data: dict = Body(...)): return WorkspaceEngine.create_marketing_campaign(data)
+@app.put("/workspace/marketing/campaigns/{id}")
+async def update_marketing_campaign(id: int, data: dict = Body(...)): return WorkspaceEngine.update_marketing_campaign(id, data)
+@app.delete("/workspace/marketing/campaigns/{id}")
+async def delete_marketing_campaign(id: int): return WorkspaceEngine.delete_marketing_campaign(id)
 
 @app.get("/workspace/accounting/daybook")
-async def get_daybook():
-    """Retrieves a chronological audit trail of all business vouchers."""
-    return WorkspaceEngine.get_daybook()
-
+async def get_daybook(): return WorkspaceEngine.get_daybook()
 @app.get("/workspace/accounting/trial-balance")
-async def get_trial_balance():
-    """Generates a real-time Trial Balance of all active ledgers."""
-    return WorkspaceEngine.get_trial_balance()
-
+async def get_trial_balance(): return WorkspaceEngine.get_trial_balance()
 @app.get("/workspace/accounting/pl")
-async def get_pl_statement():
-    """Generates a structured Profit & Loss statement."""
-    return WorkspaceEngine.get_pl_statement()
-
+async def get_pl_statement(): return WorkspaceEngine.get_pl_statement()
 @app.get("/workspace/accounting/balance-sheet")
-async def get_balance_sheet():
-    """Generates a structured Balance Sheet (Assets vs Liabilities)."""
-    return WorkspaceEngine.get_balance_sheet()
-
+async def get_balance_sheet(): return WorkspaceEngine.get_balance_sheet()
 @app.get("/workspace/accounting/customer-ledger/{customer_id}")
-async def get_customer_ledger(customer_id: str):
-    """Retrieves a granular audit trail for a specific customer."""
-    return WorkspaceEngine.get_customer_ledger(customer_id)
-
+async def get_customer_ledger(customer_id: str): return WorkspaceEngine.get_customer_ledger(customer_id)
 @app.post("/workspace/accounting/payments")
-async def record_payment(data: dict = Body(...)):
-    """Records a professional receipt voucher (Customer Payment)."""
-    return WorkspaceEngine.record_payment(data)
-
+async def record_payment(data: dict = Body(...)): return WorkspaceEngine.record_payment(data)
 @app.post("/workspace/accounting/reconcile")
-async def reconcile_bank_statement(data: dict = Body(...)):
-    """AI BRS: Matches bank transactions with ledger events."""
-    entries = data.get("entries", [])
-    return WorkspaceEngine.reconcile_bank_statement(entries)
-
+async def reconcile_bank_statement(data: dict = Body(...)): return WorkspaceEngine.reconcile_bank_statement(data.get("entries", []))
 @app.get("/workspace/accounting/gst")
-async def get_gst_reports():
-    """Generates statutory GSTR-1 and GSTR-3B summaries."""
-    return WorkspaceEngine.get_gst_reports()
+async def get_gst_reports(): return WorkspaceEngine.get_gst_reports()
+@app.get("/workspace/accounting/cfo-report")
+async def get_cfo_report(): return WorkspaceEngine.get_cfo_health_report()
 
 @app.post("/workspace/accounting/derivatives")
 async def get_derivatives_snapshot(data: dict = Body(default={})):
-    """Returns option chain, technical indicators, Greeks, and hedge optimizer analytics."""
     try:
         return DerivativesEngine.get_derivatives_snapshot(
-            underlying=data.get("underlying", "NIFTY"),
-            expiry=data.get("expiry"),
+            underlying=data.get("underlying", "NIFTY"), expiry=data.get("expiry"),
             portfolio_value=float(data.get("portfolio_value", 10_000_000)),
             portfolio_beta=float(data.get("portfolio_beta", 0.95)),
             hedge_ratio_target=float(data.get("hedge_ratio_target", 1.0)),
         )
-    except Exception as e:
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Derivatives analytics failed: {str(e)}")
+    except Exception as e: traceback.print_exc(); raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/workspace/accounting/reminders/{invoice_id}")
+async def send_invoice_reminder(invoice_id: str): return WorkspaceEngine.send_payment_reminder(invoice_id)
 
 @app.get("/dashboard/sync-workspace")
 async def sync_workspace_to_dashboard():
-    """
-    Cognitive Sync: Pulls Live Workspace Data, runs full AI Pipeline, 
-    and returns Dashboard-ready state.
-    """
     try:
         df = WorkspaceEngine.get_enterprise_analytics_df()
-        
-        if df.empty:
-            return JSONResponse(status_code=400, content={"error": "No business ledger data found. Add invoices or expenses first."})
+        if df.empty: return JSONResponse(status_code=400, content={"error": "No data found."})
+        pipeline = run_pipeline(df); dataset_id = f"LIVE-SYNC-{uuid.uuid4().hex[:6].upper()}"
+        build_dataset_index(df); store_data(dataset_id, df)
+        _sessions[dataset_id] = {"df": df, "filename": "Live ERP Stream", "timestamp": time.time(), "pipeline": pipeline}
+        return _build_dashboard_response(dataset_id, df, pipeline, filename="Live ERP Stream", is_live=True, total_rows=len(df))
+    except Exception as e: traceback.print_exc(); return JSONResponse(status_code=500, content={"error": str(e)})
 
-        # Run full NeuralBI Pipeline on Workspace Ledger
-        pipeline = run_pipeline(df)
-        processed_df = pipeline.get("_df", df)
-        
-        # New Session ID for this Sync
-        dataset_id = f"LIVE-SYNC-{uuid.uuid4().hex[:6].upper()}"
-
-        # Index for RAG and persistent store
-        build_dataset_index(processed_df)
-        store_data(dataset_id, processed_df)
-        
-        # Cache for Copilot/NLBI
-        _sessions[dataset_id] = {
-            "df": processed_df,
-            "filename": "Live ERP Stream",
-            "timestamp": time.time(),
-            "pipeline": pipeline,
-            "available_sheets": [],
-        }
-        return _build_dashboard_response(
-            dataset_id,
-            processed_df,
-            pipeline,
-            filename="Live ERP Stream",
-            is_live=True,
-            total_rows=len(df),
-        )
-    except Exception as e:
-        traceback.print_exc()
-        return JSONResponse(status_code=500, content={"error": f"Live Sync Failed: {str(e)}"})
-
-@app.post("/workspace/accounting/reminders/{invoice_id}")
-async def send_invoice_reminder(invoice_id: str):
-    """Triggers an autonomous payment reminder for a specific invoice."""
-    return WorkspaceEngine.send_payment_reminder(invoice_id)
-
+# --- EXPORTS ---
 @app.get("/workspace/export/{table_name}")
 async def export_workspace_data(table_name: str):
-    """Generates and streams a CSV version of the requested business table."""
     valid_tables = ["invoices", "customers", "inventory", "expenses", "ledger", "marketing_campaigns", "notes"]
-    
-    # Map 'marketing' alias to 'marketing_campaigns' table
-    if table_name == "marketing":
-        table_name = "marketing_campaigns"
-
+    if table_name == "marketing": table_name = "marketing_campaigns"
     if table_name not in valid_tables:
-        # Check if it's a report instead of a raw table
-        if table_name == "trial_balance":
-            csv_data = WorkspaceEngine.export_trial_balance()
-        elif table_name == "daybook":
-            csv_data = WorkspaceEngine.export_daybook()
-        elif table_name == "p_and_l":
-            csv_data = WorkspaceEngine.export_p_and_l()
-        elif table_name == "balance_sheet":
-            csv_data = WorkspaceEngine.export_balance_sheet()
-        else:
-            raise HTTPException(status_code=400, detail="Invalid table name or report for export.")
-    else:
-        csv_data = WorkspaceEngine.export_to_csv(table_name)
-
-    return StreamingResponse(
-        iter([csv_data]),
-        media_type="text/csv",
-        headers={"Content-Disposition": f"attachment; filename={table_name}_export_{datetime.now().strftime('%Y%m%d')}.csv"}
-    )
+        reports = {"trial_balance": WorkspaceEngine.export_trial_balance, "daybook": WorkspaceEngine.export_daybook, 
+                  "p_and_l": WorkspaceEngine.export_pl_statement, "balance_sheet": WorkspaceEngine.export_balance_sheet}
+        if table_name in reports: csv_data = reports[table_name]()
+        else: raise HTTPException(status_code=400, detail="Invalid table.")
+    else: csv_data = WorkspaceEngine.export_to_csv(table_name)
+    return StreamingResponse(iter([csv_data]), media_type="text/csv", headers={"Content-Disposition": f"attachment; filename={table_name}.csv"})
 
 @app.get("/workspace/export/customer-ledger/{customer_id}")
 async def export_customer_ledger(customer_id: str):
-    """Generates and streams a CSV version of a specific customer's ledger."""
     csv_data = WorkspaceEngine.export_customer_ledger(customer_id)
-    return StreamingResponse(
-        iter([csv_data]),
-        media_type="text/csv",
-        headers={"Content-Disposition": f"attachment; filename=ledger_{customer_id}_{datetime.now().strftime('%Y%m%d')}.csv"}
-    )
+    return StreamingResponse(iter([csv_data]), media_type="text/csv", headers={"Content-Disposition": f"attachment; filename=ledger_{customer_id}.csv"})
 
 @app.get("/workspace/business-report/download")
 async def download_consolidated_report():
-    """Generates and streams a unified business performance report."""
     report_text = WorkspaceEngine.generate_consolidated_business_report()
-    return PlainTextResponse(
-        report_text,
-        headers={"Content-Disposition": "attachment; filename=NeuralBI_Consolidated_Report.txt"}
-    )
-
-@app.post("/copilot-chat")
-async def copilot_chat(request: Request):
-    """
-    Live AI Command Center (Copilot v2):
-    Answers business questions by querying live SQL or the latest AI context.
-    """
-    body = await request.json()
-    query = body.get("query", "")
-    dataset_id = body.get("dataset_id") # Optional: specific context
-    
-    if not query:
-        return {
-            "response": "I'm listening. Ask about totals, trends, top performers, risks, margins, or customer and inventory patterns.",
-            "answer": "I'm listening. Ask about totals, trends, top performers, risks, margins, or customer and inventory patterns.",
-            "suggested_questions": [
-                "Summarize the current data",
-                "What are the top contributors?",
-                "Show the main risks in the data",
-            ],
-        }
-    
-    # 1. Get Context
-    context_df = None
-    analytics = {}
-    pipeline = None
-    if dataset_id and dataset_id in _sessions:
-        session = _sessions[dataset_id]
-        context_df = session.get("df")
-        analytics = session.get("analytics", {})
-        pipeline = session.get("pipeline")
-    else:
-        # Fallback: Live Workspace Data
-        context_df = WorkspaceEngine.get_enterprise_analytics_df()
-        if context_df is not None and not context_df.empty:
-            numeric_cols = context_df.select_dtypes(include=[np.number]).columns.tolist()
-            if numeric_cols:
-                primary_metric = "revenue" if "revenue" in numeric_cols else numeric_cols[0]
-                analytics["total_revenue"] = float(context_df[primary_metric].sum())
-                analytics["average_revenue"] = float(context_df[primary_metric].mean())
-            if "product" in context_df.columns and numeric_cols:
-                metric = "revenue" if "revenue" in context_df.columns else numeric_cols[0]
-                analytics["top_products"] = (
-                    context_df.groupby("product")[metric].sum().sort_values(ascending=False).head(5).to_dict()
-                )
-            if "region" in context_df.columns and numeric_cols:
-                metric = "revenue" if "revenue" in context_df.columns else numeric_cols[0]
-                analytics["region_sales"] = context_df.groupby("region")[metric].sum().to_dict()
-        
-    # 2. Query Logic (Heuristic for now, can be LLM-powered)
-    try:
-        # Log the usage
-        WorkspaceEngine.log_usage("Copilot", f"Query: {query[:50]}...")
-        if context_df is None or context_df.empty:
-            msg = "No active dataset or synced workspace context is available. Upload a dataset or sync workspace data first."
-            return {
-                "response": msg,
-                "answer": msg,
-                "suggested_questions": [
-                    "Summarize the current data",
-                    "What are the top products?",
-                    "Show revenue trends",
-                ],
-            }
-
-        ml_results = pipeline.get("ml_predictions", {}) if pipeline else {}
-        result = handle_question(query, context_df, analytics, ml_results, pipeline)
-        if not result:
-            result = run_nlbi_pipeline(query, context_df)
-
-        suggestions = [
-            "Summarize the current data",
-            "What are the top 5 contributors?",
-            "Show trend over time",
-        ]
-        if "product" in context_df.columns:
-            suggestions[1] = "What are the top 5 products?"
-        elif "customer" in " ".join(map(str.lower, context_df.columns)):
-            suggestions[1] = "Which customers contribute the most?"
-
-        return {
-            "response": result,
-            "answer": result,
-            "context_rows": int(len(context_df)),
-            "suggested_questions": suggestions,
-        }
-    except Exception as e:
-        msg = f"Neural Link Error: {str(e)}"
-        return {"response": msg, "answer": msg, "suggested_questions": []}
-
-@app.get("/workspace/accounting/cfo-report")
-async def get_cfo_report():
-    """Generates a high-level CFO health report."""
-    return WorkspaceEngine.get_cfo_health_report()
+    return PlainTextResponse(report_text, headers={"Content-Disposition": "attachment; filename=NeuralBI_Report.txt"})
 
 @app.get("/workspace/usage-stats")
 async def get_usage_stats():
-    """Returns platform engagement analytics."""
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
     try:
+        conn = sqlite3.connect(DB_PATH); conn.row_factory = sqlite3.Row
         logs = conn.execute("SELECT module, COUNT(*) as count FROM usage_logs GROUP BY module ORDER BY count DESC").fetchall()
-        return [dict(log) for log in logs]
-    finally:
-        conn.close()
+        conn.close(); return [dict(l) for l in logs]
+    except Exception as e: print(f"Usage Stats Error: {e}"); return []
+
+# --- AI & COPILOT ENDPOINTS ---
+@app.post("/copilot-chat")
+async def copilot_chat(request: Request):
+    body = await request.json(); query = body.get("query", ""); dataset_id = body.get("dataset_id")
+    if not query: return {"answer": "Listening...", "suggested_questions": ["Summarize business health"]}
+    context_df = _sessions[dataset_id]["df"] if dataset_id in _sessions else WorkspaceEngine.get_enterprise_analytics_df()
+    pipeline = _sessions[dataset_id]["pipeline"] if dataset_id in _sessions else {}
+    try:
+        WorkspaceEngine.log_usage("Copilot", f"Query: {query[:50]}")
+        if context_df is None or context_df.empty: return {"answer": "No context available. Upload or sync data."}
+        ans = handle_question(query, context_df, pipeline.get("analytics", {}), pipeline.get("ml_predictions", {}), pipeline)
+        if not ans: ans = run_nlbi_pipeline(query, context_df)
+        return {"answer": ans, "context_rows": int(len(context_df)), "suggested_questions": ["Summarize trends", "Show top performers"]}
+    except Exception as e: return {"answer": f"Error: {str(e)}", "suggested_questions": []}
 
 @app.post("/copilot/{dataset_id}")
 async def ask_copilot(dataset_id: str, question: str = Body(...)):
-    if dataset_id not in _sessions:
-        raise HTTPException(status_code=404, detail="Session not found")
-    session = _sessions[dataset_id]
-    df = session["df"]
-    # Quick analytics for context
-    numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
-    analytics = {"total_rows": len(df)}
-    if numeric_cols:
-        analytics["total_revenue"] = float(df[numeric_cols[0]].sum())
-    
-    res = handle_question(question, df, analytics, session.get("pipeline", {}).get("ml_predictions", {}), session.get("pipeline"))
-    return {"answer": res}
-
+    if dataset_id not in _sessions: raise HTTPException(status_code=404)
+    s = _sessions[dataset_id]; p = s.get("pipeline", {})
+    return {"answer": handle_question(question, s["df"], p.get("analytics", {}), p.get("ml_predictions", {}), p)}
 
 @app.post("/copilot/agent/{dataset_id}")
 async def ask_copilot_agent(dataset_id: str, question: str = Body(...)):
-    if dataset_id not in _sessions:
-        raise HTTPException(status_code=404, detail="Session not found")
-
-    session = _sessions[dataset_id]
-    df = session["df"]
-    pipeline = session.get("pipeline", {})
-    analytics = pipeline.get("analytics", {})
-    answer = handle_question(question, df, analytics, pipeline.get("ml_predictions", {}), pipeline)
-
-    return {
-        "answer": answer,
-        "agent_outputs": [
-            "Loaded active dataset session context.",
-            "Queried analytics and ML signals for the current question.",
-            "Synthesized response from the enterprise copilot engine.",
-        ],
-        "suggested_questions": [
-            "Summarize the current data",
-            "What are the top contributors?",
-            "Show revenue trends",
-        ],
-    }
+    if dataset_id not in _sessions: raise HTTPException(status_code=404)
+    s = _sessions[dataset_id]; p = s.get("pipeline", {})
+    ans = handle_question(question, s["df"], p.get("analytics", {}), p.get("ml_predictions", {}), p)
+    return {"answer": ans, "agent_outputs": ["Loaded context.", "Analyzed signals."], "suggested_questions": ["Summarize data"]}
 
 @app.post("/nlbi/{dataset_id}")
 async def ask_nlbi(dataset_id: str, question: str = Body(...)):
-    if dataset_id not in _sessions:
-        raise HTTPException(status_code=404, detail="Session not found")
-    res = run_nlbi_pipeline(question, _sessions[dataset_id]["df"])
-    return {"answer": res}
+    if dataset_id not in _sessions: raise HTTPException(status_code=404)
+    return {"answer": run_nlbi_pipeline(question, _sessions[dataset_id]["df"])}
 
 @app.post("/pricing-optimization/{dataset_id}")
 async def get_pricing_opt(dataset_id: str):
-    if dataset_id not in _sessions:
-        raise HTTPException(status_code=404, detail="Session not found")
-    pipeline = _sessions[dataset_id].get("pipeline", {})
-    return pipeline.get("ml_predictions", {}).get("pricing_optimization", {})
-
+    if dataset_id not in _sessions: raise HTTPException(status_code=404)
+    return _sessions[dataset_id].get("pipeline", {}).get("ml_predictions", {}).get("pricing_optimization", {})
 
 @app.post("/forecast/{dataset_id}")
 async def get_forecast(dataset_id: str, payload: dict = Body(default={})):
-    if dataset_id not in _sessions:
-        raise HTTPException(status_code=404, detail="Session not found")
-
-    periods = int(payload.get("periods", 30) or 30)
-    periods = max(1, min(periods, 365))
-    session = _sessions[dataset_id]
-    pipeline = session.get("pipeline", {})
-    forecast = pipeline.get("ml_predictions", {}).get("time_series_forecast")
-
+    if dataset_id not in _sessions: raise HTTPException(status_code=404)
+    periods = max(1, min(int(payload.get("periods", 30) or 30), 365))
+    s = _sessions[dataset_id]; p = s.get("pipeline", {})
+    forecast = p.get("ml_predictions", {}).get("time_series_forecast")
     if not forecast:
         from app.models.time_series_forecaster import forecast_revenue
-
-        forecast = forecast_revenue(session["df"], days_ahead=periods)
-        pipeline.setdefault("ml_predictions", {})["time_series_forecast"] = forecast
-        session["pipeline"] = pipeline
-
-    return {
-        "forecast": forecast[:periods] if isinstance(forecast, list) else [],
-        "model_info": "RandomForest time-series forecast",
-        "r2_score": 0.0,
-    }
+        forecast = forecast_revenue(s["df"], days_ahead=periods)
+        p.setdefault("ml_predictions", {})["time_series_forecast"] = forecast
+    return {"forecast": forecast[:periods] if isinstance(forecast, list) else [], "r2_score": 0.0}
 
 @app.post("/dashboard-config/{dataset_id}")
 async def get_dashboard_config(dataset_id: str):
-    if dataset_id not in _sessions:
-        raise HTTPException(status_code=404, detail="Session not found")
+    if dataset_id not in _sessions: raise HTTPException(status_code=404)
     return generate_ai_dashboard(_sessions[dataset_id]["df"])
 
+# --- AI DATA DOWNLOADS ---
 @app.get("/download-report/{dataset_id}")
 async def download_report(dataset_id: str):
-    if dataset_id not in _sessions:
-        raise HTTPException(status_code=404, detail="Session not found")
-    report = _sessions[dataset_id].get("pipeline", {}).get("analyst_report", {}).get("report", "No report available.")
-    return PlainTextResponse(str(report), headers={"Content-Disposition": f"attachment; filename=Report_{dataset_id}.txt"})
-
+    if dataset_id not in _sessions: raise HTTPException(status_code=404)
+    rep = _sessions[dataset_id].get("pipeline", {}).get("analyst_report", {}).get("report", "No report.")
+    return PlainTextResponse(str(rep), headers={"Content-Disposition": f"attachment; filename=Report_{dataset_id}.txt"})
 
 @app.get("/download-strategic-plan-pdf/{dataset_id}")
 async def download_strategic_plan_pdf(dataset_id: str):
-    if dataset_id not in _sessions:
-        raise HTTPException(status_code=404, detail="Session not found")
-
-    plan = _sessions[dataset_id].get("pipeline", {}).get("strategic_plan", "No strategic plan available.")
-    pdf_bytes = create_pdf_from_text(str(plan))
-    return StreamingResponse(
-        iter([pdf_bytes]),
-        media_type="application/pdf",
-        headers={"Content-Disposition": f"attachment; filename=StrategicPlan_{dataset_id}.pdf"},
-    )
+    if dataset_id not in _sessions: raise HTTPException(status_code=404)
+    plan = _sessions[dataset_id].get("pipeline", {}).get("strategic_plan", "No plan available.")
+    return StreamingResponse(iter([create_pdf_from_text(str(plan))]), media_type="application/pdf", headers={"Content-Disposition": f"attachment; filename=Strategy_{dataset_id}.pdf"})
 
 @app.get("/download-clean-data/{dataset_id}")
 async def download_clean_data(dataset_id: str):
-    if dataset_id not in _sessions:
-        raise HTTPException(status_code=404, detail="Session not found")
-    df = _sessions[dataset_id]["df"]
-    csv_data = df.to_csv(index=False)
-    return StreamingResponse(iter([csv_data]), media_type="text/csv", headers={"Content-Disposition": f"attachment; filename=Clean_Data_{dataset_id}.csv"})
+    if dataset_id not in _sessions: raise HTTPException(status_code=404)
+    return StreamingResponse(iter([_sessions[dataset_id]["df"].to_csv(index=False)]), media_type="text/csv", headers={"Content-Disposition": f"attachment; filename=Data_{dataset_id}.csv"})
 
 @app.post("/reprocess-dataset/{dataset_id}")
-async def reprocess_dataset(dataset_id: str, sheet_name: str = Body(None)):
-    if dataset_id not in _sessions:
-        raise HTTPException(status_code=404, detail="Session not found")
-    # This would require the original file content, which we'd need to store.
-    # For now, just rerun pipeline on current DF.
-    df = _sessions[dataset_id]["df"]
-    pipeline = run_pipeline(df)
+async def reprocess_dataset(dataset_id: str):
+    if dataset_id not in _sessions: raise HTTPException(status_code=404)
+    df = _sessions[dataset_id]["df"]; pipeline = run_pipeline(df)
     _sessions[dataset_id]["pipeline"] = pipeline
-    return _build_dashboard_response(
-        dataset_id,
-        df,
-        pipeline,
-        filename=_sessions[dataset_id].get("filename"),
-        available_sheets=_sessions[dataset_id].get("available_sheets", []),
-    )
+    return _build_dashboard_response(dataset_id, df, pipeline, filename=_sessions[dataset_id].get("filename"))
 
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.getenv("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", 8000)))
