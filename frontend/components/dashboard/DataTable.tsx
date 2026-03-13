@@ -78,10 +78,7 @@ export default function DataTable({ data, columns }: DataTableProps) {
                     </thead>
                     <tbody className="divide-y divide-[--border-subtle]">
                         {pageData.map((row, i) => (
-                            <motion.tr
-                                initial={{ opacity: 0, y: 5 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: i * 0.03 }}
+                            <tr
                                 key={i}
                                 className="hover:bg-[--surface-2]/30 transition-colors group"
                             >
@@ -90,7 +87,7 @@ export default function DataTable({ data, columns }: DataTableProps) {
                                         {fmtVal(row[col])}
                                     </td>
                                 ))}
-                            </motion.tr>
+                            </tr>
                         ))}
                     </tbody>
                 </table>

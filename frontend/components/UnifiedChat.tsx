@@ -4,10 +4,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useStore } from "@/store/useStore"
 import Link from "next/link"
-import dynamic from "next/dynamic"
-
-// Lazy load chart component
-const ReactECharts = dynamic(() => import("echarts-for-react"), { ssr: false, loading: () => <div>Loading chart...</div> })
+import SafeChart from "@/components/SafeChart"
 
 interface Message {
     id: string
@@ -278,7 +275,7 @@ export default function UnifiedChatComponent() {
                                             width: "100%",
                                             minHeight: "300px"
                                         }}>
-                                            <ReactECharts option={getChartOption(msg.chart)} style={{ height: "300px" }} />
+                                            <SafeChart option={getChartOption(msg.chart)} style={{ height: "300px" }} />
                                         </div>
                                     ) : null}
 

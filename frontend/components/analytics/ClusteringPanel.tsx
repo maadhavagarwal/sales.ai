@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
-import ReactECharts from "echarts-for-react"
+import SafeChart from "@/components/SafeChart"
 
 interface ClusteringProps {
     data: Record<string, { count: number; total_value: number; top_example: string }>
@@ -68,7 +68,7 @@ export default function ClusteringPanel({ data }: ClusteringProps) {
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "2rem", alignItems: "center" }}>
-                <ReactECharts option={chartOption} style={{ height: "240px" }} />
+                <SafeChart option={chartOption} style={{ height: "240px" }} />
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
                     {Object.entries(data).map(([tier, details], i) => (

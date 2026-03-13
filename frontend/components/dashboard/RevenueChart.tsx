@@ -1,8 +1,4 @@
-"use client"
-
-import { motion } from "framer-motion"
-import ReactECharts from "echarts-for-react"
-
+import SafeChart from "@/components/SafeChart"
 import { useStore } from "@/store/useStore"
 
 export default function RevenueChart({ data }: { data: Record<string, number> }) {
@@ -98,7 +94,7 @@ export default function RevenueChart({ data }: { data: Record<string, number> })
                 </div>
                 <span className="badge badge-primary">Live Data</span>
             </div>
-            <ReactECharts option={option} style={{ height: "320px" }} />
+            <SafeChart option={option} style={{ height: "320px" }} />
         </motion.div>
     )
-}
+}

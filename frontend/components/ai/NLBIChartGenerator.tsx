@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import ReactECharts from "echarts-for-react"
+import SafeChart from "@/components/SafeChart"
 import { askNLBI } from "@/services/api"
 import { useStore, CHART_COLORS } from "@/store/useStore"
 
@@ -160,7 +160,9 @@ export default function NLBIChartGenerator() {
                             </p>
                             <button onClick={() => setChartData(null)} style={{ background: "transparent", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: "0.75rem" }}>Clear Result</button>
                         </div>
-                        <ReactECharts option={chartOption} style={{ height: "320px" }} />
+                        <div style={{ height: "350px", width: "100%" }}>
+                            <SafeChart option={chartOption} style={{ height: "100%", width: "100%" }} />
+                        </div>
                     </motion.div>
                 )}
 

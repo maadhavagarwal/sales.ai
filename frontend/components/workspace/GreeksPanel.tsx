@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { motion } from "framer-motion"
-import ReactECharts from "echarts-for-react"
+import SafeChart from "@/components/SafeChart"
 import { Card, Badge, Button } from "@/components/ui"
 import { getDerivativesSnapshot } from "@/services/api"
 
@@ -207,7 +207,7 @@ export default function GreeksPanel() {
                         <Badge variant="outline">{data.selected_underlying} | {data.selected_expiry}</Badge>
                     </div>
                     <div className="h-[260px]">
-                        {priceOption && <ReactECharts option={priceOption} style={{ height: "100%" }} />}
+                        {priceOption && <SafeChart option={priceOption} style={{ height: "100%" }} />}
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
                         {[
@@ -236,7 +236,7 @@ export default function GreeksPanel() {
                     <Card variant="glass" padding="lg" className="h-[320px]">
                         <h4 className="text-[10px] font-black text-white uppercase tracking-widest mb-4">Risk Surface Radar</h4>
                         <div className="h-[240px]">
-                            {radarOption && <ReactECharts option={radarOption} style={{ height: "100%" }} />}
+                            {radarOption && <SafeChart option={radarOption} style={{ height: "100%" }} />}
                         </div>
                     </Card>
 

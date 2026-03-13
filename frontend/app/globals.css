@@ -140,8 +140,8 @@ pre,
 /* ===== Professional Glass Utilities ===== */
 .glass-pro {
     background: rgba(2, 6, 23, 0.7);
-    backdrop-filter: blur(16px) saturate(180%);
-    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    backdrop-filter: blur(12px) saturate(180%);
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
     border: 1px solid rgba(255, 255, 255, 0.08);
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
     transition: all var(--transition-base);
@@ -154,14 +154,14 @@ pre,
 
 .glass-pro-thick {
     background: rgba(15, 23, 42, 0.85);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     border: 1px solid var(--border-strong);
 }
 
 .chart-card {
     background: rgba(15, 23, 42, 0.4);
-    backdrop-filter: blur(12px);
+    backdrop-filter: blur(8px);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: var(--radius-lg);
     padding: 1.5rem;
@@ -300,7 +300,8 @@ pre,
     width: 500px;
     height: 500px;
     background: var(--primary);
-    filter: blur(120px);
+    filter: blur(80px);
+    will-change: transform;
     opacity: 0.1;
     border-radius: 50%;
     animation: blob-float 20s infinite alternate cubic-bezier(0.45, 0, 0.55, 1);

@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { askNLBI } from "@/services/api"
 import { motion, AnimatePresence } from "framer-motion"
-import ReactECharts from "echarts-for-react"
+import SafeChart from "@/components/SafeChart"
 import { useStore } from "@/store/useStore"
 
 export default function NLBIChart() {
@@ -249,7 +249,7 @@ export default function NLBIChart() {
                             </div>
                             <span className="badge badge-success">AI Generated</span>
                         </div>
-                        <ReactECharts option={getChartOption()!} style={{ height: "400px" }} />
+                        <SafeChart option={getChartOption()!} style={{ height: "400px" }} />
                     </motion.div>
                 )}
             </AnimatePresence>

@@ -4,7 +4,7 @@ import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { getPricingOptimization } from "@/services/api"
 import { useStore } from "@/store/useStore"
-import ReactECharts from "echarts-for-react"
+import SafeChart from "@/components/SafeChart"
 
 export default function PricingOptimizationPanel() {
     const { datasetId, currencySymbol } = useStore()
@@ -79,7 +79,7 @@ export default function PricingOptimizationPanel() {
                         Calculating reward curves and margin tradeoffs in {currencySymbol}
                     </p>
                     <div style={{ height: "150px", marginTop: "1rem" }}>
-                        <ReactECharts option={chartOption} />
+                        <SafeChart option={chartOption} />
                     </div>
                 </div>
             )}

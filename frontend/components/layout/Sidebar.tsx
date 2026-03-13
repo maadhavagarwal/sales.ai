@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -89,10 +89,10 @@ export default function Sidebar() {
                     top-0 left-0
                     w-[300px] md:w-72
                     h-screen
-                    bg-black/20 backdrop-blur-3xl md:bg-black/10
+                    bg-black/20 backdrop-blur-xl md:bg-black/10
                     border-r border-white/5
                     z-[90]
-                    transition-all duration-700
+                    transition-transform duration-700
                     flex flex-col
                     ${mobileOpen ? 'translate-x-0 shadow-[20px_0_80px_rgba(0,0,0,0.5)]' : '-translate-x-full md:translate-x-0'}
                 `}

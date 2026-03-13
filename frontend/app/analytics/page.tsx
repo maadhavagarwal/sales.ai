@@ -15,7 +15,7 @@ import DataIntelligencePanel from "@/components/analytics/DataIntelligencePanel"
 import TradingIntelligencePanel from "@/components/analytics/TradingIntelligencePanel"
 import { useStore } from "@/store/useStore"
 import { motion } from "framer-motion"
-import ReactECharts from "echarts-for-react"
+import SafeChart from "@/components/SafeChart"
 import { Card, Button, Badge } from "@/components/ui"
 
 function MLResultsPanel({ ml }: { ml: Record<string, any> }) {
@@ -76,7 +76,7 @@ function MLResultsPanel({ ml }: { ml: Record<string, any> }) {
                                 Loss Convergence Chart
                             </h4>
                             {ml.automl_results.model_scores && (
-                                <ReactECharts
+                                <SafeChart
                                     style={{ height: "300px" }}
                                     option={{
                                         backgroundColor: "transparent",

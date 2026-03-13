@@ -12,6 +12,7 @@ import TradingIntelligencePanel from "@/components/analytics/TradingIntelligence
 import ChartWidget from "@/components/dashboard/ChartWidget"
 import WidgetEditor from "@/components/dashboard/WidgetEditor"
 import DataTable from "@/components/dashboard/DataTable"
+import DebugPanel from "@/components/DebugPanel"
 import { useToast } from "@/components/ui/Toast"
 import { useStore, CHART_COLORS, DashboardWidget } from "@/store/useStore"
 import { getDashboardConfig, downloadStrategicPlanPDF, reprocessDataset, getCopilotResponse } from "@/services/api"
@@ -83,10 +84,12 @@ export default function Dashboard() {
     setSelectedSheet(sheet)
     try {
       const newResults = await reprocessDataset(datasetId, sheet === "ALL" ? "ALL_SHEETS" : sheet)
+      console.log("Reprocess results:", newResults) // Debug
       setResults(newResults)
       setWidgets([])
     } catch (err) {
       console.error("Sheet reprocessing failed:", err)
+      showToast("error", "Sheet Processing Failed", err?.message || "Unable to reprocess dataset")
     }
   }
 

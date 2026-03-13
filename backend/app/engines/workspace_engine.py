@@ -42,7 +42,7 @@ class WorkspaceEngine:
         Creates a new professional GST-compliant invoice and syncs to General Ledger via Double-Entry.
         Syncs: AR (Asset), Revenue (Income), GST (Liability), COGS (Expense), Inventory (Asset)
         """
-        invoice_id = f"GST-{datetime.now().year}-{uuid.uuid4().hex[:6].upper()}"
+        invoice_id = f"GST-{datetime.now().year}-{str(uuid.uuid4().hex)[:6].upper()}"
         conn = sqlite3.connect(DB_PATH)
         try:
             items = data.get('items', [])
@@ -752,7 +752,7 @@ class WorkspaceEngine:
                     sale = WorkspaceEngine._safe_number(row[sale_col]) if sale_col and pd.notnull(row[sale_col]) else 0
                     cost = WorkspaceEngine._safe_number(row[cost_col], sale * 0.7) if cost_col and pd.notnull(row[cost_col]) else (sale * 0.7)
 
-                    sku_val = name[:15].upper().replace(" ", "")
+                    sku_val = str(name)[:15].upper().replace(" ", "")
                     conn.execute("""
                         INSERT INTO inventory (sku, name, quantity, cost_price, sale_price)
                         VALUES (?, ?, ?, ?, ?)
@@ -805,11 +805,11 @@ class WorkspaceEngine:
                             total_spend=customers.total_spend + excluded.total_spend
                     """, (cust, email, phone, address, gst, pan, rev))
 
-                    inv_id = f"MIG-{uuid.uuid4().hex[:8].upper()}"
+                    inv_id = f"MIG-{str(uuid.uuid4().hex)[:8].upper()}"
                     items_json = json.dumps([{"name": prod, "quantity": q, "price": rev / q if q > 0 else rev, "tax_rate": 0}])
                     conn.execute("INSERT INTO invoices (id, invoice_number, customer_id, date, grand_total, items_json, status) VALUES (?, ?, ?, ?, ?, ?, ?)", (inv_id, inv_id, cust, dt, rev, items_json, 'PAID'))
 
-                    v_id = f"VCH-MIG-{uuid.uuid4().hex[:8].upper()}"
+                    v_id = f"VCH-MIG-{str(uuid.uuid4().hex)[:8].upper()}"
                     conn.execute("INSERT INTO ledger (account_name, type, amount, description, date, voucher_id, voucher_type) VALUES (?, ?, ?, ?, ?, ?, ?)", ("Sales Revenue - Domestic", 'INCOME', rev, f"Dataset Migration: {prod} for {cust}", dt, v_id, 'Sales'))
                     conn.execute("INSERT INTO ledger (account_name, type, amount, description, date, voucher_id, voucher_type) VALUES (?, ?, ?, ?, ?, ?, ?)", (f"Accounts Receivable - {cust}", 'ASSET', rev, f"MIG Sale Ref: {inv_id}", dt, v_id, 'Sales'))
                     conn.execute("INSERT INTO ledger (account_name, type, amount, description, date, voucher_id, voucher_type) VALUES (?, ?, ?, ?, ?, ?, ?)", ("Corporate Cash/Bank", 'ASSET', rev, f"MIG Receipt Ref: {inv_id} via {cust}", dt, v_id, 'Receipt'))
@@ -957,8 +957,8 @@ class WorkspaceEngine:
                     "sku": sku,
                     "name": item['name'],
                     "current_stock": item['quantity'],
-                    "daily_velocity": round(avg_daily_velocity, 2),
-                    "days_remaining": round(days_to_stockout, 1) if days_to_stockout < 999 else "∞",
+                    "daily_velocity": round(float(avg_daily_velocity), 2),
+                    "days_remaining": round(float(days_to_stockout), 1) if days_to_stockout < 999 else "∞",
                     "risk": risk_level,
                     "recommended_restock": math.ceil(avg_daily_velocity * 30) if risk_level != "HEALTHY" else 0
                 })
@@ -1100,7 +1100,7 @@ class WorkspaceEngine:
             
             return {
                 "ebitda": ebitda,
-                "current_ratio": round(current_ratio, 2),
+                "current_ratio": round(float(current_ratio), 2),
                 "business_health": "PRIME" if current_ratio > 1.5 else "STABLE" if current_ratio > 1.0 else "AT_RISK",
                 "revenue": pl.get('revenue', {}).get('total', 0)
             }

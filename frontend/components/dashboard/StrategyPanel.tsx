@@ -3,7 +3,27 @@
 import { motion } from "framer-motion"
 
 export default function StrategyPanel({ strategy }: { strategy: string[] }) {
-    if (!strategy || strategy.length === 0) return null
+    if (!strategy || strategy.length === 0) {
+        return (
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="chart-card"
+            >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem" }}>
+                    <div>
+                        <h3 style={{ fontSize: "1rem", fontWeight: 700 }}>AI Strategy Recommendations</h3>
+                        <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "2px" }}>
+                            Loading strategy recommendations...
+                        </p>
+                    </div>
+                </div>
+                <div style={{ height: "200px", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)" }}>
+                    <div className="animate-pulse">Analyzing dataset...</div>
+                </div>
+            </motion.div>
+        )
+    }
 
     return (
         <motion.div

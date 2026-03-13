@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo } from "react"
-import ReactECharts from "echarts-for-react"
+import SafeChart from "@/components/SafeChart"
 import { motion } from "framer-motion"
 
 interface ForecastData {
@@ -69,7 +69,25 @@ export default function RevenueForecastChart({ data }: { data: ForecastData[] })
         }
     }, [data])
 
-    if (!data || data.length === 0) return null
+    if (!data || data.length === 0) {
+        return (
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="chart-card"
+            >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
+                    <div>
+                        <h3 style={{ fontSize: "1rem", fontWeight: 700 }}>🔮 AI 30-Day Revenue Forecast</h3>
+                        <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "2px" }}>Neural network time-series prediction</p>
+                    </div>
+                </div>
+                <div style={{ height: "350px", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.05)", background: "rgba(255,255,255,0.01)" }}>
+                    <div>Loading forecast data...</div>
+                </div>
+            </motion.div>
+        )
+    }
 
     return (
         <motion.div
@@ -88,7 +106,9 @@ export default function RevenueForecastChart({ data }: { data: ForecastData[] })
                 </div>
             </div>
 
-            <ReactECharts option={chartOption} style={{ height: "350px" }} />
+            <div style={{ height: "350px", width: "100%" }}>
+                <SafeChart option={chartOption} style={{ height: "100%", width: "100%" }} />
+            </div>
 
             <div style={{ marginTop: "1rem", padding: "1rem", background: "rgba(99,102,241,0.04)", borderRadius: "12px", fontSize: "0.85rem", color: "var(--text-secondary)", display: "flex", gap: "1rem", alignItems: "center" }}>
                 <div style={{ fontSize: "1.5rem" }}>ℹ️</div>

@@ -1,7 +1,7 @@
 "use client"
 
 import { useRef, useState } from "react"
-import { uploadCSV } from "@/services/api"
+import { uploadCSV, reprocessDataset } from "@/services/api"
 import { useStore } from "@/store/useStore"
 import { motion, AnimatePresence } from "framer-motion"
 import { useToast } from "@/components/ui/Toast"
@@ -29,8 +29,9 @@ export default function CSVUploader() {
         setFileName(file.name)
 
         try {
+            // Step 1: Fast upload (get dataset_id + basic metadata)
             const data = await uploadCSV(file, (progress) => {
-                setUploadProgress(progress)
+                setUploadProgress(Math.round(progress * 0.7)) // First 70% for upload
             })
 
             if (data.error) {
@@ -41,9 +42,24 @@ export default function CSVUploader() {
             }
 
             setResults(data)
-            incrementSyncCount()
-            setUploadProgress(100)
-            showToast("success", "Dataset Loaded", `${file.name} · ${data.rows ?? "?"} rows processed`)
+            setUploadProgress(75)
+            showToast("success", "Dataset Loaded", `${file.name} · ${data.rows ?? "?"} rows processing...`)
+
+            // Step 2: Fetch full analysis in background (ML, clustering, insights)
+            if (data.dataset_id) {
+                try {
+                    const fullAnalysis = await reprocessDataset(data.dataset_id)
+                    setResults(fullAnalysis)
+                    setUploadProgress(100)
+                    showToast("success", "Analysis Complete", "All analytics and ML predictions ready")
+                    incrementSyncCount()
+                } catch (analysisErr) {
+                    console.warn("Background analysis failed, using partial data:", analysisErr)
+                    // User still has partial data, not a critical error
+                    incrementSyncCount()
+                    setUploadProgress(100)
+                }
+            }
         } catch (err: any) {
             const msg = err?.response?.data?.detail || "Failed to process dataset. Please try again."
             setError(msg)

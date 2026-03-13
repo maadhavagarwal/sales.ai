@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo } from "react"
-import ReactECharts from "echarts-for-react"
+import SafeChart from "@/components/SafeChart"
 import { motion } from "framer-motion"
 import { useStore, CHART_COLORS, DashboardWidget } from "@/store/useStore"
 import { Card, Button } from "@/components/ui"
@@ -221,7 +221,7 @@ export default function ChartWidget({
 
                 <div className="flex-1 min-h-[240px]">
                     {chartOption ? (
-                        <ReactECharts 
+                        <SafeChart 
                             option={chartOption} 
                             style={{ height: "100%", width: "100%" }} 
                             notMerge={true}

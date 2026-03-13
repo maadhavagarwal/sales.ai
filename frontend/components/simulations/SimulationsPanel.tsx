@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
-import ReactECharts from "echarts-for-react"
+import SafeChart from "@/components/SafeChart"
 import type { SimulationResult } from "@/store/useStore"
 
 import { useStore } from "@/store/useStore"
@@ -85,7 +85,7 @@ export default function SimulationsPanel({ simulations }: { simulations: Simulat
                     </div>
                     <span className="badge badge-primary">Monte Carlo</span>
                 </div>
-                <ReactECharts option={option} style={{ height: "350px" }} />
+                <SafeChart option={option} style={{ height: "350px" }} />
             </motion.div>
 
             {/* Cards grid */}

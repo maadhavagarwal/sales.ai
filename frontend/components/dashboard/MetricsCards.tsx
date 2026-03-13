@@ -21,7 +21,15 @@ function formatNumber(num: number, symbol: string): string {
 
 export default function MetricsCards({ analytics }: { analytics: AnalyticsData & { total_profit?: number; total_revenue?: number } }) {
     const { currencySymbol } = useStore()
-    if (!analytics) return null
+    if (!analytics) {
+        return (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="h-24 bg-black/40 rounded-xl border border-white/5 animate-pulse" />
+                ))}
+            </div>
+        )
+    }
 
     const metrics: MetricItem[] = []
 

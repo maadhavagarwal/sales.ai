@@ -3,7 +3,27 @@
 import { motion } from "framer-motion"
 
 export default function ExplanationsPanel({ explanations }: { explanations: string[] }) {
-    if (!explanations || explanations.length === 0) return null
+    if (!explanations || explanations.length === 0) {
+        return (
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="chart-card"
+            >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem" }}>
+                    <div>
+                        <h3 style={{ fontSize: "1rem", fontWeight: 700 }}>Explainable AI</h3>
+                        <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "2px" }}>
+                            Generating explanations...
+                        </p>
+                    </div>
+                </div>
+                <div style={{ height: "200px", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)" }}>
+                    <div className="animate-pulse">Compiling AI explanations...</div>
+                </div>
+            </motion.div>
+        )
+    }
 
     return (
         <motion.div

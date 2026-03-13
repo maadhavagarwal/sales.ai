@@ -3,9 +3,29 @@
 import { motion } from "framer-motion"
 
 export default function InsightsPanel({ insights }: { insights: string[] }) {
-    if (!insights || insights.length === 0) return null
-
     const icons = ["💡", "📌", "🎯", "⚡", "🔍"]
+    
+    if (!insights || insights.length === 0) {
+        return (
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="chart-card"
+            >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem" }}>
+                    <div>
+                        <h3 style={{ fontSize: "1rem", fontWeight: 700 }}>Key Insights</h3>
+                        <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "2px" }}>
+                            Extracting insights from data...
+                        </p>
+                    </div>
+                </div>
+                <div style={{ height: "180px", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)" }}>
+                    <div className="animate-pulse">Discovering patterns...</div>
+                </div>
+            </motion.div>
+        )
+    }
 
     return (
         <motion.div
