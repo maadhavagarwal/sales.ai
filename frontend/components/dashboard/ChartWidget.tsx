@@ -59,7 +59,22 @@ export default function ChartWidget({
     }, [widget, rawData])
 
     const chartOption = useMemo(() => {
-        if (!rawData || rawData.length === 0) return null
+        const baseOption = {
+            tooltip: {
+                trigger: "axis",
+                backgroundColor: "#0f172a",
+                borderColor: "#1e293b",
+                textStyle: { color: "#f8fafc" },
+                padding: [10, 14],
+                borderRadius: 8
+            },
+            grid: { left: "4%", right: "4%", bottom: "10%", top: "10%", containLabel: true },
+            xAxis: { type: "category", data: [], axisLabel: { color: "#94a3b8", fontSize: 10 } },
+            yAxis: { type: "value", axisLabel: { color: "#94a3b8", fontSize: 10 } },
+            series: []
+        }
+
+        if (!rawData || rawData.length === 0) return baseOption
         const { xColumn, yColumn, type, color } = widget
         const baseTextStyle = { color: "#94a3b8", fontFamily: "Plus Jakarta Sans, system-ui, sans-serif" }
 
@@ -205,7 +220,21 @@ export default function ChartWidget({
                 </div>
 
                 <div className="flex-1 min-h-[240px]">
-                    <ReactECharts option={chartOption} style={{ height: "100%", width: "100%" }} />
+                    {chartOption ? (
+                        <ReactECharts 
+                            option={chartOption} 
+                            style={{ height: "100%", width: "100%" }} 
+                            notMerge={true}
+                            lazyUpdate={false}
+                        />
+                    ) : (
+                        <div className="h-full flex items-center justify-center bg-[--surface-2]/30 rounded-[--radius-2xl] border border-dashed border-[--border-subtle]">
+                            <div className="text-center">
+                                <div className="text-3xl mb-2">📊</div>
+                                <p className="text-xs text-[--text-muted]">Insufficient data for chart</p>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 <div className="mt-8 pt-4 border-t border-[--border-subtle] flex items-start gap-4">

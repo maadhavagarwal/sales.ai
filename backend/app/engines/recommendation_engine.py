@@ -4,8 +4,8 @@ def generate_recommendations(analytics):
 
     # 1. AI Pricing Optimization Strategy
     try:
-        from deep_rl_engine import train_dqn
-        rl_result = train_dqn()
+        from app.engines.deep_rl_engine import train_dqn
+        rl_result = train_dqn(analytics=analytics)
         adj = rl_result['best_price_adjustment']
         if adj > 0:
             recommendations.append(

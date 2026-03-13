@@ -2,7 +2,7 @@
 
 import Sidebar from "@/components/layout/Sidebar"
 import PageHeader from "@/components/layout/PageHeader"
-import CopilotChat from "@/components/ai/CopilotChat"
+import UnifiedChatComponent from "@/components/UnifiedChat"
 import { useStore } from "@/store/useStore"
 
 export default function CopilotPage() {
@@ -25,7 +25,7 @@ export default function CopilotPage() {
                 />
 
                 <div style={{ height: "calc(100vh - 73px)" }}>
-                    <CopilotChat />
+                    <UnifiedChatComponent />
                 </div>
             </div>
         </>

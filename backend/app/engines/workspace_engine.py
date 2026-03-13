@@ -46,11 +46,15 @@ class WorkspaceEngine:
         conn = sqlite3.connect(DB_PATH)
         try:
             items = data.get('items', [])
-            items_json = json.dumps(items)
+            sanitized_items = WorkspaceEngine._sanitize_payload(items)
+            items_json = json.dumps(sanitized_items)
             tax_data = data.get('tax_totals', {})
             subtotal = data.get('subtotal', 0)
             grand_total = data.get('grand_total', 0)
-            total_tax = tax_data.get('total', 0)
+            # Use sanitized values for calculation to be safe
+            subtotal = sum(float(it.get('price', 0)) * float(it.get('quantity', 0)) for it in sanitized_items) or subtotal
+            total_tax = sum(float(it.get('cgst', 0)) + float(it.get('sgst', 0)) + float(it.get('igst', 0)) for it in sanitized_items)
+            grand_total = subtotal + total_tax
             payment_timeline = data.get('payment_timeline', 'LATER')
             payment_days = int(data.get('payment_days', 0) or 0)
             due_date = data.get('due_date')
@@ -146,14 +150,18 @@ class WorkspaceEngine:
 
     @staticmethod
     def get_invoices():
-        conn = sqlite3.connect(DB_PATH)
-        conn.row_factory = sqlite3.Row
         try:
+            conn = sqlite3.connect(DB_PATH)
+            conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
+            # Handle potential missing columns by using safe SELECT
             cursor.execute("SELECT * FROM invoices ORDER BY created_at DESC")
-            return [dict(row) for row in cursor.fetchall()]
-        finally:
+            rows = [dict(row) for row in cursor.fetchall()]
             conn.close()
+            return WorkspaceEngine._sanitize_payload(rows)
+        except Exception as e:
+            print(f"Error fetching invoices: {e}")
+            return []
 
     @staticmethod
     def update_invoice(invoice_id: str, data: dict):
