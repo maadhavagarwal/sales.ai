@@ -1,7 +1,3 @@
-"""
-Smart Copilot Engine — answers any question about uploaded datasets.
-Works with ALL column types, uses pandas for data analysis.
-"""
 import pandas as pd
 import numpy as np
 
@@ -9,6 +5,22 @@ import numpy as np
 def handle_question(question, df, analytics, ml_results, pipeline=None):
     """Handle a copilot question using direct data analysis."""
     q = question.lower().strip()
+
+    # Detect "What-If" simulation requests
+    if any(w in q for w in ["what if", "simulate", "what happens if"]):
+        try:
+            from app.engines.intelligence_engine import IntelligenceEngine
+            sim_result = IntelligenceEngine.simulate_what_if(question)
+            
+            # Format simulation result for the chat
+            impact = sim_result.get("impact_description", "")
+            baseline = f"₹{sim_result.get('baseline_revenue', 0):,.0f}"
+            hypo = f"₹{sim_result.get('hypothetical_revenue', 0):,.0f}"
+            rec = sim_result.get("recommendation", "")
+            
+            return f"🌿 **Simulation Engine Diagnostics**\n\n{impact}\n\n• **Baseline Revenue (30D):** {baseline}\n• **Projected Impact:** {hypo}\n• **Confidence Score:** {sim_result.get('confidence_interval', 0.85)*100}%\n\n💡 **Executive Recommendation:** {rec}"
+        except Exception as e:
+            print(f"Simulation routing error: {e}")
 
     try:
         # Try direct pandas analysis first  
@@ -22,7 +34,7 @@ def handle_question(question, df, analytics, ml_results, pipeline=None):
 
 
 def _analyze_with_pandas(q, df, analytics, ml_results, pipeline):
-    """Use pandas to answer questions directly from data."""
+
 
     numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
     cat_cols = df.select_dtypes(include=["object"]).columns.tolist()

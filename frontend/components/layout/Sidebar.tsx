@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from "framer-motion"
 const navItems = [
     {
         section: "Intelligence Hub",
+        roles: ["ADMIN", "SALES", "FINANCE"],
         items: [
             { href: "/dashboard", label: "Executive Nexus", icon: "📊" },
             { href: "/analytics", label: "Synthetic Analytics", icon: "📈" },
@@ -16,28 +17,37 @@ const navItems = [
     },
     {
         section: "Cognitive Engine",
+        roles: ["ADMIN", "SALES", "FINANCE", "WAREHOUSE"],
         items: [
-            { href: "/copilot", label: "AI Neural Copilot", icon: "🤖" },
-            { href: "/datasets", label: "Natural Language BI", icon: "💡" },
+            { href: "/copilot", label: "Neural Intelligence", icon: "🧠" },
+            { href: "/portal", label: "Customer Portal", icon: "🌐" },
         ],
     },
     {
         section: "Decision Layer",
+        roles: ["ADMIN", "FINANCE"],
         items: [
             { href: "/simulations", label: "Probabilistic Sims", icon: "🔬" },
+            { href: "/workspace/sync", label: "Tally Sync Hub", icon: "🔄" },
         ],
     },
     {
         section: "Enterprise Stack",
+        roles: ["ADMIN", "SALES", "FINANCE", "WAREHOUSE"],
         items: [
             { href: "/workspace", label: "Global Workspace", icon: "🏢" },
+            { href: "/crm", label: "Predictive CRM", icon: "🤝", roles: ["ADMIN", "SALES"] },
+            { href: "/workspace?section=billing", label: "Financial Engine", icon: "🧾", roles: ["ADMIN", "FINANCE"] },
+            { href: "/workspace/procurement", label: "Procurement & PO", icon: "🛒", roles: ["ADMIN", "FINANCE"] },
+            { href: "/workspace?section=inventory", label: "Asset Lab", icon: "📦", roles: ["ADMIN", "WAREHOUSE"] },
+            { href: "/workspace?section=accounts", label: "Accounting Core", icon: "🏛️", roles: ["ADMIN", "FINANCE"] },
         ],
     },
 ]
 
 export default function Sidebar() {
     const pathname = usePathname()
-    const { theme, toggleTheme } = useStore()
+    const { theme, toggleTheme, userRole, userEmail } = useStore()
     const [mobileOpen, setMobileOpen] = useState(false)
     const [engineId, setEngineId] = useState("CORE-X0-SYST")
 
@@ -112,13 +122,13 @@ export default function Sidebar() {
 
                 {/* Navigation */}
                 <nav className="flex-1 overflow-y-auto px-6 py-8 space-y-10 scrollbar-pro font-jakarta">
-                    {navItems.map((section) => (
+                    {navItems.filter(s => !s.roles || ((userRole || "ADMIN") && s.roles.includes(userRole || "ADMIN"))).map((section) => (
                         <div key={section.section}>
                             <div className="px-4 mb-5 text-[10px] uppercase tracking-[0.3em] font-black text-[--text-muted] opacity-50">
                                 {section.section}
                             </div>
                             <div className="space-y-2">
-                                {section.items.map((item) => {
+                                {section.items.filter(i => !(i as any).roles || ((userRole || "ADMIN") && (i as any).roles.includes(userRole || "ADMIN"))).map((item) => {
                                     const isActive = pathname === item.href
                                     return (
                                         <Link

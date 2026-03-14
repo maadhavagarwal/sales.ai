@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next"
 import "./globals.css"
 import ThemeInitializer from "@/components/ThemeInitializer"
 import { ToastProvider } from "@/components/ui/Toast"
+import NavigationGuard from "@/components/NavigationGuard"
 
 export const metadata: Metadata = {
   title: "NeuralBI - AI Decision Intelligence Platform",
@@ -34,7 +35,22 @@ export default function RootLayout({
       </head>
       <body className="bg-[--background] text-[--text-primary] antialiased selection:bg-[--primary]/30 font-jakarta">
         <ThemeInitializer />
-        <ToastProvider>{children}</ToastProvider>
+        <ToastProvider>
+           <NavigationGuard>
+              {children}
+           </NavigationGuard>
+        </ToastProvider>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js');
+                });
+              }
+            `,
+          }}
+        />
       </body>
     </html>
   )

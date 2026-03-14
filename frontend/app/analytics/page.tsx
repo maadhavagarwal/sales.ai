@@ -13,6 +13,7 @@ import ClusteringPanel from "@/components/analytics/ClusteringPanel"
 import AnomalyAlertPanel from "@/components/analytics/AnomalyAlertPanel"
 import DataIntelligencePanel from "@/components/analytics/DataIntelligencePanel"
 import TradingIntelligencePanel from "@/components/analytics/TradingIntelligencePanel"
+import EnterpriseIntelligence from "@/components/analytics/EnterpriseIntelligence"
 import { useStore } from "@/store/useStore"
 import { motion } from "framer-motion"
 import SafeChart from "@/components/SafeChart"
@@ -138,7 +139,8 @@ function TelemetryLine({ label, value }: { label: string, value: string }) {
 }
 
 export default function AnalyticsPage() {
-    const { results, fetchForecast } = useStore()
+    const results = useStore(state => state.results)
+    const fetchForecast = useStore(state => state.fetchForecast)
 
     useEffect(() => {
         if (results?.dataset_id && !results.forecast) {
@@ -178,7 +180,8 @@ export default function AnalyticsPage() {
                     </div>
                 </div>
             ) : (
-                <div className="space-y-12">
+                <div className="space-y-20">
+                    <EnterpriseIntelligence />
                     {/* Confidence & Intelligence Section */}
                     {(results.confidence_score !== undefined || results.data_quality !== undefined) && (
                         <DataIntelligencePanel
@@ -220,14 +223,21 @@ export default function AnalyticsPage() {
                     {results.ml_predictions?.time_series_forecast && (
                         <Card variant="bento" padding="lg">
                             <h3 className="text-xs font-black uppercase tracking-[0.3em] text-[--accent-emerald] mb-8">Predictive Yield Forecast</h3>
-                            <RevenueForecastChart data={results.ml_predictions.time_series_forecast} />
+                            <RevenueForecastChart 
+                                data={results.ml_predictions.time_series_forecast.forecast || []} 
+                                reasoning={results.ml_predictions.time_series_forecast.logic}
+                            />
                         </Card>
                     )}
 
                     {results.forecast?.forecast && (
                         <Card variant="glass" padding="lg">
                             <h3 className="text-xs font-black uppercase tracking-[0.3em] text-[--accent-violet] mb-8">Dynamic Forecasting Layer</h3>
-                            <RevenueForecastChart data={results.forecast.forecast} />
+                            <RevenueForecastChart 
+                                data={results.forecast.forecast} 
+                                reasoning={(results.forecast as any).reasoning}
+                                confidence={(results.forecast as any).confidence_interval}
+                            />
                         </Card>
                     )}
 

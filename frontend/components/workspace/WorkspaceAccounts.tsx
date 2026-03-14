@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
@@ -8,13 +8,15 @@ import {
     getPLStatement, getBalanceSheet, getGSTReports,
     getCustomers, getCustomerLedger, recordPayment,
     downloadBusinessReport, getUsageStats, getCFOHealthReport,
-    exportWorkspaceData, exportCustomerLedger, reconcileBankStatement
+    exportWorkspaceData, exportCustomerLedger, reconcileBankStatement,
+    downloadGSTR1Json
 } from "@/services/api"
 import { useStore } from "@/store/useStore"
 import { Card, Button, Badge } from "@/components/ui"
 import GreeksPanel from "./GreeksPanel"
+import WorkspaceIntelligence from "./WorkspaceIntelligence"
 
-type TabType = "gateway" | "voucher" | "daybook" | "trial-balance" | "pl" | "bs" | "ledger" | "customer-ledger" | "compliance" | "usage" | "cfo" | "reconcile" | "derivatives"
+type TabType = "gateway" | "voucher" | "daybook" | "trial-balance" | "pl" | "bs" | "ledger" | "customer-ledger" | "compliance" | "usage" | "cfo" | "reconcile" | "derivatives" | "intelligence"
 
 export default function WorkspaceAccounts() {
     const { currencySymbol, workspaceSyncCount } = useStore()
@@ -224,6 +226,7 @@ export default function WorkspaceAccounts() {
                                 <MenuButton label="Customer Ledger" sub="Individual Client Matrix" icon="CL" onClick={() => setActiveTab("customer-ledger")} />
                                 <MenuButton label="Derivatives Matrix" sub="Option Chain & Greeks" icon="GR" onClick={() => setActiveTab("derivatives")} />
                                 <MenuButton label="CFO Intelligence" sub="Predictive Fiscal Health" icon="CF" onClick={() => setActiveTab("cfo")} />
+                                <MenuButton label="Decision Intelligence" sub="What-If & Forecasting" icon="AI" activeHighlight onClick={() => setActiveTab("intelligence")} />
                                 <MenuButton label="Consolidated Report" sub="Download Performance Master" icon="RP" onClick={() => downloadBusinessReport()} />
                             </div>
                         </section>
@@ -388,6 +391,12 @@ export default function WorkspaceAccounts() {
                         {activeTab === "cfo" && (
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                                 <CFOIntelligenceView data={cfoData} currency={currencySymbol} setActiveTab={setActiveTab} />
+                            </motion.div>
+                        )}
+
+                        {activeTab === "intelligence" && (
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                                <WorkspaceIntelligence />
                             </motion.div>
                         )}
 
@@ -1159,7 +1168,12 @@ function ComplianceView({ data }: any) {
                     <h3 className="text-xl font-black text-white uppercase italic tracking-tighter">Statutory Compliance Cockpit</h3>
                     <p className="text-[10px] font-black text-[--primary] uppercase tracking-[0.3em] mt-1">GSTR-1 & GSTR-3B Auto-Generation</p>
                 </div>
-                <Badge variant="pro" pulse>Portal Connection: Ready</Badge>
+                <div className="flex gap-4">
+                    <Button variant="outline" size="sm" onClick={() => downloadGSTR1Json()} className="uppercase text-[9px] font-black tracking-widest border-[--accent-cyan]/20 text-[--accent-cyan]">
+                        Download GSTR-1 JSON
+                    </Button>
+                    <Badge variant="pro" pulse>Portal Connection: Ready</Badge>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

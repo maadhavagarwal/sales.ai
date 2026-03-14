@@ -6,6 +6,9 @@ export interface AnalyticsData {
     total_profit?: number
     top_products?: Record<string, number>
     region_sales?: Record<string, number>
+    average_margin?: number
+    working_capital?: any
+    predictive_liquidity?: any
 }
 
 export interface SimulationResult {
@@ -64,7 +67,9 @@ export interface UploadResults {
     numeric_columns?: string[]
     categorical_columns?: string[]
     clustering?: Record<string, { count: number; total_value: number; top_example: string }>
-    anomalies?: string[]
+    anomalies?: any[]
+    working_capital?: any
+    predictive_liquidity?: any
     data_quality?: number
     confidence_score?: number
     summary?: Record<string, any>
@@ -128,7 +133,14 @@ interface AppState {
     sidebarCollapsed: boolean
     theme: "dark" | "light"
 
+    // Auth state
+    userRole: string | null
+    userEmail: string | null
+    onboardingComplete: boolean
+
     // Actions
+    setUser: (email: string | null, role: string | null) => void
+    setOnboardingComplete: (complete: boolean) => void
     setResults: (results: UploadResults) => void
     setIsUploading: (loading: boolean) => void
     setUploadProgress: (progress: number) => void
@@ -148,6 +160,15 @@ interface AppState {
     // Workspace sync – persisted so cross-page uploads trigger re-fetch
     workspaceSyncCount: number
     incrementSyncCount: () => void
+
+    // Intelligence state
+    intelligenceData: {
+        anomalies: any[]
+        cashFlow: any
+        scenarios: any[]
+        leaderboard: any[]
+    } | null
+    setIntelligenceData: (data: any) => void
 
     fetchForecast: (datasetId: string, periods?: number) => Promise<void>
 }
@@ -176,6 +197,26 @@ export const useStore = create<AppState>((set) => ({
     widgets: [],
     editingWidget: null,
     workspaceSyncCount: _initSyncCount(),
+    onboardingComplete: typeof window !== "undefined" ? localStorage.getItem("onboarding_complete") === "true" : false,
+    userRole: typeof window !== "undefined" ? localStorage.getItem("user_role") : null,
+    userEmail: typeof window !== "undefined" ? localStorage.getItem("user_email") : null,
+
+    setUser: (email, role) => {
+        if (typeof window !== "undefined") {
+            if (email) localStorage.setItem("user_email", email)
+            else localStorage.removeItem("user_email")
+            if (role) localStorage.setItem("user_role", role)
+            else localStorage.removeItem("user_role")
+        }
+        set({ userEmail: email, userRole: role })
+    },
+
+    setOnboardingComplete: (complete) => {
+        if (typeof window !== "undefined") {
+            localStorage.setItem("onboarding_complete", String(complete))
+        }
+        set({ onboardingComplete: complete })
+    },
 
     setResults: (results) => set({ results, datasetId: results.dataset_id || null }),
     setIsUploading: (isUploading) => set({ isUploading }),
@@ -208,6 +249,13 @@ export const useStore = create<AppState>((set) => ({
         if (typeof window !== "undefined") localStorage.setItem("ws_sync_count", String(next))
         return { workspaceSyncCount: next }
     }),
+
+    intelligenceData: null,
+    setIntelligenceData: (data) => set((state) => ({
+        intelligenceData: state.intelligenceData ? { ...state.intelligenceData, ...data } : { 
+            anomalies: [], cashFlow: null, scenarios: [], leaderboard: [], ...data 
+        }
+    })),
 
     fetchForecast: async (datasetId, periods = 12) => {
         try {

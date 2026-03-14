@@ -13,8 +13,8 @@ export default function CopilotPage() {
             <Sidebar />
             <div className="main-content">
                 <PageHeader
-                    title="AI Copilot"
-                    subtitle="Ask anything about your data"
+                    title="Neural Intelligence Hub"
+                    subtitle="Unified AI assistant for data analysis and charting"
                     actions={
                         results ? (
                             <span className="badge badge-success">Dataset ready</span>

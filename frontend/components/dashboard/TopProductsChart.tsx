@@ -1,5 +1,4 @@
-"use client"
-
+import React, { useMemo } from "react"
 import { motion } from "framer-motion"
 import SafeChart from "@/components/SafeChart"
 
@@ -10,9 +9,8 @@ export default function TopProductsChart({ data }: { data: Record<string, number
     if (!data || Object.keys(data).length === 0) return null
 
     const entries = Object.entries(data).sort((a, b) => b[1] - a[1])
-    const maxVal = entries[0]?.[1] || 1
 
-    const option = {
+    const option = useMemo(() => ({
         backgroundColor: "transparent",
         tooltip: {
             trigger: "axis",
@@ -64,7 +62,7 @@ export default function TopProductsChart({ data }: { data: Record<string, number
         ],
         animationEasing: "elasticOut",
         animationDuration: 1200,
-    }
+    }), [entries, currencySymbol])
 
     return (
         <motion.div

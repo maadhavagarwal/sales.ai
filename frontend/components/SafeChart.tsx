@@ -1,31 +1,85 @@
 "use client"
 
-import React from "react"
-import dynamic from "next/dynamic"
-
-// Core dynamic component to handle ECharts with SSR disabled
-const EChartsWrapper = dynamic(() => import("echarts-for-react"), {
-    ssr: false,
-    loading: () => (
-        <div className="flex items-center justify-center w-full h-full min-h-[200px] bg-black/5 rounded-xl border border-dashed border-white/5">
-            <div className="flex flex-col items-center gap-2">
-                <div className="w-6 h-6 border-2 border-[--primary] border-t-transparent rounded-full animate-spin" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-[--text-muted]">Initializing Engine...</span>
-            </div>
-        </div>
-    )
-})
+import React, { useRef, useEffect, useMemo } from "react"
+import * as echarts from "echarts"
 
 interface SafeChartProps {
     option: any
     style?: React.CSSProperties
     className?: string
-    onEvents?: Record<string, Function>
-    notMerge?: boolean
-    lazyUpdate?: boolean
     theme?: string | object
+    notMerge?: boolean
 }
 
-export default function SafeChart(props: SafeChartProps) {
-    return <EChartsWrapper {...props} />
+export default function SafeChart({ option, style, theme = "dark", notMerge = true }: SafeChartProps) {
+    const chartRef = useRef<HTMLDivElement>(null)
+    const chartInstance = useRef<echarts.ECharts | null>(null)
+
+    const finalStyle = useMemo(() => ({
+        height: "350px",
+        width: "100%",
+        ...style
+    }), [style])
+
+    // Option hash to prevent unnecessary setOption calls if the object content is the same
+    const optionStr = useMemo(() => JSON.stringify(option), [option])
+
+    useEffect(() => {
+        if (!chartRef.current) return
+        
+        const initChart = () => {
+            if (!chartRef.current) return;
+            try {
+                if (!chartInstance.current) {
+                    chartInstance.current = echarts.init(chartRef.current, theme)
+                }
+                if (option) {
+                    chartInstance.current.setOption(option, notMerge)
+                }
+                chartInstance.current.resize()
+            } catch (err) {
+                console.error("SafeChart Init Error:", err)
+            }
+        };
+
+        // MutationObserver/ResizeObserver is more reliable than timeout
+        const resizeObserver = new ResizeObserver(() => {
+            if (chartInstance.current) {
+                chartInstance.current.resize()
+            } else {
+                initChart()
+            }
+        })
+
+        resizeObserver.observe(chartRef.current)
+
+        return () => {
+            resizeObserver.disconnect()
+        }
+    }, [optionStr, theme, notMerge])
+
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            if (chartInstance.current) {
+                chartInstance.current.dispose()
+                chartInstance.current = null
+            }
+        }
+    }, [])
+
+    if (!option) return (
+        <div className="flex items-center justify-center w-full h-[300px] border border-dashed border-white/5 rounded-2xl bg-white/[0.02]">
+            <span className="text-[10px] uppercase tracking-widest text-white/20 font-black">Waiting for Data Pipeline...</span>
+        </div>
+    )
+
+    return (
+        <div 
+            ref={chartRef} 
+            style={{ ...finalStyle, position: 'relative', zIndex: 1 }} 
+            className="echarts-safe-canvas w-full h-full"
+        />
+    )
 }
+

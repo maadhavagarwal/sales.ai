@@ -367,6 +367,24 @@ pre,
     border-left: 2px solid var(--primary);
 }
 
+.scrollbar-pro::-webkit-scrollbar {
+    width: 4px;
+}
+
+.scrollbar-pro::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.scrollbar-pro::-webkit-scrollbar-thumb {
+    background: rgba(99, 102, 241, 0.2);
+    border-radius: 20px;
+}
+
+.scrollbar-pro::-webkit-scrollbar-thumb:hover {
+    background: var(--primary);
+    box-shadow: 0 0 10px var(--primary-glow);
+}
+
 /* ===== Animations ===== */
 @keyframes fadeInUp {
     from {

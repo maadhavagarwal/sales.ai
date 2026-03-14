@@ -223,9 +223,8 @@ export default function ChartWidget({
                     {chartOption ? (
                         <SafeChart 
                             option={chartOption} 
-                            style={{ height: "100%", width: "100%" }} 
+                            style={{ height: "300px", width: "100%" }} 
                             notMerge={true}
-                            lazyUpdate={false}
                         />
                     ) : (
                         <div className="h-full flex items-center justify-center bg-[--surface-2]/30 rounded-[--radius-2xl] border border-dashed border-[--border-subtle]">

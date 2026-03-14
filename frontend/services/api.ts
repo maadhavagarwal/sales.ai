@@ -7,6 +7,8 @@ const api = axios.create({
   timeout: 300000,
 })
 
+export default api
+
 export const buildApiUrl = (path: string) => `${API_URL}${path}`
 
 export const uploadCSV = async (
@@ -325,3 +327,117 @@ export const exportWorkspaceData = (tableName: string) => {
 export const exportCustomerLedger = (customerId: string) => {
   window.open(buildApiUrl(`/workspace/export/customer-ledger/${customerId}`), "_blank")
 }
+
+export const generateEInvoice = async (invoiceId: string) => {
+  const res = await api.post(`/workspace/invoices/${invoiceId}/einvoice`)
+  return res.data
+}
+
+export const generatePaymentLink = async (invoiceId: string, amount: number) => {
+  const res = await api.post(`/workspace/invoices/${invoiceId}/payment-link`, { amount })
+  return res.data
+}
+
+export const sendWhatsAppReminder = async (phone: string, message: string) => {
+  const res = await api.post("/workspace/marketing/whatsapp-send", { phone, message })
+  return res.data
+}
+
+export const scheduleReport = async (reportType: string, email: string, frequency: string) => {
+  const res = await api.post("/workspace/reports/schedule", { report_type: reportType, email, frequency })
+  return res.data
+}
+
+export const getAuditLogs = async () => {
+  const res = await api.get("/workspace/audit-logs")
+  return res.data
+}
+
+export const getHealthScores = async () => {
+  const res = await api.get("/crm/health-scores")
+  return res.data
+}
+
+export const getPredictiveCRMInsights = async () => {
+    const res = await api.get("/crm/predictive-insights")
+    return res.data
+}
+
+export const getDeals = async () => {
+  const res = await api.get("/workspace/crm/deals")
+  return res.data
+}
+
+export const manageDeal = async (action: "CREATE" | "UPDATE" | "DELETE", data: any) => {
+  if (action === "CREATE") return (await api.post("/workspace/crm/deals", data)).data
+  if (action === "UPDATE") return (await api.put(`/workspace/crm/deals/${data.id}`, data)).data
+  return null
+}
+
+// --- PROCUREMENT & PO API ---
+export const managePurchaseOrders = async (action: "CREATE" | "RECEIVE" | "LIST", data: any = {}) => {
+  const res = await api.post("/workspace/procurement/po", { action, ...data })
+  return res.data
+}
+
+// --- ADVANCED ANALYTICS ---
+export const getRevenueScenarios = async () => {
+  const res = await api.get("/workspace/analytics/scenarios")
+  return res.data
+}
+
+export const getSalesLeaderboard = async () => {
+  const res = await api.get("/workspace/analytics/leaderboard")
+  return res.data
+}
+
+export const getCrossSellRecommendations = async (sku: string) => {
+  const res = await api.get(`/workspace/analytics/cross-sell/${sku}`)
+  return res.data
+}
+
+export const handleReturn = async (invoiceId: string, items: any[]) => {
+  const res = await api.post("/workspace/procurement/returns", { invoice_id: invoiceId, items })
+  return res.data
+}
+
+// --- INTELLIGENCE & STRATEGY ---
+export const getIntelligenceAnomalies = async () => {
+  const res = await api.get("/workspace/accounting/anomalies")
+  return res.data
+}
+
+export const getCashFlowForecast = async () => {
+  const res = await api.get("/workspace/accounting/cash-flow-gap")
+  return res.data
+}
+
+export const simulateWhatIf = async (query: string) => {
+  const res = await api.post("/ai/intelligence/what-if", { query })
+  return res.data
+}
+
+export const transferInventory = async (data: {
+  sku: string
+  quantity: number
+  from_location: string
+  to_location: string
+}) => {
+  const res = await api.post("/workspace/inventory/transfer", data)
+  return res.data
+}
+
+export const getInventoryTransfers = async () => {
+  const res = await api.get("/workspace/inventory/transfers")
+  return res.data
+}
+
+export const downloadGSTR1Json = () => {
+  window.open(buildApiUrl(`/workspace/accounting/gst/gstr1-json`), "_blank")
+}
+
+export const getWorkingCapital = async () => {
+  const res = await api.get("/workspace/accounting/working-capital")
+  return res.data
+}
+

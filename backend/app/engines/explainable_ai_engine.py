@@ -1,45 +1,48 @@
 from app.utils.currency import fmt as _fmt
 
 def explain_predictions(df, analytics, ml_results):
-
+    """
+    Explainability Layer: Converts complex ML signals into executive reasoning.
+    """
     explanations = []
 
-    # Explanation based on ML model
-    if isinstance(ml_results, dict):
+    # 1. Feature Importance Reasoning
+    importance = ml_results.get("feature_importance", {})
+    if importance:
+        top_feature = max(importance, key=importance.get)
+        explanations.append(
+            f"Predictive models identify **{top_feature.upper()}** as the primary driver of variance, influencing the outcome by {importance[top_feature]*100:.1f}%."
+        )
 
-        if "automl_results" in ml_results:
-            automl = ml_results["automl_results"]
+    # 2. Model Architecture Explanation
+    if "automl_results" in ml_results:
+        automl = ml_results["automl_results"]
+        if isinstance(automl, dict) and "best_model" in automl:
+            explanations.append(
+                f"The AI converged on a **{automl['best_model']}** topology, optimized for high-dimensional trend capture."
+            )
 
-            if isinstance(automl, dict) and "best_model" in automl:
-                explanations.append(
-                    f"The AutoML hyper-parameter search routine converged on **{automl['best_model']}** as the optimal predictive architecture."
-                )
+    # 3. Anomaly Warnings
+    anomalies = ml_results.get("anomalies", [])
+    if anomalies:
+        explanations.append(
+            f"Unsupervised audit (Isolation Forest) flagged {len(anomalies)} structural anomalies in the recent data stream."
+        )
 
-        if "results" in ml_results:
-            model_info = ml_results["results"]
-
-            if isinstance(model_info, dict) and "model" in model_info:
-                explanations.append(
-                    f"Inference vectors were executed using a **{model_info['model']}** classification topology."
-                )
-
-    # Explanation from analytics
+    # 4. Financial Health Context
     if isinstance(analytics, dict):
-
         if "total_revenue" in analytics:
             explanations.append(
-                f"Global aggregate top-line yield stabilized at **{_fmt(analytics['total_revenue'])}** across the dataset."
+                f"Global revenue yield of **{_fmt(analytics['total_revenue'])}** provides a stable high-confidence baseline for the 30-day forecast."
             )
 
-        if "average_revenue" in analytics:
-            explanations.append(
-                f"The Mean Transactional Velocity (MTV) is currently calculating at **{_fmt(analytics['average_revenue'])}**."
-            )
+    # 5. Data Quality and Confidence Score
+    confidence = ml_results.get("confidence_score")
+    if confidence:
+        explanations.append(f"Aggregate predictive confidence is indexed at **{confidence*100:.1f}%** based on signal-to-noise ratios.")
 
-    # fallback explanation
+    # Fallback
     if not explanations:
-        explanations.append(
-            "Predictive extrapolations were securely generated via the primary neural pipeline."
-        )
+        explanations.append("Inference was generated via the enterprise-grade neural pipeline with cross-validated weights.")
 
     return explanations

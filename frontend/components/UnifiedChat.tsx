@@ -97,16 +97,14 @@ export default function UnifiedChatComponent() {
             const controller = new AbortController()
             const timeout = setTimeout(() => controller.abort(), 15000) // 15s timeout
 
-            const response = await fetch("/api/v1/chat-unified", {
+            const response = await fetch("/api/backend/copilot-chat", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${datasetId}`
                 },
                 body: JSON.stringify({
                     query: query,
                     dataset_id: datasetId,
-                    response_type: "auto"
                 }),
                 signal: controller.signal
             })
@@ -125,8 +123,8 @@ export default function UnifiedChatComponent() {
             const aiMsg: Message = {
                 id: Math.random().toString(),
                 role: "ai",
-                text: data.answer || data.message || "Processing...",
-                type: data.response_type || "text",
+                text: data.answer || "I've analyzed the data for you.",
+                type: data.type || "text",
                 chart: data.chart,
                 confidence: data.confidence,
                 timestamp: new Date()
@@ -322,19 +320,47 @@ export default function UnifiedChatComponent() {
                                         color: "var(--text-muted)",
                                         marginTop: "0.25rem",
                                         display: "flex",
+                                        flexDirection: "column",
                                         gap: "0.5rem",
-                                        alignItems: "center"
+                                        width: "100%"
                                     }}>
-                                        <span>{formatTime(msg.timestamp)}</span>
-                                        {msg.confidence && msg.role === "ai" && (
-                                            <span style={{
-                                                background: msg.confidence > 0.9 ? "rgba(34,197,94,0.2)" : "rgba(249,115,22,0.2)",
-                                                color: msg.confidence > 0.9 ? "#22c55e" : "#f97316",
-                                                padding: "0 0.3rem",
-                                                borderRadius: "3px"
+                                        <div style={{ display: "flex", gap: "0.8rem", alignItems: "center" }}>
+                                            <span>{formatTime(msg.timestamp)}</span>
+                                            {msg.confidence && msg.role === "ai" && (
+                                                <span style={{
+                                                    background: msg.confidence > 0.9 ? "rgba(34,197,94,0.15)" : "rgba(249,115,22,0.15)",
+                                                    color: msg.confidence > 0.9 ? "#4ade80" : "#fb923c",
+                                                    padding: "2px 6px",
+                                                    borderRadius: "4px",
+                                                    fontSize: "0.65rem",
+                                                    fontWeight: 600,
+                                                    border: `1px solid ${msg.confidence > 0.9 ? "rgba(34,197,94,0.2)" : "rgba(249,115,22,0.2)"}`
+                                                }}>
+                                                    {Math.round(msg.confidence * 100)}% Confidence
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        {msg.role === "ai" && (msg as any).explainability?.length > 0 && (
+                                            <div style={{
+                                                display: "flex",
+                                                flexWrap: "wrap",
+                                                gap: "0.4rem",
+                                                marginTop: "0.2rem"
                                             }}>
-                                                {Math.round(msg.confidence * 100)}% confidence
-                                            </span>
+                                                {(msg as any).explainability.map((driver: any, idx: number) => (
+                                                    <span key={idx} style={{
+                                                        fontSize: "0.6rem",
+                                                        padding: "2px 8px",
+                                                        background: "rgba(255,255,255,0.05)",
+                                                        border: "1px solid rgba(255,255,255,0.1)",
+                                                        borderRadius: "4px",
+                                                        color: "var(--text-secondary)"
+                                                    }}>
+                                                        🔍 {driver.factor || driver}
+                                                    </span>
+                                                ))}
+                                            </div>
                                         )}
                                     </div>
                                 </div>

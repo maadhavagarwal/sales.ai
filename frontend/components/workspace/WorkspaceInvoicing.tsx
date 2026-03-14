@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { createInvoice, getInvoices, updateInvoice, deleteInvoice, exportWorkspaceData, sendInvoiceReminder, getCustomers, getInventory } from "@/services/api"
+import { createInvoice, getInvoices, updateInvoice, deleteInvoice, exportWorkspaceData, sendInvoiceReminder, getCustomers, getInventory, generateEInvoice, generatePaymentLink, sendWhatsAppReminder, getCrossSellRecommendations } from "@/services/api"
 import { useStore } from "@/store/useStore"
 import { Card, Button, Badge, Modal } from "@/components/ui"
 
@@ -54,6 +54,7 @@ export default function WorkspaceInvoicing() {
                 newItems[index].desc = stock.name
                 newItems[index].price = stock.sale_price
                 newItems[index].hsn = stock.hsn_code || "998311"
+                fetchRecommendations(value)
             }
         }
         setItems(newItems)
@@ -247,6 +248,49 @@ export default function WorkspaceInvoicing() {
         }
     }
 
+    const handleWhatsApp = async (invoice: any) => {
+        try {
+            const customer = findCustomerForInvoice(invoice)
+            const phone = customer?.phone || "91"
+            const message = `Hello ${invoice.customer_id}, your invoice #${invoice.id} for ${currencySymbol}${invoice.grand_total} is ready. View/Pay here: [Link]`
+            await sendWhatsAppReminder(phone, message)
+            alert("WhatsApp Reminder Signal Sent!")
+        } catch (e) {
+            alert("Failed to send WhatsApp.")
+        }
+    }
+
+    const handleEInvoice = async (invoice: any) => {
+        try {
+            const res = await generateEInvoice(invoice.id)
+            alert(`E-Invoice IRN Generated: ${res.irn}\nAcknowledge No: ${res.ack_no}`)
+            refreshData()
+        } catch (e) {
+            alert("E-Invoice Generation Failed")
+        }
+    }
+
+    const handlePayLink = async (invoice: any) => {
+        try {
+            const res = await generatePaymentLink(invoice.id, invoice.grand_total)
+            alert(`Payment Link Created: ${res.payment_link}\nStatus: Active`)
+            refreshData()
+        } catch (e) {
+            alert("Failed to create payment link")
+        }
+    }
+
+    const [recommendations, setRecommendations] = useState<any[]>([])
+    const fetchRecommendations = async (sku: string) => {
+        if (!sku) return
+        try {
+            const res = await getCrossSellRecommendations(sku)
+            setRecommendations(res || [])
+        } catch (e) {
+            setRecommendations([])
+        }
+    }
+
     const handleSendReminder = useCallback(async (invoice: any, autoOpenEmail = false) => {
         const invoiceId = invoice.id
         setReminderLoadingId(invoiceId)
@@ -299,8 +343,6 @@ export default function WorkspaceInvoicing() {
         }
     }, [handleSendReminder, invoices, promptedReminderIds])
 
-    const totals = calculateTotals()
-    const dueDatePreview = getDueDateFromPlan()
     const syncedCustomers = invoices.filter(inv => !!findCustomerForInvoice(inv)).length
     const syncedInventoryInvoices = invoices.filter(inv =>
         parseInvoiceItems(inv).every((item: any) => !item.inventory_id || inventory.some(stock => stock.sku === item.inventory_id))
@@ -522,7 +564,7 @@ export default function WorkspaceInvoicing() {
                                                     />
                                                 )}
                                                 <p className="text-[10px] text-[--primary] font-bold uppercase tracking-widest">
-                                                    Due Date Preview: {dueDatePreview}
+                                                    Due Date Preview: {getDueDateFromPlan()}
                                                 </p>
                                             </div>
                                             <div className="space-y-4">
@@ -536,45 +578,52 @@ export default function WorkspaceInvoicing() {
                                             </div>
                                         </div>
 
-                                        {/* AI Cognitive Suggestion */}
-                                        {items.some(it => inventory.find(stock => stock.sku === it.inventory_id)?.quantity > 20) && (
-                                            <div className="mt-8 p-6 rounded-2xl border border-[--accent-amber]/20 bg-[--accent-amber]/5">
-                                                <div className="flex items-center gap-3 mb-2">
-                                                    <span className="text-lg">🧠</span>
-                                                    <p className="text-[10px] font-black text-[--accent-amber] uppercase tracking-widest">Cognitive Strategy Alert</p>
+                                        {/* AI Cognitive Suggestions & Cross-Sell */}
+                                        <div className="mt-8 space-y-4">
+                                            {recommendations.length > 0 && (
+                                                <div className="p-6 rounded-2xl border border-[--accent-cyan]/20 bg-[--accent-cyan]/5">
+                                                    <h4 className="text-[10px] font-black text-[--accent-cyan] uppercase tracking-widest mb-4 flex items-center gap-2">
+                                                        <span>🎯</span> Predictive Cross-Sell Targets
+                                                    </h4>
+                                                    <div className="flex flex-wrap gap-3">
+                                                        {recommendations.map(rec => (
+                                                            <div key={rec.sku} className="px-4 py-2 bg-black/40 rounded-full border border-white/10 flex items-center gap-3">
+                                                                <span className="text-[10px] font-black text-white">{rec.sku}</span>
+                                                                <span className="text-[9px] font-bold text-[--text-muted]">{rec.name}</span>
+                                                                <span className="text-[10px] font-black text-[--accent-emerald]">{rec.prob}% Match</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
                                                 </div>
-                                                <p className="text-[11px] font-bold text-white/70 leading-relaxed italic">
-                                                    "Multiple items in this invoice have high stock levels (&gt;20 units). Consider applying a **5% volume discount** to accelerate inventory turnover and optimize cash-flow."
-                                                </p>
-                                            </div>
-                                        )}
+                                            )}
+                                        </div>
                                     </div>
                                     <div className="w-full lg:w-96 space-y-4">
                                         <div className="flex justify-between items-center text-[11px] font-bold text-[--text-muted]">
                                             <span>TAXABLE COMPONENT</span>
-                                            <span className="text-white">{currencySymbol}{totals.subtotal.toLocaleString()}</span>
+                                            <span className="text-white">{currencySymbol}{calculateTotals().subtotal.toLocaleString()}</span>
                                         </div>
                                         {isInterState ? (
                                             <div className="flex justify-between items-center text-[11px] font-bold text-[--accent-amber]">
                                                 <span>IGST (18%)</span>
-                                                <span>{currencySymbol}{totals.igst.toLocaleString()}</span>
+                                                <span>{currencySymbol}{calculateTotals().igst.toLocaleString()}</span>
                                             </div>
                                         ) : (
                                             <>
                                                 <div className="flex justify-between items-center text-[11px] font-bold text-[--accent-amber]">
                                                     <span>CGST (9%)</span>
-                                                    <span>{currencySymbol}{totals.cgst.toLocaleString()}</span>
+                                                    <span>{currencySymbol}{calculateTotals().cgst.toLocaleString()}</span>
                                                 </div>
                                                 <div className="flex justify-between items-center text-[11px] font-bold text-[--accent-amber]">
                                                     <span>SGST (9%)</span>
-                                                    <span>{currencySymbol}{totals.sgst.toLocaleString()}</span>
+                                                    <span>{currencySymbol}{calculateTotals().sgst.toLocaleString()}</span>
                                                 </div>
                                             </>
                                         )}
                                         <div className="pt-6 mt-4 border-t border-white/20 flex justify-between items-end">
                                             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[--text-muted]">Gross Payable</span>
                                             <span className="text-4xl font-black text-[--primary] tracking-tighter">
-                                                {currencySymbol}{totals.grandTotal.toLocaleString()}
+                                                {currencySymbol}{calculateTotals().grandTotal.toLocaleString()}
                                             </span>
                                         </div>
                                     </div>
@@ -733,8 +782,29 @@ export default function WorkspaceInvoicing() {
                                             >
                                                 Edit Status
                                             </Button>
-                                            <Button variant="ghost" size="xs" className="uppercase text-[9px] font-black tracking-widest">
-                                                View IRN →
+                                            <Button 
+                                                variant="ghost" 
+                                                size="xs" 
+                                                className="text-[--accent-violet] hover:bg-[--accent-violet]/10 uppercase text-[9px] font-black tracking-widest"
+                                                onClick={() => handleWhatsApp(inv)}
+                                            >
+                                                WhatsApp
+                                            </Button>
+                                            <Button 
+                                                variant="ghost" 
+                                                size="xs" 
+                                                className="text-[--accent-emerald] hover:bg-[--accent-emerald]/10 uppercase text-[9px] font-black tracking-widest"
+                                                onClick={() => handlePayLink(inv)}
+                                            >
+                                                Pay Link
+                                            </Button>
+                                            <Button 
+                                                variant="ghost" 
+                                                size="xs" 
+                                                className="text-[--accent-cyan] hover:bg-[--accent-cyan]/10 uppercase text-[9px] font-black tracking-widest"
+                                                onClick={() => handleEInvoice(inv)}
+                                            >
+                                                IRN/QR
                                             </Button>
                                             <Button 
                                                 variant="ghost" 
@@ -790,6 +860,13 @@ export default function WorkspaceInvoicing() {
                                 <div className="text-right">
                                     <p className="font-black uppercase text-slate-400 mb-2">Compliance Ref:</p>
                                     <p className="font-bold">Digital Signature: VERIFIED</p>
+                                    {viewingInvoice.irn && (
+                                        <div className="mt-4 p-4 border rounded-xl bg-slate-50">
+                                            <p className="text-[8px] font-black text-slate-400 uppercase">Statutory E-Invoice IRN</p>
+                                            <p className="text-[10px] font-mono break-all mt-1">{viewingInvoice.irn}</p>
+                                            <p className="text-[8px] font-black text-slate-400 uppercase mt-2">Ack No: {viewingInvoice.ack_no}</p>
+                                        </div>
+                                    )}
                                     <p className="mt-1 text-slate-500 italic">This is an AI-generated statutory document.</p>
                                 </div>
                             </div>

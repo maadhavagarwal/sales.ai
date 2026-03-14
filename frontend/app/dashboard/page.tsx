@@ -12,6 +12,8 @@ import TradingIntelligencePanel from "@/components/analytics/TradingIntelligence
 import ChartWidget from "@/components/dashboard/ChartWidget"
 import WidgetEditor from "@/components/dashboard/WidgetEditor"
 import DataTable from "@/components/dashboard/DataTable"
+import AnomalyPanel from "@/components/dashboard/AnomalyPanel"
+import LiquidityForecast from "@/components/dashboard/LiquidityForecast"
 import DebugPanel from "@/components/DebugPanel"
 import { useToast } from "@/components/ui/Toast"
 import { useStore, CHART_COLORS, DashboardWidget } from "@/store/useStore"
@@ -40,8 +42,17 @@ export default function Dashboard() {
   const handleLiveSync = async () => {
     setIsSyncing(true)
     try {
-      const { syncWorkspaceToDashboard } = await import("@/services/api")
+      const { syncWorkspaceToDashboard, getCashFlowForecast } = await import("@/services/api")
       const data = await syncWorkspaceToDashboard()
+      
+      // Fetch Cash Flow Gap independently if not in sync payload
+      if (!data.predictive_liquidity) {
+          try {
+              const cf = await getCashFlowForecast()
+              data.predictive_liquidity = cf
+          } catch {}
+      }
+      
       setResults(data)
       setFileName("Live Enterprise Stream")
       setWidgets([]) // Reset widgets for new dataset logic
@@ -87,7 +98,7 @@ export default function Dashboard() {
       console.log("Reprocess results:", newResults) // Debug
       setResults(newResults)
       setWidgets([])
-    } catch (err) {
+    } catch (err: any) {
       console.error("Sheet reprocessing failed:", err)
       showToast("error", "Sheet Processing Failed", err?.message || "Unable to reprocess dataset")
     }
@@ -244,6 +255,15 @@ export default function Dashboard() {
                   className="space-y-12"
                 >
                   <NLBIChartGenerator />
+                  
+                  {results.predictive_liquidity && (
+                      <LiquidityForecast data={results.predictive_liquidity} />
+                  )}
+
+                  {results.anomalies && results.anomalies.length > 0 && (
+                      <AnomalyPanel anomalies={results.anomalies} />
+                  )}
+
                   {results.analytics && <MetricsCards analytics={results.analytics} />}
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
@@ -374,7 +394,7 @@ export default function Dashboard() {
         )}
       </AnimatePresence>
 
-      <CopilotFloating datasetId={datasetId} />
+      <CopilotFloating datasetId={datasetId || undefined} />
     </DashboardLayout>
   )
 }

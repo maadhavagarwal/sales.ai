@@ -9,9 +9,37 @@ interface ForecastData {
     predicted_revenue: number
 }
 
-export default function RevenueForecastChart({ data }: { data: ForecastData[] }) {
+interface RevenueForecastChartProps {
+    data: ForecastData[]
+    reasoning?: string
+    confidence?: { lower: number; upper: number }
+}
+
+export default function RevenueForecastChart({ data, reasoning, confidence }: RevenueForecastChartProps) {
     const chartOption = useMemo(() => {
         if (!data || data.length === 0) return null
+
+        const series: any[] = [
+            {
+                name: "Predicted Revenue",
+                type: "line",
+                data: data.map(d => d.predicted_revenue),
+                smooth: true,
+                symbol: "circle",
+                symbolSize: 8,
+                itemStyle: { color: "#6366f1" },
+                lineStyle: { width: 3, color: "#6366f1" },
+                areaStyle: {
+                    color: {
+                        type: "linear", x: 0, y: 0, x2: 0, y2: 1,
+                        colorStops: [
+                            { offset: 0, color: "rgba(99,102,241,0.2)" },
+                            { offset: 1, color: "transparent" }
+                        ]
+                    }
+                }
+            }
+        ]
 
         return {
             backgroundColor: "transparent",
@@ -44,27 +72,7 @@ export default function RevenueForecastChart({ data }: { data: ForecastData[] })
                 splitLine: { lineStyle: { color: "rgba(255,255,255,0.04)" } },
                 axisLabel: { color: "#6b7280", fontSize: 11, fontFamily: "Inter" }
             },
-            series: [
-                {
-                    name: "Predicted Revenue",
-                    type: "line",
-                    data: data.map(d => d.predicted_revenue),
-                    smooth: true,
-                    symbol: "circle",
-                    symbolSize: 8,
-                    itemStyle: { color: "#6366f1" },
-                    lineStyle: { width: 3, color: "#6366f1" },
-                    areaStyle: {
-                        color: {
-                            type: "linear", x: 0, y: 0, x2: 0, y2: 1,
-                            colorStops: [
-                                { offset: 0, color: "rgba(99,102,241,0.2)" },
-                                { offset: 1, color: "transparent" }
-                            ]
-                        }
-                    }
-                }
-            ],
+            series,
             animationDuration: 2000
         }
     }, [data])
@@ -100,22 +108,35 @@ export default function RevenueForecastChart({ data }: { data: ForecastData[] })
                     <h3 style={{ fontSize: "1rem", fontWeight: 700 }}>🔮 AI 30-Day Revenue Forecast</h3>
                     <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "2px" }}>Neural network time-series prediction</p>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                    <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#6366f1", boxShadow: "0 0 8px #6366f1" }}></span>
-                    <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", fontWeight: 600 }}>ML PREDICTION</span>
+                <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+                    {confidence && (
+                        <div className="text-[10px] font-black text-[--accent-emerald] bg-[--accent-emerald]/10 px-3 py-1 rounded-full border border-[--accent-emerald]/20">
+                            CONFIDENCE: {((1 - (confidence.upper - confidence.lower) / (confidence.upper + confidence.lower)) * 100).toFixed(0)}%
+                        </div>
+                    )}
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                        <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#6366f1", boxShadow: "0 0 8px #6366f1" }}></span>
+                        <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", fontWeight: 600 }}>ML PREDICTION</span>
+                    </div>
                 </div>
             </div>
 
             <div style={{ height: "350px", width: "100%" }}>
-                <SafeChart option={chartOption} style={{ height: "100%", width: "100%" }} />
+                <SafeChart option={chartOption} style={{ height: "350px", width: "100%" }} />
             </div>
 
-            <div style={{ marginTop: "1rem", padding: "1rem", background: "rgba(99,102,241,0.04)", borderRadius: "12px", fontSize: "0.85rem", color: "var(--text-secondary)", display: "flex", gap: "1rem", alignItems: "center" }}>
-                <div style={{ fontSize: "1.5rem" }}>ℹ️</div>
-                <p>
-                    This forecast uses a specialized **Recurrent Neural Network (RNN)** to analyze historical seasonality and cyclical trends to project future sales with an 89% confidence interval.
-                </p>
+            <div style={{ marginTop: "1rem", padding: "1.5rem", background: "rgba(99,102,241,0.04)", border: "1px solid rgba(99,102,241,0.1)", borderRadius: "16px", fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+                <div className="flex gap-4 items-start">
+                    <div className="w-10 h-10 rounded-xl bg-[--primary]/10 flex items-center justify-center text-xl shrink-0">🧠</div>
+                    <div>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-[--primary] mb-1">Explainable Reasoning</p>
+                        <p className="leading-relaxed font-medium">
+                            {reasoning || "This forecast utilizes a specialized Recurrent Neural Network (RNN) to isolate historical seasonality and cyclical volatility, projecting future yields based on weighted temporal dependencies."}
+                        </p>
+                    </div>
+                </div>
             </div>
         </motion.div>
     )
 }
+

@@ -106,26 +106,35 @@ def run_automl(df: pd.DataFrame) -> dict:
     if len(X) < 10:
         return {"error": "Not enough valid data rows for training"}
 
+    # --- SPEED OPTIMIZATION: Sample for Competition ---
+    # Model selection doesn't need all 300k rows if the pattern is consistent.
+    if len(X) > 2000:
+        X_comp = X.sample(2000, random_state=42)
+        y_comp = y.loc[X_comp.index]
+    else:
+        X_comp = X
+        y_comp = y
+
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42, shuffle=True
+        X_comp, y_comp, test_size=0.2, random_state=42, shuffle=True
     )
 
     # ── Model Candidates ──────────────────────────────────────────────────────
     candidates: dict = {
         "RandomForest": RandomForestRegressor(
-            n_estimators=300, max_features="sqrt",
+            n_estimators=100, max_features="sqrt",
             min_samples_leaf=2, random_state=42, n_jobs=-1
         ),
         "ExtraTrees": ExtraTreesRegressor(
-            n_estimators=300, max_features="sqrt",
+            n_estimators=100, max_features="sqrt",
             min_samples_leaf=2, random_state=42, n_jobs=-1
         ),
         "HistGBM": HistGradientBoostingRegressor(
-            max_iter=300, learning_rate=0.05,
+            max_iter=100, learning_rate=0.05,
             max_leaf_nodes=31, random_state=42
         ),
         "GradientBoosting": GradientBoostingRegressor(
-            n_estimators=200, learning_rate=0.05,
+            n_estimators=100, learning_rate=0.05,
             max_depth=4, subsample=0.8, random_state=42
         ),
         "Ridge": SKPipeline([
@@ -135,13 +144,13 @@ def run_automl(df: pd.DataFrame) -> dict:
     }
     if HAS_XGBOOST:
         candidates["XGBoost"] = XGBRegressor(
-            n_estimators=300, learning_rate=0.05, max_depth=5,
+            n_estimators=100, learning_rate=0.05, max_depth=5,
             subsample=0.8, colsample_bytree=0.8,
             random_state=42, verbosity=0, n_jobs=-1
         )
     if HAS_LIGHTGBM:
         candidates["LightGBM"] = LGBMRegressor(
-            n_estimators=300, learning_rate=0.05, num_leaves=31,
+            n_estimators=100, learning_rate=0.05, num_leaves=31,
             random_state=42, n_jobs=-1, verbose=-1
         )
 

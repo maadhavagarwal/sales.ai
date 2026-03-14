@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useCallback } from "react"
+import { useState, useRef, useCallback, useEffect } from "react"
 import DashboardLayout from "@/components/layout/DashboardLayout"
 import { motion, AnimatePresence } from "framer-motion"
 import WorkspaceInvoicing from "@/components/workspace/WorkspaceInvoicing"
@@ -13,6 +13,8 @@ import { uploadCSV, syncWorkspaceToDashboard } from "@/services/api"
 import { useStore } from "@/store/useStore"
 import { useToast } from "@/components/ui/Toast"
 
+import { useSearchParams } from "next/navigation"
+
 type SectionId = "billing" | "crm" | "marketing" | "inventory" | "accounts"
 
 interface Section {
@@ -24,7 +26,16 @@ interface Section {
 }
 
 export default function WorkspacePage() {
-    const [activeSection, setActiveSection] = useState<SectionId>("billing")
+    const searchParams = useSearchParams()
+    const initialSection = (searchParams.get("section") as SectionId) || "billing"
+    const [activeSection, setActiveSection] = useState<SectionId>(initialSection)
+
+    useEffect(() => {
+        const section = searchParams.get("section") as SectionId
+        if (section && ["billing", "crm", "marketing", "inventory", "accounts"].includes(section)) {
+            setActiveSection(section)
+        }
+    }, [searchParams])
     const [isDragging, setIsDragging] = useState(false)
     const [isSyncing, setIsSyncing] = useState(false)
     const [syncResult, setSyncResult] = useState<{ rows: number; file: string } | null>(null)

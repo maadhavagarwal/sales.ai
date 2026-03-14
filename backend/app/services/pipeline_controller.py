@@ -30,108 +30,104 @@ def run_pipeline(df):
 
     ml_results = {}
     simulation_results = []
-
-    if dataset_type == "sales_dataset":
-        try:
-            ml_results = run_ml_pipeline(df)
-        except Exception as e:
-            ml_results = {"error": str(e)}
-
-        try:
-            simulation_results = run_simulations(df)
-        except Exception as e:
-            simulation_results = [{"error": str(e)}]
-
-    # --- MARKET INTELLIGENCE INJECTION ---
-    market_data = {}
-    if dataset_type == "market_dataset":
-        try:
-            # Standardize names for common market logic
-            # volume is usually standardized to 'quantity'
-            # price is usually standardized to 'close' or 'price'
-            price_col = 'close' if 'close' in df.columns else ('price' if 'price' in df.columns else 'revenue')
-            vol_col = 'quantity' if 'quantity' in df.columns else 'volume'
-            
-            # 1. Technical Indicators
-            indicators = MarketDynamicsEngine.calculate_indicators(df, price_col=price_col)
-            market_data["indicators"] = indicators
-            
-            # 2. Options Analysis (if columns exist)
-            if "strike" in df.columns and "iv" in df.columns:
-                # Calculate spot price from latest price column
-                spot = df[price_col].iloc[-1] if not df.empty else 100.0
-                indicators = MarketDynamicsEngine.analyze_option_chain(df, spot)
-                market_data["indicators"] = indicators
-                
-                oi_col = 'open_interest' if 'open_interest' in df.columns else 'oi'
-                calls = df[df['type'].str.lower() == 'call'] if 'type' in df.columns else pd.DataFrame()
-                puts = df[df['type'].str.lower() == 'put'] if 'type' in df.columns else pd.DataFrame()
-                
-                if not calls.empty and not puts.empty:
-                    market_data["pcr"] = MarketDynamicsEngine.calculate_pcr(calls, puts, oi_col=oi_col, vol_col=vol_col)
-                    
-            elif "strike" in df.columns:
-                # Basic PCR if no IVs for Greeks
-                oi_col = 'open_interest' if 'open_interest' in df.columns else 'oi'
-                calls = df[df['type'].str.lower() == 'call'] if 'type' in df.columns else pd.DataFrame()
-                puts = df[df['type'].str.lower() == 'put'] if 'type' in df.columns else pd.DataFrame()
-                if not calls.empty and not puts.empty:
-                    market_data["pcr"] = MarketDynamicsEngine.calculate_pcr(calls, puts, oi_col=oi_col, vol_col=vol_col)
-                    
-            # 3. Alpha Predictions using existing ML
-            ml_results = run_ml_pipeline(df)
-        except Exception as e:
-            import traceback
-            traceback.print_exc()
-            print(f"Market Engine Error: {e}")
-
-    strategy = generate_strategy(analytics, ml_results)
-    insights = generate_insights(analytics)
-    explanations = explain_predictions(df, analytics, ml_results)
-
-    # Recommendations (uses Deep RL — wrapped in try/except)
-    try:
-        recommendations = generate_recommendations(analytics)
-    except Exception as e:
-        recommendations = [f"Recommendation engine error: {e}"]
-
-    # --- ADVANCED AI INJECTION ---
     anomalies_data = []
     clusters_data = {}
+    
+    market_data = {}
+    
+    # Run independent models in parallel for speed
+    from concurrent.futures import ThreadPoolExecutor
+    import traceback
+
+    def run_ai_tasks():
+        nonlocal anomalies_data, clusters_data, ml_results, simulation_results, strategy, insights, explanations, recommendations, market_data
+        with ThreadPoolExecutor(max_workers=6) as executor:
+            # 1. Standard AI Tasks
+            from app.models.advanced_ai_models import detect_anomalies, run_clustering
+            from app.models.time_series_forecaster import forecast_revenue
+            
+            future_anomalies = executor.submit(detect_anomalies, df)
+            future_forecast = executor.submit(forecast_revenue, df, days_ahead=30)
+            
+            # 2. Main ML & Simulations
+            future_ml = None
+            if dataset_type in ["sales_dataset", "market_dataset"]:
+                future_ml = executor.submit(run_ml_pipeline, df)
+                if dataset_type == "sales_dataset":
+                    future_sims = executor.submit(run_simulations, df)
+                else: 
+                    # Market specific indicators
+                    price_col = 'close' if 'close' in df.columns else ('price' if 'price' in df.columns else 'revenue')
+                    future_sims = executor.submit(MarketDynamicsEngine.calculate_indicators, df, price_col=price_col)
+            
+            # 3. Clustering
+            future_clusters = None
+            if "revenue" in df.columns:
+                target_col = next((c for c in ["product", "group", "category", "region", "customer"] if c in df.columns), None)
+                if target_col:
+                    future_clusters = executor.submit(run_clustering, df, target_col, "revenue")
+            
+            # 4. Strategy & RL (Need ML results if possible, but let's try to run them independently or later)
+            # We'll run the core ones first
+            
+            # Collect results
+            try:
+                anomalies = future_anomalies.result(timeout=15)
+                if anomalies:
+                    anomalies_data = anomalies
+                    insights.extend(["🚨 WARNING - " + a for a in anomalies])
+            except: pass
+            
+            try:
+                if future_ml:
+                    ml_results = future_ml.result(timeout=20)
+            except Exception as e:
+                ml_results = {"error": str(e)}
+                
+            try:
+                if dataset_type == "sales_dataset":
+                    simulation_results = future_sims.result(timeout=15)
+                elif dataset_type == "market_dataset":
+                    market_data["indicators"] = future_sims.result(timeout=15)
+            except: pass
+
+            try:
+                if future_clusters:
+                    clusters = future_clusters.result(timeout=15)
+                    clusters_data = clusters
+                    if clusters:
+                        insights.append(f"🧠 AI identified {len(clusters)} optimal performance tiers.")
+            except: pass
+            
+            try:
+                forecast_res = future_forecast.result(timeout=15)
+                if forecast_res and "forecast" in forecast_res:
+                    ml_results["time_series_forecast"] = forecast_res
+                    forecast_list = forecast_res["forecast"]
+                    if forecast_list:
+                        last_pred = forecast_list[-1].get('predicted_revenue', 0)
+                        insights.append(f"🔮 Yield prediction: ₹{last_pred:,.2f} projected peak node.")
+            except: pass
+
+    # Initialize placeholders
+    strategy = []
+    insights = []
+    explanations = []
+    recommendations = []
+
     try:
-        from app.models.advanced_ai_models import detect_anomalies, run_clustering
-        from app.models.time_series_forecaster import forecast_revenue
-        
-        anomalies = detect_anomalies(df)
-        anomalies_data = anomalies
-        if anomalies:
-            insights.extend(["🚨 WARNING - " + a for a in anomalies])
-            
-        if "revenue" in df.columns:
-            target_col = None
-            for col in ["product", "group", "category", "region"]:
-                if col in df.columns:
-                    target_col = col
-                    break
-                    
-            if target_col:
-                clusters = run_clustering(df, target_col, "revenue")
-                clusters_data = clusters
-                if clusters:
-                    insights.append(f"🧠 AI identified {len(clusters)} optimal performance tiers for {target_col}s.")
-                    for k, v in clusters.items():
-                        insights.append(f"🎯 {k}: {v['count']} {target_col}s total ₹{v['total_value']:,.0f} revenue (Top earner: {v['top_example']})")
-        
-        # Run 30-Day Revenue Forecasting
-        forecast = forecast_revenue(df, days_ahead=30)
-        if forecast:
-            ml_results["time_series_forecast"] = forecast
-            last_pred = forecast[-1]['predicted_revenue']
-            insights.append(f"🔮 Revenue predicted to hit ₹{last_pred:,.2f}/day by next month based on historical ML trends.")
-            
+        run_ai_tasks()
+        # High-order reasoning tasks (run after core tasks)
+        strategy = generate_strategy(analytics, ml_results)
+        insights.extend(generate_insights(analytics))
+        explanations = explain_predictions(df, analytics, ml_results)
+        try:
+            recommendations = generate_recommendations(analytics)
+        except: pass
     except Exception as e:
-        print(f"Failed to run advanced AI models: {e}")
-        pass
+        traceback.print_exc()
+        print(f"Parallel AI Execution Error: {e}")
+
     # --- END ADVANCED AI ---
 
 
@@ -234,7 +230,7 @@ def run_pipeline(df):
 
     # Run Pricing Optimization (RL)
     try:
-        pricing_opt = train_dqn(episodes=100, analytics=analytics)
+        pricing_opt = train_dqn(episodes=20, analytics=analytics)
         ml_results["pricing_optimization"] = pricing_opt
     except:
         pricing_opt = None

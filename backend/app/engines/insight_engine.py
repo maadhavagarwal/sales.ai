@@ -61,4 +61,25 @@ def generate_insights(analytics, currency="₹"):
                 "The system is currently training a Prophet-based Time-Series simulation to propagate these trajectories into a 180-day predictive horizon."
             )
 
+    # 6. Predictive Liquidity & Capital Management
+    if "predictive_liquidity" in analytics:
+        gap = analytics["predictive_liquidity"].get("gap_detected", False)
+        if gap:
+            insights.append(
+                f"⚠️ **Liquidity Exposure Alert:** AI projections detect a potential 90-day capital deficiency. **Action Required:** Optimize Accounts Receivable (AR) recovery and delay non-critical Procurement Orders (PO)."
+            )
+        else:
+            insights.append(
+                f"💎 **Strategic Capital Surplus:** The enterprise maintains a robust Liquidity Buffer. **Opportunity:** Deploy surplus capital into high-yield inventory expansion."
+            )
+
+    # 7. Inventory Velocity Risk
+    if "inventory_risk" in analytics:
+        risks = analytics["inventory_risk"]
+        critical = [r for r in risks if r['risk'] == 'CRITICAL']
+        if critical:
+            insights.append(
+                f"🚨 **Supply Chain Resilience Warning:** {len(critical)} SKUs are trending toward an immediate stock-out baseline. Prioritize procurement for these SKUs."
+            )
+
     return insights

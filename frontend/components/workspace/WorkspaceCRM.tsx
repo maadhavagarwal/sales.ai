@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { addCustomer, getCustomers, getCustomerLedger, deleteCustomer, updateCustomer, exportWorkspaceData, exportCustomerLedger } from "@/services/api"
+import { addCustomer, getCustomers, getCustomerLedger, deleteCustomer, updateCustomer, exportWorkspaceData, exportCustomerLedger, getHealthScores, getPredictiveCRMInsights } from "@/services/api"
 import { useStore } from "@/store/useStore"
 import { Card, Button, Badge } from "@/components/ui"
 
@@ -11,6 +11,8 @@ export default function WorkspaceCRM() {
     const [customers, setCustomers] = useState<any[]>([])
     const [showAdd, setShowAdd] = useState(false)
     const [loading, setLoading] = useState(false)
+    const [healthScores, setHealthScores] = useState<any>({})
+    const [crmInsights, setCrmInsights] = useState<any[]>([])
 
     // Ledger Modal State
     const [showLedger, setShowLedger] = useState(false)
@@ -28,8 +30,14 @@ export default function WorkspaceCRM() {
 
     const refreshData = async () => {
         try {
-            const res = await getCustomers()
+            const [res, grades, insights] = await Promise.all([
+                getCustomers(), 
+                getHealthScores(),
+                getPredictiveCRMInsights()
+            ])
             setCustomers(res)
+            setHealthScores(grades || {})
+            setCrmInsights(insights || [])
         } catch (e) {
             console.error(e)
         }
@@ -100,6 +108,21 @@ export default function WorkspaceCRM() {
                     </Button>
                 </div>
             </div>
+
+            {/* AI Insights Bar */}
+            {crmInsights.length > 0 && (
+                <div className="flex gap-6 overflow-x-auto pb-4 no-scrollbar">
+                    {crmInsights.map((insight, idx) => (
+                        <div key={idx} className="min-w-[300px] p-6 rounded-2xl bg-[--primary]/5 border border-[--primary]/20 flex items-start gap-4">
+                            <span className="text-2xl">💡</span>
+                            <div>
+                                <p className="text-[10px] font-black text-[--primary] uppercase tracking-widest mb-1">{insight.type}</p>
+                                <p className="text-xs font-bold text-white/80">{insight.insight}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
 
             <AnimatePresence>
                 {showAdd && (
@@ -223,6 +246,14 @@ export default function WorkspaceCRM() {
                                             <div className="flex flex-wrap gap-2">
                                                 <Badge variant="outline" className="text-[8px] tracking-widest border-white/10 uppercase py-0 px-2 opacity-50 font-bold">UID: {String(c.id).slice(0, 8)}</Badge>
                                                 {c.gstin && <Badge variant="pro" pulse size="xs">GST: ACTIVE</Badge>}
+                                                {healthScores[c.name] && (
+                                                    <Badge 
+                                                        variant={healthScores[c.name] > 80 ? "success" : healthScores[c.name] > 50 ? "warning" : "danger"} 
+                                                        size="xs"
+                                                    >
+                                                        {healthScores[c.name]}% HEALTH
+                                                    </Badge>
+                                                )}
                                             </div>
                                         </div>
                                         <div className="w-12 h-12 bg-white/[0.03] border border-white/5 rounded-2xl flex items-center justify-center text-xl grayscale group-hover:grayscale-0 group-hover:scale-110 transition-all duration-500 shadow-inner">
@@ -322,7 +353,7 @@ export default function WorkspaceCRM() {
                                             EXPORT LEDGER (CSV)
                                         </Button>
                                     </div>
-                                    <button onClick={() => setShowLedger(false)} className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white/40 hover:text-white transition-colors">×</button>
+                                    <button onClick={() => setShowLedger(false)} className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white/40 house:text-white transition-colors">×</button>
                                 </div>
 
                                 <div className="flex-1 overflow-y-auto p-8 scrollbar-pro">

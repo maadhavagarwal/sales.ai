@@ -12,7 +12,7 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
   (
     {
       variant = "default",
-      padding = "md",
+      padding = "none",
       interactive = false,
       className = "",
       children,
@@ -27,6 +27,7 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
       elevated: "bg-[--surface-2] border border-[--border-strong] shadow-[--shadow-lg]",
       outlined: "bg-transparent border border-[--border-strong]",
       glass: "glass-pro",
+      glass_pro: "glass-pro", // alias for consistency
       bento: "bento-card",
     }
 
@@ -45,7 +46,7 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
     return (
       <div
         ref={ref}
-        className={`${baseStyles} ${variants[variant]} ${paddings[padding]} ${interactiveClass} ${className}`}
+        className={`${baseStyles} ${variants[variant] || variants.default} ${paddings[padding]} ${interactiveClass} ${className}`}
         {...props}
       >
         {variant === "elevated" && (
@@ -57,6 +58,21 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
   }
 )
 
-Card.displayName = "Card"
+export function CardHeader({ children, className }: any) {
+  return <div className={`p-6 pb-2 ${className}`}>{children}</div>
+}
 
+export function CardTitle({ children, className }: any) {
+  return <h3 className={`text-xl font-bold ${className}`}>{children}</h3>
+}
+
+export function CardDescription({ children, className }: any) {
+  return <p className={`text-sm text-slate-500 ${className}`}>{children}</p>
+}
+
+export function CardContent({ children, className }: any) {
+  return <div className={`p-6 pt-0 ${className}`}>{children}</div>
+}
+
+Card.displayName = "Card"
 export default Card
