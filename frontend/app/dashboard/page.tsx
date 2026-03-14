@@ -3,6 +3,7 @@
 import { useState, useMemo, useCallback, useEffect } from "react"
 import DashboardLayout from "@/components/layout/DashboardLayout"
 import CSVUploader from "@/components/upload/CSVUploader"
+import AdditionalCSVUploader from "@/components/upload/AdditionalCSVUploader"
 import MetricsCards from "@/components/dashboard/MetricsCards"
 import StrategyPanel from "@/components/dashboard/StrategyPanel"
 import InsightsPanel from "@/components/dashboard/InsightsPanel"
@@ -17,7 +18,7 @@ import LiquidityForecast from "@/components/dashboard/LiquidityForecast"
 import DebugPanel from "@/components/DebugPanel"
 import { useToast } from "@/components/ui/Toast"
 import { useStore, CHART_COLORS, DashboardWidget } from "@/store/useStore"
-import { getDashboardConfig, downloadStrategicPlanPDF, reprocessDataset, getCopilotResponse } from "@/services/api"
+import { getDashboardConfig, downloadStrategicPlanPDF, reprocessDataset, getCopilotResponse, getLiveKPIs } from "@/services/api"
 import { motion, AnimatePresence } from "framer-motion"
 import MarkdownRenderer from "@/components/ai/MarkdownRenderer"
 import { Button, Card, Badge } from "@/components/ui"
@@ -30,8 +31,64 @@ export default function Dashboard() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [isSyncing, setIsSyncing] = useState(false)
   const [selectedSheet, setSelectedSheet] = useState<string>("0")
+  const [liveKPIs, setLiveKPIs] = useState<any>(null)
+  const [kpiUpdateTime, setKpiUpdateTime] = useState<string | null>(null)
 
   const { showToast } = useToast()
+
+  // Fetch live KPIs via WebSockets
+  useEffect(() => {
+    let ws: WebSocket;
+    
+    const connectWebSocket = () => {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      // Convert http(s):// to ws(s)://
+      const wsUrl = API_URL.replace(/^http/, "ws") + "/api/ws/live-kpis";
+      
+      ws = new WebSocket(wsUrl);
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data && data.kpis) {
+            setLiveKPIs(data.kpis);
+            setKpiUpdateTime(data.last_updated);
+          }
+        } catch (err) {
+          console.warn("Failed to parse live KPI data:", err);
+        }
+      };
+
+      ws.onerror = (error) => {
+        console.warn("WebSocket error for live KPIs:", error);
+      };
+
+      ws.onclose = () => {
+        // Reconnect after 5 seconds if connection drops
+        setTimeout(connectWebSocket, 5000);
+      };
+    };
+
+    // Initial HTTP fetch just in case WS is slow to connect
+    const fetchInitialKPIs = async () => {
+      try {
+        const data = await getLiveKPIs();
+        if (data && data.kpis) {
+          setLiveKPIs(data.kpis);
+          setKpiUpdateTime(data.last_updated);
+        }
+      } catch (err) {
+        console.warn("Failed to fetch initial live KPIs:", err);
+      }
+    };
+    
+    fetchInitialKPIs();
+    connectWebSocket();
+
+    return () => {
+      if (ws) ws.close();
+    };
+  }, [])
 
   const numericCols = useMemo(() => results?.numeric_columns || [], [results?.numeric_columns])
   const catCols = useMemo(() => results?.categorical_columns || [], [results?.categorical_columns])
@@ -255,7 +312,41 @@ export default function Dashboard() {
                   className="space-y-12"
                 >
                   <NLBIChartGenerator />
-                  
+
+                  {/* Live KPI Stream */}
+                  {liveKPIs && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4"
+                    >
+                      {Object.entries(liveKPIs).map(([key, value]: [string, any]) => (
+                        <Card key={key} variant="glass" padding="md" className="text-center border-white/10 bg-black/20">
+                          <div className="text-[10px] font-black uppercase tracking-widest text-[--text-muted] mb-2">
+                            {key.replace(/_/g, ' ')}
+                          </div>
+                          <div className="text-lg font-black text-white">
+                            {typeof value === 'number' ? (
+                              key.includes('revenue') || key.includes('cash') ? 
+                                `₹${value.toLocaleString('en-IN', { maximumFractionDigits: 0 })}` :
+                              key.includes('growth') || key.includes('margin') ?
+                                `${value.toFixed(1)}%` :
+                                value.toLocaleString()
+                            ) : value}
+                          </div>
+                        </Card>
+                      ))}
+                      <Card variant="glass" padding="md" className="text-center border-[--primary]/30 bg-[--primary]/5 col-span-full md:col-span-1">
+                        <div className="text-[10px] font-black uppercase tracking-widest text-[--primary] mb-2">
+                          Last Update
+                        </div>
+                        <div className="text-xs font-bold text-[--primary]">
+                          {kpiUpdateTime ? new Date(kpiUpdateTime).toLocaleTimeString() : '—'}
+                        </div>
+                      </Card>
+                    </motion.div>
+                  )}
+
                   {results.predictive_liquidity && (
                       <LiquidityForecast data={results.predictive_liquidity} />
                   )}
@@ -375,7 +466,16 @@ export default function Dashboard() {
                 <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-[--text-muted]">Ingestion Stream Aggregator</h4>
               </div>
               <Card variant="glass" padding="lg" className="bg-white/[0.01]">
-                <CSVUploader />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h5 className="text-sm font-semibold text-white mb-4">Initial Data Upload</h5>
+                    <CSVUploader />
+                  </div>
+                  <div>
+                    <h5 className="text-sm font-semibold text-white mb-4">Additional Data Upload</h5>
+                    <AdditionalCSVUploader />
+                  </div>
+                </div>
               </Card>
             </div>
           </motion.div>

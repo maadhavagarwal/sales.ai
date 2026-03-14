@@ -1,7 +1,7 @@
 "use client"
 
 import { useRef, useState } from "react"
-import { uploadCSV, reprocessDataset } from "@/services/api"
+import { uploadCSV, getUploadStatus } from "@/services/api"
 import { useStore } from "@/store/useStore"
 import { motion, AnimatePresence } from "framer-motion"
 import { useToast } from "@/components/ui/Toast"
@@ -29,9 +29,9 @@ export default function CSVUploader() {
         setFileName(file.name)
 
         try {
-            // Step 1: Fast upload (get dataset_id + basic metadata)
+            // Step 1: Fast upload (get dataset_id + basic metadata immediately)
             const data = await uploadCSV(file, (progress) => {
-                setUploadProgress(Math.round(progress * 0.7)) // First 70% for upload
+                setUploadProgress(Math.round(progress * 0.5)) // First 50% for upload
             })
 
             if (data.error) {
@@ -41,31 +41,68 @@ export default function CSVUploader() {
                 return
             }
 
+            // Set initial results immediately
             setResults(data)
-            setUploadProgress(75)
-            showToast("success", "Dataset Loaded", `${file.name} · ${data.rows ?? "?"} rows processing...`)
+            setUploadProgress(60)
+            showToast("success", "Dataset Loaded", `${file.name} · ${data.rows ?? "?"} rows uploaded successfully!`)
 
-            // Step 2: Fetch full analysis in background (ML, clustering, insights)
+            // Step 2: Poll for completion status
             if (data.dataset_id) {
-                try {
-                    const fullAnalysis = await reprocessDataset(data.dataset_id)
-                    setResults(fullAnalysis)
-                    setUploadProgress(100)
-                    showToast("success", "Analysis Complete", "All analytics and ML predictions ready")
-                    incrementSyncCount()
-                } catch (analysisErr) {
-                    console.warn("Background analysis failed, using partial data:", analysisErr)
-                    // User still has partial data, not a critical error
-                    incrementSyncCount()
-                    setUploadProgress(100)
+                const pollStatus = async () => {
+                    try {
+                        const statusData = await getUploadStatus(data.dataset_id)
+
+                        if (statusData.status === "completed") {
+                            setResults(statusData)
+                            setUploadProgress(100)
+                            showToast("success", "Analysis Complete", "All analytics and ML predictions ready")
+                            incrementSyncCount()
+                            return true // Stop polling
+                        } else if (statusData.status === "error") {
+                            console.warn("Processing failed:", statusData.error)
+                            showToast("warning", "Partial Analysis", "Basic data loaded, advanced analysis may be limited")
+                            incrementSyncCount()
+                            setUploadProgress(100)
+                            return true // Stop polling
+                        } else {
+                            // Still processing, update progress
+                            setUploadProgress(Math.min(90, 60 + Math.random() * 20)) // Show some progress
+                            return false // Continue polling
+                        }
+                    } catch (err) {
+                        console.warn("Status check failed:", err)
+                        // Continue with partial data
+                        incrementSyncCount()
+                        setUploadProgress(100)
+                        return true
+                    }
                 }
+
+                // Poll every 2 seconds for up to 30 seconds
+                let attempts = 0
+                const maxAttempts = 15
+                const pollInterval = setInterval(async () => {
+                    attempts++
+                    const done = await pollStatus()
+                    if (done || attempts >= maxAttempts) {
+                        clearInterval(pollInterval)
+                        setIsUploading(false) // Always stop loading state
+                        if (!done) {
+                            // Timeout - use what we have
+                            setUploadProgress(100)
+                            showToast("info", "Processing Complete", "Dataset ready for analysis")
+                            incrementSyncCount()
+                        }
+                    }
+                }, 2000)
             }
         } catch (err: any) {
             const msg = err?.response?.data?.detail || "Failed to process dataset. Please try again."
             setError(msg)
             showToast("error", "Upload Error", msg)
         } finally {
-            setIsUploading(false)
+            // Don't set isUploading to false here - let the polling complete
+            // The polling will handle setting progress to 100 and stopping the loading state
         }
     }
 

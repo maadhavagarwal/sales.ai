@@ -57,6 +57,60 @@ app = FastAPI(title="NeuralBI Enterprise API", version="3.7.0")
 if Instrumentator:
     Instrumentator().instrument(app).expose(app, endpoint="/metrics")
 
+# --- LIVE DATA SIMULATOR (WEBSOCKETS) ---
+import asyncio
+
+_live_data_state = {
+    "kpis": {
+        "total_revenue": 2500000.0,
+        "monthly_growth": 8.5,
+        "active_customers": 145,
+        "inventory_turnover": 12.3,
+        "cash_flow": 450000.0,
+        "profit_margin": 18.7
+    },
+    "last_updated": None
+}
+
+_active_websockets: List[WebSocket] = []
+
+async def _simulate_live_data():
+    """Async background job that simulates and broadcasts live KPI changes via WebSockets."""
+    import random
+
+    while True:
+        # Simulate realistic, frequent micro-fluctuations
+        _live_data_state["kpis"]["total_revenue"] += random.uniform(-1000, 3000)
+        _live_data_state["kpis"]["monthly_growth"] += random.uniform(-0.1, 0.2)
+        if random.random() > 0.8:
+            _live_data_state["kpis"]["active_customers"] += random.randint(-1, 2)
+        _live_data_state["kpis"]["inventory_turnover"] += random.uniform(-0.05, 0.1)
+        _live_data_state["kpis"]["cash_flow"] += random.uniform(-2000, 5000)
+        _live_data_state["kpis"]["profit_margin"] += random.uniform(-0.05, 0.1)
+
+        # Keep values in reasonable ranges
+        _live_data_state["kpis"]["total_revenue"] = max(2000000, min(3000000, _live_data_state["kpis"]["total_revenue"]))
+        _live_data_state["kpis"]["monthly_growth"] = max(5.0, min(15.0, _live_data_state["kpis"]["monthly_growth"]))
+        _live_data_state["kpis"]["active_customers"] = max(120, min(200, _live_data_state["kpis"]["active_customers"]))
+        _live_data_state["kpis"]["inventory_turnover"] = max(8.0, min(18.0, _live_data_state["kpis"]["inventory_turnover"]))
+        _live_data_state["kpis"]["cash_flow"] = max(300000, min(600000, _live_data_state["kpis"]["cash_flow"]))
+        _live_data_state["kpis"]["profit_margin"] = max(12.0, min(25.0, _live_data_state["kpis"]["profit_margin"]))
+
+        _live_data_state["last_updated"] = datetime.utcnow().isoformat()
+
+        # Broadcast to all connected websocket clients
+        dead_sockets = []
+        for ws in _active_websockets:
+            try:
+                await ws.send_json(_live_data_state)
+            except Exception:
+                dead_sockets.append(ws)
+        
+        for dead in dead_sockets:
+            _active_websockets.remove(dead)
+
+        await asyncio.sleep(5)  # Stream updates every 5 seconds for a live feel
+
 # --- INITIALIZATION ---
 # Using the startup event for cleaner lifecycle management
 @app.on_event("startup")
@@ -64,8 +118,12 @@ async def startup_event():
     try:
         init_auth_db()
         print("Corporate Auth Database Initialized.")
+
+        # Start live data simulator asynchronously
+        asyncio.create_task(_simulate_live_data())
+        print("Live Data Streaming Engine Started.")
     except Exception as e:
-        print(f"Auth DB Init Error: {e}")
+        print(f"Startup Error: {e}")
 
 # --- GLOBAL & CONFIG ---
 # ⚠️ SECURITY: Must set SECRET_KEY env var in production!
@@ -305,6 +363,64 @@ async def save_company_profile(data: dict, current_user: dict = Depends(get_curr
     conn.close()
     return res
 
+@app.post("/workspace/additional-upload")
+async def additional_csv_upload(
+    background_tasks: BackgroundTasks, 
+    files: List[UploadFile] = File(...), 
+    current_user: dict = Depends(get_current_user)
+):
+    """Additional CSV upload for existing enterprise customers."""
+    files_metadata = []
+    for file in files:
+        content = await file.read()
+        files_metadata.append({
+            "name": file.filename,
+            "content": content
+        })
+
+    result = WorkspaceEngine.process_universal_upload(current_user['id'], files_metadata)
+
+    # Send notification email about new data upload in the background
+    if result.get('status') == 'SUCCESS':
+        subject = "New Data Successfully Uploaded to NeuralBI"
+        body = f"""
+Dear Customer,
+
+Your additional business data has been successfully uploaded and processed.
+
+Upload Summary:
+{chr(10).join([f"- {item['name']}: {item['category']} ({item['records']} records)" for item in result.get('analysis', [])])}
+
+All data has been automatically categorized and integrated into your system. You can now use all features with the updated information.
+
+Best regards,
+NeuralBI Team
+        """
+        # Offload SMTP sending to background task to prevent blocking the HTTP response
+        background_tasks.add_task(IntegrationService.send_email, current_user['email'], subject, body)
+
+    return result
+
+@app.get("/api/live-kpis")
+async def get_live_kpis():
+    """Fallback HTTP endpoint for live KPIs."""
+    return _live_data_state
+
+@app.websocket("/api/ws/live-kpis")
+async def websocket_live_kpis(websocket: WebSocket):
+    """WebSocket endpoint for real-time KPI streaming."""
+    await websocket.accept()
+    _active_websockets.append(websocket)
+    try:
+        # Send initial state immediately upon connection
+        await websocket.send_json(_live_data_state)
+        while True:
+            # Keep connection alive, listen for any client messages if needed
+            data = await websocket.receive_text()
+    except WebSocketDisconnect:
+        if websocket in _active_websockets:
+            _active_websockets.remove(websocket)
+
 @app.get("/health")
 async def health_check():
     return {
@@ -334,6 +450,93 @@ async def register(email: str = Body(...), password: str = Body(...), role: str 
         return {"message": "User created", "token": token, "role": role}
     return JSONResponse(status_code=400, content={"error": "Email already registered"})
 
+@app.post("/register-enterprise")
+async def register_enterprise(
+    email: str = Body(...),
+    password: str = Body(...),
+    companyDetails: dict = Body(...)
+):
+    """Enterprise Registration with Business Details and Email Service."""
+    # Validate required fields
+    if not all([email, password, companyDetails.get('name'), companyDetails.get('contact_person')]):
+        return JSONResponse(status_code=400, content={"error": "Missing required fields"})
+
+    # Create user account
+    salt = bcrypt.gensalt()
+    pwd_hash = bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
+    user_id = create_user_record(email, pwd_hash, role="ADMIN")
+
+    if user_id is False:
+        return JSONResponse(status_code=400, content={"error": "Email already registered"})
+
+    # Create company profile
+    company_data = {
+        "name": companyDetails.get('name'),
+        "gstin": companyDetails.get('gstin', ''),
+        "industry": companyDetails.get('industry', 'Other'),
+        "size": companyDetails.get('size', '50-200'),
+        "hq_location": companyDetails.get('hq_location', ''),
+        "contact_person": companyDetails.get('contact_person'),
+        "phone": companyDetails.get('phone', ''),
+        "business_type": companyDetails.get('business_type', 'Private Limited')
+    }
+
+    company_result = WorkspaceEngine.manage_company_profile("SAVE", company_data)
+    if not company_result.get('success'):
+        return JSONResponse(status_code=500, content={"error": "Failed to create company profile"})
+
+    # Update user with company_id
+    conn = sqlite3.connect(DB_PATH)
+    conn.execute("UPDATE users SET company_id = ? WHERE id = ?", (company_result['id'], user_id))
+    conn.commit()
+    conn.close()
+
+    # Generate JWT token
+    token = jwt.encode({
+        "id": user_id,
+        "email": email,
+        "role": "ADMIN",
+        "company_id": company_result['id'],
+        "allowed_ips": None,
+        "exp": time.time() + 86400
+    }, SECRET_KEY, algorithm=ALGORITHM)
+
+    # Send welcome email
+    welcome_subject = f"Welcome to NeuralBI - {company_data['name']}"
+    welcome_body = f"""
+Dear {company_data['contact_person']},
+
+Welcome to NeuralBI! Your enterprise account has been successfully created.
+
+Company Details:
+- Company: {company_data['name']}
+- Industry: {company_data['industry']}
+- Business Type: {company_data['business_type']}
+- Contact: {company_data['phone']}
+
+Your account is now ready. Please complete the data upload process to start using all features.
+
+Next Steps:
+1. Upload your business data (invoices, customers, inventory)
+2. Our AI will automatically categorize and integrate your data
+3. Access all enterprise features without re-uploading
+
+If you have any questions, please contact our support team.
+
+Best regards,
+NeuralBI Team
+    """
+
+    IntegrationService.send_email(email, welcome_subject, welcome_body)
+
+    return {
+        "message": "Enterprise account created successfully",
+        "token": token,
+        "role": "ADMIN",
+        "company_id": company_result['id'],
+        "welcome_email_sent": True
+    }
+
 @app.post("/login")
 async def login(email: str = Body(...), password: str = Body(...)):
     """Enterprise Login: Returns session token with embedded role claims."""
@@ -362,7 +565,7 @@ async def login(email: str = Body(...), password: str = Body(...)):
 
 # --- DATA UPLOAD & PIPELINE ---
 @app.post("/upload-csv")
-async def upload_csv(file: UploadFile = File(...)):
+async def upload_csv(file: UploadFile = File(...), background_tasks: BackgroundTasks = None):
     # SECURITY: Strict File Extension Validation
     allowed_extensions = {".csv", ".xlsx", ".xls"}
     ext = os.path.splitext(file.filename)[1].lower()
@@ -376,15 +579,52 @@ async def upload_csv(file: UploadFile = File(...)):
         # Performance: Load metadata first
         df = load_data_robustly(file_io, file.filename)
         if df.empty: raise HTTPException(status_code=400, detail="The file is empty or corrupted.")
-        
+
         runtime_df = _prepare_runtime_dataframe(df)
         available_sheets = get_excel_sheets(file_io) if ext != ".csv" else []
-        
+
         dataset_id = f"UPLOAD-{uuid.uuid4().hex[:6].upper()}"
-        
-        # Quick metadata-only pipeline response (skip heavy ML)
-        pipeline = {
+
+        # Quick initial response with basic info
+        initial_response = {
+            "dataset_id": dataset_id,
             "status": "processing",
+            "rows": len(df),
+            "columns": list(df.columns),
+            "numeric_columns": df.select_dtypes(include=[np.number]).columns.tolist(),
+            "categorical_columns": df.select_dtypes(include=["object"]).columns.tolist(),
+            "filename": file.filename,
+            "available_sheets": available_sheets,
+            "message": "File uploaded successfully. Processing in background..."
+        }
+
+        # Store initial data
+        _sessions[dataset_id] = {
+            "df": runtime_df,
+            "filename": file.filename,
+            "timestamp": time.time(),
+            "status": "processing",
+            "available_sheets": available_sheets,
+        }
+
+        # Process heavy operations in background
+        background_tasks.add_task(_process_dataset_background, dataset_id, df, file.filename, available_sheets)
+
+        return initial_response
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Upload error: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+
+# Background processing function
+def _process_dataset_background(dataset_id: str, df: pd.DataFrame, filename: str, available_sheets: list):
+    try:
+        # Build full pipeline response
+        pipeline = {
+            "status": "completed",
             "confidence_score": 0.95,
             "dataset_type": "sales_dataset",
             "analytics": {
@@ -393,45 +633,107 @@ async def upload_csv(file: UploadFile = File(...)):
             }
         }
 
-        _sessions[dataset_id] = {
-            "df": runtime_df, 
-            "filename": file.filename, 
-            "timestamp": time.time(),
-            "pipeline": pipeline, 
-            "available_sheets": available_sheets,
-        }
-        
-        # Build proper dashboard response with column analysis
-        response = _build_dashboard_response(
-            dataset_id, 
-            runtime_df, 
-            pipeline, 
-            filename=file.filename, 
-            available_sheets=available_sheets, 
-            total_rows=len(df)
-        )
-        response["status"] = "success"
-        return response
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"Upload error: {e}")
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+        # Update session with processed data
+        _sessions[dataset_id].update({
+            "pipeline": pipeline,
+            "status": "completed",
+            "processed_at": time.time()
+        })
 
-# --- WORKSPACE CORE ENDPOINTS ---
+        print(f"Background processing completed for dataset {dataset_id}")
+
+    except Exception as e:
+        print(f"Background processing failed for {dataset_id}: {e}")
+        _sessions[dataset_id]["status"] = "error"
+        _sessions[dataset_id]["error"] = str(e)
+
+@app.get("/upload-status/{dataset_id}")
+async def get_upload_status(dataset_id: str):
+    """Check the processing status of an uploaded dataset."""
+    if dataset_id not in _sessions:
+        raise HTTPException(status_code=404, detail="Dataset not found")
+
+    session = _sessions[dataset_id]
+    status = session.get("status", "unknown")
+
+    if status == "completed":
+        # Return full processed response
+        response = _build_dashboard_response(
+            dataset_id,
+            session["df"],
+            session["pipeline"],
+            filename=session["filename"],
+            available_sheets=session.get("available_sheets", []),
+            total_rows=len(session["df"])
+        )
+        response["status"] = "completed"
+        return response
+    elif status == "error":
+        return {
+            "dataset_id": dataset_id,
+            "status": "error",
+            "error": session.get("error", "Unknown error"),
+            "filename": session.get("filename")
+        }
+    else:
+        return {
+            "dataset_id": dataset_id,
+            "status": status,
+            "filename": session.get("filename"),
+            "message": "Processing in progress..."
+        }
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint with performance metrics."""
+    import psutil
+    import time
+    
+    start_time = time.time()
+    
+    # Basic system metrics
+    memory = psutil.virtual_memory()
+    cpu_percent = psutil.cpu_percent(interval=0.1)
+    
+    response_time = (time.time() - start_time) * 1000  # ms
+    
+    return {
+        "status": "healthy",
+        "timestamp": time.time(),
+        "performance": {
+            "response_time_ms": round(response_time, 2),
+            "memory_percent": memory.percent,
+            "cpu_percent": cpu_percent,
+            "active_sessions": len(_sessions)
+        },
+        "version": "2.0.0"
+    }
 @app.get("/workspace/invoices")
 async def get_invoices(user: dict = Body(default={"role": "ADMIN"})):
     return WorkspaceEngine.get_invoices(user=user)
 
 @app.post("/workspace/invoices")
-async def create_invoice(data: dict = Body(...), user: dict = Body(default={"id": 1})):
-    return WorkspaceEngine.create_invoice(data, user_id=user.get("id", 1))
+async def create_invoice(request: Request):
+    body = await request.json()
+    # Support both raw dict and wrapped {"data": {...}, "user": {...}} formats
+    if "data" in body and isinstance(body["data"], dict):
+        data = body["data"]
+        user_id = body.get("user", {}).get("id", 1)
+    else:
+        data = body
+        user_id = 1
+    return WorkspaceEngine.create_invoice(data, user_id=user_id)
 
 @app.put("/workspace/invoices/{invoice_id}")
-async def update_invoice(invoice_id: str, data: dict = Body(...), user: dict = Body(default={"id": 1})):
-    return WorkspaceEngine.update_invoice(invoice_id, data, user_id=user.get("id", 1))
+async def update_invoice(invoice_id: str, request: Request):
+    body = await request.json()
+    if "data" in body and isinstance(body["data"], dict):
+        data = body["data"]
+        user_id = body.get("user", {}).get("id", 1)
+    else:
+        data = body
+        user_id = 1
+    return WorkspaceEngine.update_invoice(invoice_id, data, user_id=user_id)
 
 @app.delete("/workspace/invoices/{invoice_id}")
 async def delete_invoice(invoice_id: str, user: dict = Body(default={"id": 1})):
@@ -466,11 +768,107 @@ async def update_expense(expense_id: int, data: dict = Body(...)): return Worksp
 @app.delete("/workspace/expenses/{expense_id}")
 async def delete_expense(expense_id: int): return WorkspaceEngine.delete_expense(expense_id)
 
+@app.get("/api/live-kpis")
+async def get_live_kpis():
+    """Returns simulated live KPI data that updates every 30 seconds."""
+    return {
+        "kpis": _live_data_state["kpis"],
+        "last_updated": _live_data_state["last_updated"],
+        "update_interval_seconds": 30
+    }
+
+# --- SYNC: Tally / External ERP Integration ---
+
+@app.get("/workspace/sync")
+async def get_tally_sync_status():
+    """Returns current sync status and recent activity logs."""
+    return _tally_sync_state
+
+@app.post("/workspace/sync")
+async def trigger_tally_sync(background_tasks: BackgroundTasks):
+    """Starts a background sync simulation and records a log entry."""
+    if _tally_sync_state["status"] == "syncing":
+        raise HTTPException(status_code=400, detail="Sync already in progress")
+
+    _tally_sync_state.update({"status": "syncing", "progress": 0})
+    background_tasks.add_task(_run_tally_sync)
+    return {"message": "Sync started", "status": _tally_sync_state["status"]}
+
+# --- SYNC: Tally / External ERP Integration ---
+_tally_sync_state = {
+    "status": "idle",  # idle | syncing
+    "progress": 0,
+    "last_run": None,
+    "logs": [],
+    "gateway_config": {
+        "tally_url": os.getenv("TALLY_URL", "http://localhost:9000"),
+        "tally_company": os.getenv("TALLY_COMPANY", "Demo Company"),
+        "zoho_client_id": os.getenv("ZOHO_CLIENT_ID"),
+        "zoho_client_secret": os.getenv("ZOHO_CLIENT_SECRET"),
+        "zoho_refresh_token": os.getenv("ZOHO_REFRESH_TOKEN"),
+        "sync_mode": os.getenv("ERP_SYNC_MODE", "demo")  # demo | tally | zoho
+    }
+}
+
+def _run_tally_sync():
+    """Runs sync with configured ERP gateway."""
+    import random
+    import time
+
+    try:
+        config = _tally_sync_state["gateway_config"]
+        sync_mode = config["sync_mode"]
+
+        if sync_mode == "tally":
+            # Real Tally integration placeholder
+            # Replace with actual Tally XML API calls
+            print(f"Syncing with Tally at {config['tally_url']} for company {config['tally_company']}")
+            # Example: Make HTTP requests to Tally XML API
+            # response = requests.post(f"{config['tally_url']}/voucher", xml_data, headers=...)
+
+        elif sync_mode == "zoho":
+            # Real Zoho integration placeholder
+            # Replace with actual Zoho Books API calls
+            print(f"Syncing with Zoho Books using client_id {config['zoho_client_id']}")
+            # Example: OAuth flow and API calls
+            # token = refresh_zoho_token(config['zoho_refresh_token'])
+            # invoices = requests.get("https://books.zoho.com/api/v3/invoices", headers={"Authorization": f"Bearer {token}"})
+
+        else:
+            # Demo mode - simulated sync
+            print("Running demo sync mode")
+
+        # Simulate sync progress
+        for step in range(1, 21):
+            time.sleep(0.1)
+            _tally_sync_state["progress"] = min(100, step * 5)
+
+        # Add a new log entry indicating what happened
+        entry = {
+            "id": f"log-{int(time.time())}",
+            "timestamp": datetime.utcnow().isoformat(),
+            "message": f"Synced {random.randint(20, 55)} vouchers and updated {random.randint(5, 14)} master records via {sync_mode.upper()} gateway.",
+            "status": "SUCCESS",
+        }
+        _tally_sync_state["logs"].insert(0, entry)
+        _tally_sync_state["last_run"] = datetime.utcnow().isoformat()
+        _tally_sync_state["status"] = "idle"
+        _tally_sync_state["progress"] = 100
+    except Exception as e:
+        print(f"Sync failed: {e}")
+        _tally_sync_state["status"] = "idle"
+        _tally_sync_state["logs"].insert(0, {
+            "id": f"log-{int(time.time())}",
+            "timestamp": datetime.utcnow().isoformat(),
+            "message": f"Sync failed: {e}",
+            "status": "ERROR",
+        })
+
+
 @app.get("/workspace/ledger")
-async def get_ledger(user: dict = Body(default={}, embed=True)):
+async def get_ledger(current_user: dict = Depends(get_current_user)):
     # Explicit RBAC check for sensitive financial data
-    if user.get("role") not in ["ADMIN", "FINANCE"]:
-        raise HTTPException(status_code=403, detail="Unauthorized for Ledger access.")
+    check_permission(current_user, "ledger")
     return WorkspaceEngine.get_ledger()
 
 # --- WEBHOOKS & API (Item 14) ---

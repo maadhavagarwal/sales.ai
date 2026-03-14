@@ -1,91 +1,100 @@
-
+import sqlite3
+import pandas as pd
+import io
 import os
 import sys
 import json
-import pandas as pd
-import numpy as np
 from datetime import datetime
 
-# Add project root to path
-sys.path.append(os.getcwd())
+# Add the project root to sys.path
+sys.path.append(os.path.abspath(os.path.join(os.getcwd(), 'backend')))
 
-from backend.app.engines.workspace_engine import WorkspaceEngine
-from backend.app.engines.ml_engine import run_ml_pipeline
-from backend.app.engines.rag_engine import build_dataset_index, search_dataset
-from backend.app.services.integration_service import IntegrationService
-from backend.app.core.database_manager import log_activity, _encrypt_val, _decrypt_val
+from app.engines.workspace_engine import WorkspaceEngine
+from app.engines.intelligence_engine import IntelligenceEngine
+import app.core.database_manager as db_manager
 
-def test_suite():
-    print("=== NeuralBI Enterprise Feature Test Suite ===")
+TEST_DB = "test_enterprise.db"
 
-    # 1. Test Encryption at Rest
-    sensitive_data = "27AAAAA0000A1Z5"
-    encrypted = _encrypt_val(sensitive_data)
-    decrypted = _decrypt_val(encrypted)
-    print(f"[SECURITY] Encryption Test: {sensitive_data} -> {encrypted} -> {decrypted}")
-    assert decrypted == sensitive_data, "Encryption Mismatch!"
+def setup_test_db():
+    if os.path.exists(TEST_DB):
+        os.remove(TEST_DB)
+    
+    # Force DB_PATH to test DB before init
+    import app.core.database_manager as db_manager
+    db_manager.DB_PATH = TEST_DB
+    db_manager.init_workspace_db()
 
-    # 2. Test Cash Flow Gap Predictor
-    print("[FINANCE] Testing Cash Flow Gap Predictor...")
-    gap_data = WorkspaceEngine.predict_cash_flow_gap()
-    print(f"Result: {json.dumps(gap_data, indent=2)}")
-
-    # 3. Test Churn Health Scoring
-    print("[CRM] Testing Customer Health Scoring...")
-    health_scores = WorkspaceEngine.get_customer_health_scores()
-    if health_scores and len(health_scores) > 0:
-        first = health_scores[0]
-        print(f"Sample Score: {first.get('name', 'N/A')} - Health: {first.get('health_score')} (Risk: {first.get('churn_risk')})")
-        print(f"Action Triggered: {first.get('next_action')}")
-    else:
-        print("No customers found for health scoring.")
-
-    # 4. Test Hybrid RAG Engine
-    print("[AI] Testing Hybrid RAG (Vector + Keyword)...")
-    mock_df = pd.DataFrame({
-        'name': ['Laptop Pro', 'Mouse Wireless', 'Keyboard RGB'],
-        'category': ['Electronics', 'Peripherals', 'Peripherals'],
-        'price': [120000, 1500, 4500],
-        'date': ['2026-01-01', '2026-01-02', '2026-01-03']
-    })
-    build_dataset_index(mock_df)
-    results = search_dataset("Laptop electronics price")
-    print(f"RAG Results: {results}")
-
-    # 5. Test Anomaly Detection (Isolation Forest)
-    print("[AI] Testing Proactive Anomaly Detection...")
-    anamoly_df = pd.DataFrame({
-        'revenue': [100, 110, 105, 95, 120, 1000000], # Clear outlier
-        'month': [1, 1, 1, 1, 1, 1],
-        'year': [2026, 2026, 2026, 2026, 2026, 2026],
-        'date': ['2026-01-01']*6
-    })
-    ml_res = run_ml_pipeline(anamoly_df)
-    print(f"Anomalies Found: {ml_res.get('anomalies')}")
-    print(f"Scenarios Generated: {ml_res.get('scenarios')}")
-
-    # 6. Test GST JSON Export
-    print("[COMPLIANCE] Testing GSTR-1 JSON Schema...")
-    mock_inv = [{
-        'customer_gstin': '27ABCDE1234F1Z1',
-        'invoice_number': 'INV-999',
-        'grand_total': 50000,
-        'subtotal': 45000,
-        'cgst_total': 2500,
-        'sgst_total': 2500,
-        'date': '2026-03-14',
-        'hsn_code': '8414'
-    }]
-    gstr_json = IntegrationService.generate_gstr1_json(mock_inv)
-    print(f"GSTR-1 JSON (Sample): {json.dumps(gstr_json['b2b'][0]['inv'][0]['itms'][0]['itm_det'], indent=2)}")
-
-    # 7. Test E-Invoicing IRN (NIC Schema)
-    print("[COMPLIANCE] Testing NIC IRN Generation...")
-    irp_res = IntegrationService.generate_einvoice_irn(mock_inv[0])
-    print(f"IRN: {irp_res['irn']}")
-    print(f"QR Code: {irp_res['qr_code_data']}")
-
-    print("\n=== ALL ENTERPRISE TESTS COMPLETED ===")
+def run_full_test():
+    print("🚀 INITIALIZING ENTERPRISE TEST SUITE...")
+    setup_test_db()
+    
+    # Patch DB_PATH in modules to use test DB
+    import app.engines.workspace_engine
+    import app.engines.intelligence_engine
+    app.engines.workspace_engine.DB_PATH = TEST_DB
+    app.engines.intelligence_engine.DB_PATH = TEST_DB
+    
+    csv_path = r"c:\Users\techa\OneDrive\Desktop\sales ai platfrom\Book1.csv"
+    with open(csv_path, "rb") as f:
+        content = f.read()
+    
+    # Step 1: Ingestion
+    print("\n--- Phase 1: Universal Data Ingestion ---")
+    files_metadata = [{"name": "Book1.csv", "content": content}]
+    ingest_res = WorkspaceEngine.process_universal_upload(1, files_metadata)
+    print(f"Status: {ingest_res['status']}")
+    print(f"Analysis: {json.dumps(ingest_res['analysis'], indent=2)}")
+    
+    # Step 2: Verification
+    print("\n--- Phase 2: Record Verification ---")
+    conn = sqlite3.connect(TEST_DB)
+    inv_count = conn.execute("SELECT COUNT(*) FROM invoices").fetchone()[0]
+    total_rev = conn.execute("SELECT SUM(grand_total) FROM invoices").fetchone()[0] or 0
+    print(f"Total Invoices Processed: {inv_count}")
+    print(f"Total Portfolio Revenue: ₹{total_rev:,.2f}")
+    
+    # Step 3: Predictive Analytics
+    print("\n--- Phase 3: Intelligence Engine Test ---")
+    anomalies = IntelligenceEngine.detect_anomalies()
+    print(f"Anomalies Detected: {len(anomalies.get('alerts', []))}")
+    if anomalies.get('alerts'):
+        print(f"Sample Alert: {anomalies['alerts'][0]['insight']}")
+        
+    cash_flow = IntelligenceEngine.get_cash_flow_forecast()
+    print(f"Cash Flow Status: {cash_flow['risk_assessment']}")
+    print(f"90D Projected Cash (End): ₹{cash_flow['forecast_90d'][-1]['projected_cash'] if cash_flow['forecast_90d'] else 0:,.2f}")
+    
+    scenarios = IntelligenceEngine.get_revenue_scenarios()
+    print(f"Revenue Scenarios Generated: {len(scenarios)}")
+    for s in scenarios:
+        print(f"  > {s['case']}: ₹{s['revenue']:,.0f}")
+        
+    crm_insights = WorkspaceEngine.get_predictive_crm_insights()
+    print(f"CRM Predictive Insights: {len(crm_insights)}")
+    for insight in crm_insights:
+        print(f"  [{insight['type']}] {insight['insight']}")
+        
+    conn.close()
+    print("\n✅ ENTERPRISE TEST SUITE COMPLETE.")
+    
+    # Generate Report Object
+    report = {
+        "timestamp": datetime.now().isoformat(),
+        "dataset": "Book1.csv",
+        "ingestion": ingest_res,
+        "metrics": {
+            "invoice_count": inv_count,
+            "total_revenue": total_rev
+        },
+        "intelligence": {
+            "anomalies": anomalies,
+            "cash_flow": cash_flow,
+            "scenarios": scenarios,
+            "crm": crm_insights
+        }
+    }
+    with open("test_report.json", "w") as rf:
+        json.dump(report, rf, indent=2)
 
 if __name__ == "__main__":
-    test_suite()
+    run_full_test()

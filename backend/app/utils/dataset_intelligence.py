@@ -5,6 +5,9 @@ Universal Dataset Intelligence — detects dataset type and schema from ANY CSV.
 import pandas as pd
 import numpy as np
 
+# Cache for dataset summaries to improve performance
+_summary_cache = {}
+
 
 def detect_dataset_type(df):
     """Detect what type of dataset this is based on column analysis."""
@@ -57,47 +60,68 @@ def detect_dataset_type(df):
     return "generic_dataset"
 
 
-def get_dataset_summary(df):
-    """Generate a comprehensive summary of the dataset."""
-    numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
-    categorical_cols = df.select_dtypes(include=["object"]).columns.tolist()
-    date_cols = df.select_dtypes(include=["datetime64"]).columns.tolist()
+def get_dataset_summary(df, max_columns=20):
+    """Generate a comprehensive summary of the dataset with performance optimizations."""
+    # Create a cache key based on dataframe shape and column names
+    cache_key = f"{len(df)}_{len(df.columns)}_{hash(tuple(df.columns))}"
+    
+    if cache_key in _summary_cache:
+        return _summary_cache[cache_key]
+    # Limit processing to prevent slowdowns
+    total_cols = len(df.columns)
+    if total_cols > max_columns:
+        # Process only first max_columns columns for performance
+        df_sample = df.iloc[:, :max_columns]
+    else:
+        df_sample = df
+
+    numeric_cols = df_sample.select_dtypes(include=[np.number]).columns.tolist()
+    categorical_cols = df_sample.select_dtypes(include=["object"]).columns.tolist()
+    date_cols = df_sample.select_dtypes(include=["datetime64"]).columns.tolist()
 
     summary = {
         "total_rows": len(df),
-        "total_columns": len(df.columns),
+        "total_columns": total_cols,
         "columns": list(df.columns),
         "numeric_columns": numeric_cols,
         "categorical_columns": categorical_cols,
         "date_columns": date_cols,
-        "missing_values": {k: int(v) for k, v in df.isnull().sum().items() if v > 0},
+        "missing_values": {k: int(v) for k, v in df.isnull().sum().head(max_columns).items() if v > 0},
         "numeric_stats": {},
         "categorical_stats": {},
+        "performance_note": f"Summary calculated for {len(df_sample.columns)} of {total_cols} columns" if total_cols > max_columns else None
     }
 
-    # Numeric summaries
-    for col in numeric_cols:
+    # Numeric summaries - limit to first 10 numeric columns for performance
+    for col in numeric_cols[:10]:
         try:
-            summary["numeric_stats"][col] = {
-                "mean": round(float(df[col].mean()), 2),
-                "median": round(float(df[col].median()), 2),
-                "min": round(float(df[col].min()), 2),
-                "max": round(float(df[col].max()), 2),
-                "std": round(float(df[col].std()), 2),
-                "sum": round(float(df[col].sum()), 2),
-            }
+            col_data = df[col].dropna()
+            if len(col_data) > 0:
+                summary["numeric_stats"][col] = {
+                    "mean": round(float(col_data.mean()), 2),
+                    "median": round(float(col_data.median()), 2),
+                    "min": round(float(col_data.min()), 2),
+                    "max": round(float(col_data.max()), 2),
+                    "std": round(float(col_data.std()), 2) if len(col_data) > 1 else 0,
+                    "count": len(col_data),
+                }
         except Exception:
             pass
 
-    # Categorical summaries
-    for col in categorical_cols[:10]:
+    # Categorical summaries - limit to first 5 categorical columns
+    for col in categorical_cols[:5]:
         try:
-            value_counts = df[col].value_counts().head(10)
-            summary["categorical_stats"][col] = {
-                "unique_count": int(df[col].nunique()),
-                "top_values": {str(k): int(v) for k, v in value_counts.items()},
-            }
+            col_data = df[col].dropna()
+            if len(col_data) > 0:
+                value_counts = col_data.value_counts().head(5)
+                summary["categorical_stats"][col] = {
+                    "unique_count": int(col_data.nunique()),
+                    "top_values": {str(k): int(v) for k, v in value_counts.items()},
+                    "total_non_null": len(col_data),
+                }
         except Exception:
             pass
 
+    # Cache the result
+    _summary_cache[cache_key] = summary
     return summary

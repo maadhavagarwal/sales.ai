@@ -1,0 +1,287 @@
+{
+  "timestamp": "2026-03-14 20:08:08",
+  "target": "http://127.0.0.1:8000",
+  "dataset": "Book1.csv",
+  "summary": {
+    "total": 39,
+    "pass": 32,
+    "warn": 2,
+    "fail": 5,
+    "time": 47.2
+  },
+  "results": [
+    {
+      "category": "INFRA",
+      "test": "Backend Health Check",
+      "status": "PASS",
+      "time": 0.18,
+      "detail": "Backend Online. Response: {'status': 'Enterprise NeuralBI Backend Online', 'timestamp': '2026-03-14T20:07:21.602565'}"
+    },
+    {
+      "category": "INFRA",
+      "test": "Health Endpoint",
+      "status": "PASS",
+      "time": 0.02,
+      "detail": "Engines: {'workspace': 'active', 'financial': 'active', 'ai_pipeline': 'active'}"
+    },
+    {
+      "category": "INFRA",
+      "test": "Frontend Landing Page",
+      "status": "PASS",
+      "time": 0.1,
+      "detail": "Landing page loaded (24494 bytes)"
+    },
+    {
+      "category": "AUTH",
+      "test": "User Registration",
+      "status": "PASS",
+      "time": 0.29,
+      "detail": "Registered. Token received: True, Role: ADMIN"
+    },
+    {
+      "category": "AUTH",
+      "test": "User Login",
+      "status": "WARN",
+      "time": 0.02,
+      "detail": "Status 401 \u2014 Login with default creds failed (expected if custom)"
+    },
+    {
+      "category": "INGESTION",
+      "test": "CSV Upload (Analytics Pipeline)",
+      "status": "PASS",
+      "time": 0.29,
+      "detail": "Uploaded. ID=UPLOAD-FE1BEE, Rows=82, Cols=16"
+    },
+    {
+      "category": "INGESTION",
+      "test": "Workspace Universal Upload (Enterprise)",
+      "status": "PASS",
+      "time": 0.28,
+      "detail": "Workspace ingestion OK. Category=INVOICE, Records=82"
+    },
+    {
+      "category": "INVOICES",
+      "test": "Get Invoices",
+      "status": "PASS",
+      "time": 0.7,
+      "detail": "Invoices fetched: 7069 records"
+    },
+    {
+      "category": "INVOICES",
+      "test": "Create Invoice",
+      "status": "FAIL",
+      "time": 0.04,
+      "detail": "Status 422: {\"detail\":[{\"type\":\"missing\",\"loc\":[\"body\",\"data\"],\"msg\":\"Field required\",\"input\":null}]}"
+    },
+    {
+      "category": "CRM",
+      "test": "Get Customers",
+      "status": "PASS",
+      "time": 0.03,
+      "detail": "Customers: 8 entities"
+    },
+    {
+      "category": "CRM",
+      "test": "Add Customer",
+      "status": "PASS",
+      "time": 0.01,
+      "detail": "Customer added: {'status': 'success'}"
+    },
+    {
+      "category": "CRM",
+      "test": "CRM Health Scores",
+      "status": "PASS",
+      "time": 0.31,
+      "detail": "Health scores for 0 customers"
+    },
+    {
+      "category": "CRM",
+      "test": "CRM Predictive Insights",
+      "status": "PASS",
+      "time": 1.04,
+      "detail": "Predictive insights: 2 signals. Types: ['CHURN_PREDICTION', 'AI_COACH']"
+    },
+    {
+      "category": "INVENTORY",
+      "test": "Get Inventory",
+      "status": "PASS",
+      "time": 0.02,
+      "detail": "Inventory items: 7"
+    },
+    {
+      "category": "INVENTORY",
+      "test": "Inventory Health",
+      "status": "PASS",
+      "time": 0.18,
+      "detail": "Inventory health: [{\"sku\": \"WIDGETA\", \"name\": \"Widget A\", \"current_stock\": 0, \"daily_velocity\": 0.0, \"days_remaining\": 0.0, \"risk\": \"CRITICAL\", \"recommended_restock\": 1}, {\"sku\": \"WIDGETB\", \"name\": \"Widget B\", \"current"
+    },
+    {
+      "category": "ACCOUNTING",
+      "test": "General Ledger",
+      "status": "FAIL",
+      "time": 0.01,
+      "detail": "Status 403"
+    },
+    {
+      "category": "ACCOUNTING",
+      "test": "Daybook",
+      "status": "PASS",
+      "time": 0.14,
+      "detail": "Daybook vouchers: 1000"
+    },
+    {
+      "category": "ACCOUNTING",
+      "test": "Trial Balance",
+      "status": "PASS",
+      "time": 0.11,
+      "detail": "Trial balance accounts: 12"
+    },
+    {
+      "category": "ACCOUNTING",
+      "test": "Profit & Loss",
+      "status": "PASS",
+      "time": 0.04,
+      "detail": "P&L: {\"revenue\": {\"items\": [{\"account_name\": \"Sales Revenue - Domestic\", \"balance\": 17921430.08}], \"total\": 17921430.08}, \"cogs\": {\"items\": [], \"total\": 0}, \"gross_profit\": 17921430.08, \"overheads\": {\"item"
+    },
+    {
+      "category": "ACCOUNTING",
+      "test": "Balance Sheet",
+      "status": "PASS",
+      "time": 0.1,
+      "detail": "Balance Sheet: {\"assets\": {\"items\": [{\"account_name\": \"Accounts Receivable - Acme Corp\", \"balance\": 0.0}, {\"account_name\": \"Accounts Receivable - Globex\", \"balance\": 0.0}, {\"account_name\": \"Accounts Receivable - Hea"
+    },
+    {
+      "category": "ACCOUNTING",
+      "test": "Financial Statements",
+      "status": "PASS",
+      "time": 0.1,
+      "detail": "Statements: ['balance_sheet', 'p_and_l']"
+    },
+    {
+      "category": "ACCOUNTING",
+      "test": "GST Reports",
+      "status": "PASS",
+      "time": 0.05,
+      "detail": "GST Reports: {\"gstr1\": {\"taxable_value\": 0, \"cgst\": 0, \"sgst\": 0, \"igst\": 0, \"total_tax\": 0, \"invoice_count\": 7069}, \"gstr3b\": {\"output_tax\": {\"taxable_value\": 0, \"cgst\": 0, \"sgst\": 0, \"igst\": 0, \"total_tax\": 0, \""
+    },
+    {
+      "category": "ACCOUNTING",
+      "test": "GSTR-1 JSON Export",
+      "status": "PASS",
+      "time": 1.63,
+      "detail": "GSTR-1 JSON: {\"gstin\": \"27AAAAA0000A1Z5\", \"fp\": \"032026\", \"gt\": 0.0, \"cur_gt\": 0.0, \"b2b\": [{\"ctin\": null, \"inv\": [{\"inum\": \"MIG-031440C4\", \"idt\": \"2026-03-01\", \"val\": 5000.0, \"pos\": \"27\", \"rchrg\": \"N\", \"inv_typ\":"
+    },
+    {
+      "category": "ACCOUNTING",
+      "test": "Working Capital",
+      "status": "FAIL",
+      "time": 0.1,
+      "detail": "Status 500"
+    },
+    {
+      "category": "ACCOUNTING",
+      "test": "CFO Report",
+      "status": "PASS",
+      "time": 0.34,
+      "detail": "CFO Report: EBITDA=None, Health=None, CR=None"
+    },
+    {
+      "category": "ACCOUNTING",
+      "test": "Customer Ledger (Pallmer)",
+      "status": "PASS",
+      "time": 0.04,
+      "detail": "Customer Ledger (Pallmer): 0 entries"
+    },
+    {
+      "category": "AI_ENGINE",
+      "test": "Cash Flow Forecast (90D)",
+      "status": "PASS",
+      "time": 0.12,
+      "detail": "Cash Flow: Risk=STABLE, Forecast Points=18"
+    },
+    {
+      "category": "AI_ENGINE",
+      "test": "Anomaly Detection",
+      "status": "PASS",
+      "time": 0.58,
+      "detail": "Anomalies: [{\"type\": \"REVENUE_ANOMALY\", \"severity\": \"POSITIVE_SURGE\", \"date\": \"2026-03-01\", \"entity\": \"Widget A\", \"value\": 5000.0, \"expected\": 1277.9114432401598, \"insight\": \"Sales surge of 291.3% detected.\", \"r"
+    },
+    {
+      "category": "AI_ENGINE",
+      "test": "Derivatives Engine",
+      "status": "PASS",
+      "time": 0.07,
+      "detail": "Derivatives: {\"underlyings\": [\"BANKNIFTY\", \"FINNIFTY\", \"NIFTY\", \"SENSEX\"], \"selected_underlying\": \"NIFTY\", \"available_expiries\": [\"2026-03-19\", \"2026-03-26\", \"2026-04-02\", \"2026-04-09\"], \"selected_expiry\": \"2026-0"
+    },
+    {
+      "category": "OPERATIONS",
+      "test": "Expenses",
+      "status": "PASS",
+      "time": 0.0,
+      "detail": "Expenses: 0 entries"
+    },
+    {
+      "category": "OPERATIONS",
+      "test": "Procurement Orders",
+      "status": "PASS",
+      "time": 0.02,
+      "detail": "Procurement: []"
+    },
+    {
+      "category": "AI_COPILOT",
+      "test": "AI Copilot Query",
+      "status": "PASS",
+      "time": 0.02,
+      "detail": "Copilot Response: {\"answer\": \"Top 5 Srl No by Qty:\\n  \\u2022 TOTAL: \\u20b9136.9K\\n  \\u2022 11: \\u20b910.0K\\n  \\u2022 38: \\u20b910.0K\\n  \\u2022 39: \\u20b910.0K\\n  \\u2022 37: \\u20b910.0K\"}"
+    },
+    {
+      "category": "SYNC",
+      "test": "Workspace \u2192 Dashboard Sync",
+      "status": "WARN",
+      "time": 38.02,
+      "detail": "Status 500: {\"error\":\"'type'\"}"
+    },
+    {
+      "category": "MARKETING",
+      "test": "Marketing Campaigns",
+      "status": "PASS",
+      "time": 0.08,
+      "detail": "Marketing campaigns: 0"
+    },
+    {
+      "category": "FRONTEND",
+      "test": "Login Page",
+      "status": "PASS",
+      "time": 0.63,
+      "detail": "Login page loaded (13381 bytes)"
+    },
+    {
+      "category": "FRONTEND",
+      "test": "Dashboard Page",
+      "status": "PASS",
+      "time": 0.6,
+      "detail": "Dashboard page loaded (20486 bytes)"
+    },
+    {
+      "category": "FRONTEND",
+      "test": "Workspace Page",
+      "status": "PASS",
+      "time": 0.53,
+      "detail": "Workspace page loaded (30090 bytes)"
+    },
+    {
+      "category": "FRONTEND",
+      "test": "CRM Page",
+      "status": "FAIL",
+      "time": 0.3,
+      "detail": "Status 404"
+    },
+    {
+      "category": "FRONTEND",
+      "test": "Onboarding Page",
+      "status": "FAIL",
+      "time": 0.04,
+      "detail": "Status 404"
+    }
+  ]
+}

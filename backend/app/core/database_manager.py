@@ -4,6 +4,7 @@ import pandas as pd
 import json
 import time
 import base64
+import uuid
 from datetime import datetime
 
 # Vector Database Support
@@ -160,6 +161,19 @@ def init_workspace_db():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
+
+        # 4.5.1 Expenses (Operational Costs)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS expenses (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                date TEXT,
+                category TEXT,
+                amount REAL,
+                description TEXT,
+                payment_method TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
         
         # 4.6 Sales Targets (Quota tracking)
         conn.execute("""
@@ -256,6 +270,70 @@ def init_workspace_db():
         conn.commit()
     finally:
         if conn: conn.close()
+
+    # Seed demo data if database is empty (useful for first-time runs)
+    _seed_demo_data()
+
+
+def _seed_demo_data():
+    """Populate the database with seed data when tables are empty."""
+    conn, _ = get_db_connection()
+    try:
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT COUNT(*) FROM customers")
+        if cursor.fetchone()[0] == 0:
+            cursor.executemany(
+                "INSERT INTO customers (name, email, phone, address, gstin, pan, total_spend) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                [
+                    ("Acme Corp", "accounts@acme.com", "+91-9876543210", "123 Industrial Park, Bangalore", "27AAAAA0000A1Z5", "AAAAA0000A", 0.0),
+                    ("Neural Labs", "finance@neural-labs.ai", "+91-9123456789", "77 Innovation Drive, Pune", "27BBBBB0000B1Z6", "BBBBB0000B", 0.0),
+                ]
+            )
+
+        cursor.execute("SELECT COUNT(*) FROM inventory")
+        if cursor.fetchone()[0] == 0:
+            cursor.executemany(
+                "INSERT INTO inventory (sku, name, quantity, cost_price, sale_price, category, hsn_code) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                [
+                    ("SKU-0001", "Widget Pro", 150, 3200.0, 4520.0, "Hardware", "998311"),
+                    ("SKU-0002", "Neural Module", 80, 7200.0, 9800.0, "Electronics", "998312"),
+                ]
+            )
+
+        cursor.execute("SELECT COUNT(*) FROM invoices")
+        if cursor.fetchone()[0] == 0:
+            invoice_id = f"GST-{datetime.now().year}-{str(uuid.uuid4().hex)[:6].upper()}"
+            cursor.execute(
+                "INSERT INTO invoices (id, invoice_number, customer_id, customer_gstin, date, due_date, payment_timeline, payment_days, items_json, subtotal, total_tax, cgst_total, sgst_total, igst_total, grand_total, status, currency) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    invoice_id,
+                    invoice_id,
+                    "Acme Corp",
+                    "27AAAAA0000A1Z5",
+                    datetime.now().strftime("%Y-%m-%d"),
+                    (datetime.now() + pd.Timedelta(days=7)).strftime("%Y-%m-%d"),
+                    "Net 7",
+                    7,
+                    json.dumps([{"inventory_id": "SKU-0001", "desc": "Widget Pro", "qty": 10, "price": 4520.0, "cgst": 407.0, "sgst": 407.0, "igst": 0}]),
+                    45200.0,
+                    814.0,
+                    407.0,
+                    407.0,
+                    0.0,
+                    46014.0,
+                    "PENDING",
+                    "₹",
+                )
+            )
+
+        conn.commit()
+    except Exception as e:
+        print(f"Demo data seeding failed: {e}")
+    finally:
+        if conn:
+            conn.close()
+
 
 def init_auth_db():
     """Enterprise Auth Init: Ensures users table exists."""

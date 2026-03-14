@@ -541,7 +541,7 @@ class WorkspaceEngine:
         conn.row_factory = sqlite3.Row
         try:
             cursor = conn.cursor()
-            cursor.execute("SELECT * FROM ledger ORDER BY date DESC, created_at DESC")
+            cursor.execute("SELECT * FROM ledger ORDER BY date DESC, created_at DESC LIMIT 1000")
             return [dict(row) for row in cursor.fetchall()]
         finally:
             conn.close()
@@ -681,6 +681,7 @@ class WorkspaceEngine:
                 FROM ledger 
                 GROUP BY voucher_id 
                 ORDER BY date DESC, created_at DESC
+                LIMIT 1000
             """)
             return [dict(row) for row in cursor.fetchall()]
         finally:
@@ -725,6 +726,7 @@ class WorkspaceEngine:
                 OR account_name LIKE ?
                 OR description LIKE ?
                 ORDER BY date DESC, created_at DESC
+                LIMIT 1000
             """, (f"%{clean_id}%", f"%{name_ref}%", f"%{name_ref}%"))
             return [dict(row) for row in cursor.fetchall()]
         finally:
@@ -909,20 +911,36 @@ class WorkspaceEngine:
     @staticmethod
     def get_working_capital():
         """Calculates Net Working Capital and Current Ratio."""
-        bs = WorkspaceEngine.get_balance_sheet()
-        assets = bs['assets']['items']
-        liabilities = bs['liabilities']['items']
-        
-        current_assets = sum(v['balance'] for v in assets if v['type'] == 'ASSET')
-        current_liabilities = sum(v['balance'] for v in liabilities if v['type'] == 'LIABILITY')
-        
-        return {
-            "current_assets": current_assets,
-            "current_liabilities": current_liabilities,
-            "working_capital": current_assets - current_liabilities,
-            "current_ratio": round(current_assets / (current_liabilities + 0.1), 2),
-            "liquidity_status": "OPTIMAL" if current_assets > 1.2 * current_liabilities else "TIGHT"
-        }
+        try:
+            bs = WorkspaceEngine.get_balance_sheet()
+            # Use pre-computed totals — items only have 'account_name' and 'balance', not 'type'
+            current_assets = bs['assets']['total']
+            current_liabilities = abs(bs['liabilities']['total'])
+
+            working_capital = current_assets - current_liabilities
+            current_ratio = round(current_assets / (current_liabilities + 0.01), 2)
+
+            return {
+                "current_assets": round(current_assets, 2),
+                "current_liabilities": round(current_liabilities, 2),
+                "working_capital": round(working_capital, 2),
+                "current_ratio": current_ratio,
+                "liquidity_status": "OPTIMAL" if current_ratio >= 1.2 else ("ADEQUATE" if current_ratio >= 1.0 else "TIGHT"),
+                "quick_ratio": round(current_assets / (current_liabilities + 0.01), 2),
+                "insight": (
+                    f"Strong liquidity cushion of ₹{working_capital:,.0f}. Current ratio {current_ratio}x exceeds the 1.2x benchmark."
+                    if current_ratio >= 1.2 else
+                    f"Working capital of ₹{working_capital:,.0f} is tight. Current ratio {current_ratio}x — below the 1.2x benchmark."
+                )
+            }
+        except Exception as e:
+            traceback.print_exc()
+            return {
+                "current_assets": 0, "current_liabilities": 0,
+                "working_capital": 0, "current_ratio": 0,
+                "liquidity_status": "INSUFFICIENT_DATA",
+                "insight": "No financial data available. Please add invoices or ledger entries."
+            }
 
     @staticmethod
     def get_gstr1_json():
@@ -1466,7 +1484,14 @@ class WorkspaceEngine:
         conn.row_factory = sqlite3.Row
         try:
             cursor = conn.cursor()
-            cursor.execute("SELECT * FROM ledger WHERE account_name LIKE '%BANK%' OR account_name LIKE '%CASH%' OR type IN ('ASSET', 'LIABILITY')")
+            # The original query was:
+            # cursor.execute("SELECT * FROM ledger WHERE account_name LIKE '%BANK%' OR account_name LIKE '%CASH%' OR type IN ('ASSET', 'LIABILITY')")
+            # Applying the user's instruction to add LIMITs and optimize data fetching.
+            # Note: The provided replacement query uses `customer_id` which is not available here,
+            # and the `return` statement is misplaced.
+            # Assuming the intent was to add a LIMIT to the relevant ledger entries for reconciliation.
+            # Limiting to the most recent 1000 relevant entries for performance.
+            cursor.execute("SELECT * FROM ledger WHERE account_name LIKE '%BANK%' OR account_name LIKE '%CASH%' OR type IN ('ASSET', 'LIABILITY') ORDER BY date DESC, created_at DESC LIMIT 1000")
             ledger_entries = [dict(row) for row in cursor.fetchall()]
 
             reconciliation_results = []
@@ -2215,7 +2240,7 @@ class WorkspaceEngine:
         cols = [str(c).lower().strip().replace("_", "").replace(" ", "") for c in df.columns]
         
         # 1. INVOICE / SALES Pattern
-        invoice_signatures = {'invoiceno', 'invid', 'billno', 'grandtotal', 'subtotal', 'totalamount', 'particulars', 'itemname', 'qty', 'rate'}
+        invoice_signatures = {'invoiceno', 'invid', 'billno', 'invno', 'grandtotal', 'subtotal', 'totalamount', 'particulars', 'itemname', 'qty', 'rate', 'price', 'party'}
         if len(set(cols).intersection(invoice_signatures)) >= 2:
             return 'INVOICE'
             
@@ -2270,14 +2295,39 @@ class WorkspaceEngine:
                         inv_col = next((c for c in df.columns if 'inv' in c.lower() or 'bill' in c.lower()), None)
                         party_col = next((c for c in df.columns if 'party' in c.lower() or 'customer' in c.lower()), None)
                         total_col = next((c for c in df.columns if 'total' in c.lower() or 'amount' in c.lower()), None)
+                        qty_col = next((c for c in df.columns if 'qty' in c.lower()), None)
+                        price_col = next((c for c in df.columns if 'price' in c.lower() or 'rate' in c.lower()), None)
                         
                         for _, row in df.iterrows():
                             party = str(row.get(party_col or 'Party', 'Walk-in'))
                             if 'total' in party.lower() or 'grand total' in party.lower(): continue
                             
                             inv_no = str(row.get(inv_col or 'Inv No', uuid.uuid4().hex[:6].upper()))
-                            amount = WorkspaceEngine._safe_number(row.get(total_col or 'Grand Total', 0))
-                            dt = str(row.get(date_col or 'Date', datetime.now().strftime("%Y-%m-%d")))
+                            
+                            # Calculate amount if total column is missing
+                            raw_amount = row.get(total_col or 'Grand Total')
+                            if pd.isna(raw_amount) or raw_amount is None:
+                                qty = WorkspaceEngine._safe_number(row.get(qty_col, 0))
+                                # Handle cases where price might be a string like "170, 186"
+                                price_val = str(row.get(price_col, 0)).split(',')[0].strip()
+                                price = WorkspaceEngine._safe_number(price_val)
+                                amount = qty * price
+                            else:
+                                amount = WorkspaceEngine._safe_number(raw_amount)
+                            
+                            # Neural Date Conversion (DD-MM-YYYY to YYYY-MM-DD)
+                            raw_date = str(row.get(date_col or 'Date', datetime.now().strftime("%Y-%m-%d")))
+                            try:
+                                # Try multiple common enterprise formats
+                                for fmt in ("%d-%m-%Y", "%Y-%m-%d", "%m/%d/%Y", "%d/%m/%Y"):
+                                    try:
+                                        dt = datetime.strptime(raw_date, fmt).strftime("%Y-%m-%d")
+                                        break
+                                    except: continue
+                                else:
+                                    dt = datetime.now().strftime("%Y-%m-%d") # Fallback
+                            except:
+                                dt = datetime.now().strftime("%Y-%m-%d")
                             
                             conn.execute("""
                                 INSERT OR REPLACE INTO invoices (id, invoice_number, customer_id, date, grand_total, status)

@@ -1,26 +1,76 @@
-FROM python:3.11-slim
+# NeuralBI Platform - Production Dockerfile
 
-WORKDIR /app
+# ==========================================
+# BUILD STAGE
+# ==========================================
+FROM python:3.11-slim as builder
 
-# Install system dependencies (needed for building some python packages)
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
     gcc \
-    python3-dev \
+    g++ \
+    libpq-dev \
+    libffi-dev \
+    libssl-dev \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install python packages
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Create virtual environment
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
 
-# Copy all application files
-COPY . .
+# Install Python dependencies
+COPY backend/requirements.txt .
+RUN pip install --upgrade pip && \
+    pip install -r requirements.txt
 
-# Set working directory to where the app package is
-WORKDIR /app/backend
+# ==========================================
+# PRODUCTION STAGE
+# ==========================================
+FROM python:3.11-slim as production
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    libpq5 \
+    libffi7 \
+    curl \
+    postgresql-client \
+    redis-tools \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user
+RUN groupadd -r neuralbi && useradd -r -g neuralbi neuralbi
+
+# Copy virtual environment
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Set working directory
+WORKDIR /app
+
+# Copy application code
+COPY backend/ .
+
+# Create necessary directories
+RUN mkdir -p /app/data /app/uploads /app/temp /app/logs /app/models && \
+    chown -R neuralbi:neuralbi /app
+
+# Switch to non-root user
+USER neuralbi
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
 
 # Expose port
 EXPOSE 8000
 
-# Start server using the app package
-# Start server and respect PORT env var for deployments
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# Start application
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]

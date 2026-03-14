@@ -34,9 +34,35 @@ export default function WorkspaceInvoicing() {
     const refreshData = async () => {
         try {
             const [invRes, custRes, stockRes] = await Promise.all([getInvoices(), getCustomers(), getInventory()])
-            setInvoices(invRes)
-            setCustomers(custRes)
-            setInventory(stockRes)
+
+            // In dev mode, seed sample data when backend returns empty sets
+            const isDev = process.env.NODE_ENV === "development"
+            const sampleInvoices = [
+                {
+                    id: "SAMPLE-001",
+                    customer_id: "Acme Corp",
+                    customer_gstin: "27AAAAA0000A1Z5",
+                    subtotal: 45200,
+                    total_tax: 8136,
+                    grand_total: 53336,
+                    due_date: new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0],
+                    status: "PENDING",
+                    payment_terms: "Net 7",
+                    items_json: JSON.stringify([{ inventory_id: "SKU-0001", desc: "Widget Pro", qty: 10, price: 4520 }]),
+                },
+            ]
+
+            const sampleCustomers = [
+                { id: 1, name: "Acme Corp", email: "accounts@acme.com", phone: "+91-9876543210", gstin: "27AAAAA0000A1Z5" },
+            ]
+
+            const sampleInventory = [
+                { sku: "SKU-0001", name: "Widget Pro", quantity: 125, sale_price: 4520, hsn_code: "998311" },
+            ]
+
+            setInvoices(invRes.length || !isDev ? invRes : sampleInvoices)
+            setCustomers(custRes.length || !isDev ? custRes : sampleCustomers)
+            setInventory(stockRes.length || !isDev ? stockRes : sampleInventory)
         } catch (e) {
             console.error(e)
         }
@@ -741,7 +767,7 @@ export default function WorkspaceInvoicing() {
                                         {currencySymbol}{(inv.total_tax || inv.tax_totals?.total || 0).toLocaleString()}
                                     </td>
                                     <td className="py-5 text-right font-black text-white text-sm">
-                                        {currencySymbol}{inv.grand_total.toLocaleString()}
+                                        {currencySymbol}{(Number(inv.grand_total ?? 0)).toLocaleString()}
                                     </td>
                                     <td className="py-5 text-right">
                                         <div className="flex justify-end gap-2">
@@ -913,7 +939,7 @@ export default function WorkspaceInvoicing() {
                                     </div>
                                     <div className="flex justify-between text-lg font-black border-t pt-3 border-slate-900">
                                         <span>Grand Total</span>
-                                        <span>{currencySymbol}{viewingInvoice.grand_total.toLocaleString()}</span>
+                                        <span>{currencySymbol}{(Number(viewingInvoice.grand_total ?? 0)).toLocaleString()}</span>
                                     </div>
                                 </div>
                             </div>

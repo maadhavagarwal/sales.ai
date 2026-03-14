@@ -124,19 +124,27 @@ export default function WorkspaceIntelligence() {
                                     </Badge>
                                 </div>
                                 
-                                <div className="h-64 flex items-end gap-1 pb-4">
-                                    {(cashFlow?.forecast_90d || []).map((f: any, i: number) => (
-                                        <div key={i} className="flex-1 flex flex-col items-center group relative h-full justify-end">
-                                            <div 
-                                                className={`w-full rounded-t-sm transition-all duration-500 ${f.is_gap ? 'bg-rose-500/40 group-hover:bg-rose-500' : 'bg-[--primary]/30 group-hover:bg-[--primary]'}`}
-                                                style={{ height: `${Math.max(10, (f.projected_cash / (cashFlow?.current_balance * 2)) * 100)}%` }}
-                                            />
-                                            <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-white text-black text-[8px] font-black px-2 py-1 rounded whitespace-nowrap z-10">
-                                                {currencySymbol}{f.projected_cash?.toLocaleString()}
+                                 <div className="h-64 flex items-end gap-1 pb-4">
+                                    {(cashFlow?.forecast_90d || []).map((f: any, i: number) => {
+                                        const denom = (cashFlow?.current_balance || 1) * 2
+                                        const percentage = denom !== 0 ? (f.projected_cash / denom) * 100 : 0
+                                        const heightVal = isFinite(percentage) ? Math.max(10, percentage) : 10
+
+                                        return (
+                                            <div key={f.date || i} className="flex-1 flex flex-col items-center group relative h-full justify-end">
+                                                <div 
+                                                    className={`w-full rounded-t-sm transition-all duration-500 ${f.is_gap ? 'bg-rose-500/40 group-hover:bg-rose-500' : 'bg-[--primary]/30 group-hover:bg-[--primary]'}`}
+                                                    style={{ height: `${heightVal}%` }}
+                                                />
+                                                <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-white text-black text-[8px] font-black px-2 py-1 rounded whitespace-nowrap z-10">
+                                                    {currencySymbol}{(f.projected_cash || 0).toLocaleString()}
+                                                </div>
+                                                <span className="text-[7px] font-black text-slate-700 uppercase mt-4 rotate-45 origin-left">
+                                                    {f.date ? new Date(f.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '---'}
+                                                </span>
                                             </div>
-                                            <span className="text-[7px] font-black text-slate-700 uppercase mt-4 rotate-45 origin-left">{new Date(f.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</span>
-                                        </div>
-                                    ))}
+                                        )
+                                    })}
                                 </div>
                             </Card>
 

@@ -29,6 +29,11 @@ export const uploadCSV = async (
   return res.data
 }
 
+export const getUploadStatus = async (datasetId: string) => {
+  const res = await api.get(`/upload-status/${datasetId}`)
+  return res.data
+}
+
 export const askCopilot = async (datasetId: string, question: string) => {
   const res = await api.post(`/copilot/${datasetId}`, JSON.stringify(question), {
     headers: { "Content-Type": "application/json" },
@@ -169,6 +174,21 @@ export const getLedger = async () => {
 
 export const addLedgerEntry = async (data: any) => {
   const res = await api.post("/workspace/ledger", data)
+  return res.data
+}
+
+export const getTallySyncStatus = async () => {
+  const res = await api.get("/workspace/sync")
+  return res.data
+}
+
+export const triggerTallySync = async () => {
+  const res = await api.post("/workspace/sync")
+  return res.data
+}
+
+export const getLiveKPIs = async () => {
+  const res = await api.get("/api/live-kpis")
   return res.data
 }
 
