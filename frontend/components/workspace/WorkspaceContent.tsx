@@ -73,10 +73,10 @@ function WorkspaceContent() {
             incrementSyncCount()
             setResults(result.data)
             setFileName(file.name)
-            showToast("Data uploaded successfully!", "success")
+            showToast("success", "Upload Successful", "Data uploaded successfully!")
         } catch (error) {
             console.error("Upload failed:", error)
-            showToast("Upload failed. Please try again.", "error")
+            showToast("error", "Upload Failed", "Please try again.")
         } finally {
             setIsSyncing(false)
         }
@@ -90,10 +90,10 @@ function WorkspaceContent() {
             incrementSyncCount()
             setResults(result.data)
             setFileName("Current Dataset")
-            showToast("Workspace synced successfully!", "success")
+            showToast("success", "Sync Successful", "Workspace synced successfully!")
         } catch (error) {
             console.error("Sync failed:", error)
-            showToast("Sync failed. Please try again.", "error")
+            showToast("error", "Sync Failed", "Please try again.")
         } finally {
             setIsSyncing(false)
         }

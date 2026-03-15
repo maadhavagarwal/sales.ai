@@ -246,6 +246,46 @@ def init_workspace_db():
             )
         """)
 
+        # 7. Operational Hub (Human Capital & Tasks)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS personnel (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                email TEXT,
+                role TEXT,
+                efficiency_score REAL DEFAULT 0.0,
+                status TEXT DEFAULT 'Active', -- Active, Offline, On Leave
+                avatar TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS tasks (
+                id TEXT PRIMARY KEY,
+                title TEXT NOT NULL,
+                description TEXT,
+                assignee_id TEXT, -- Link to personnel.id
+                priority TEXT DEFAULT 'Medium', -- High, Medium, Low
+                status TEXT DEFAULT 'TODO', -- TODO, IN_PROGRESS, REVIEW, DONE
+                deadline TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS operational_schedules (
+                id TEXT PRIMARY KEY,
+                title TEXT NOT NULL,
+                type TEXT DEFAULT 'SHIFT', -- SHIFT, MILESTONE
+                date TEXT,
+                hours TEXT, -- e.g., '09:00 - 17:00'
+                role_requirement TEXT,
+                personnel_id TEXT, -- Optional link to specific personnel
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
         # Migration logic (Ensure columns exist in existing DB)
         cols_to_add = [
             ("users", "role", "TEXT DEFAULT 'ADMIN'"),
@@ -260,7 +300,9 @@ def init_workspace_db():
             ("deals", "notes", "TEXT"),
             ("purchase_orders", "status", "TEXT DEFAULT 'PENDING'"),
             ("users", "allowed_ips", "TEXT"),
-            ("users", "idle_timeout", "INTEGER DEFAULT 3600")
+            ("users", "idle_timeout", "INTEGER DEFAULT 3600"),
+            ("tasks", "description", "TEXT"),
+            ("operational_schedules", "personnel_id", "TEXT")
         ]
         for tbl, col, ctype in cols_to_add:
             try:
@@ -325,6 +367,38 @@ def _seed_demo_data():
                     "PENDING",
                     "₹",
                 )
+            )
+
+        cursor.execute("SELECT COUNT(*) FROM personnel")
+        if cursor.fetchone()[0] == 0:
+            cursor.executemany(
+                "INSERT INTO personnel (id, name, email, role, efficiency_score, status, avatar) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                [
+                    ("STAFF-001", "Elena Rodriguez", "elena@neural.ai", "Sr. Data Engineer", 98.5, "Active", "ER"),
+                    ("STAFF-002", "James Chen", "james@neural.ai", "Financial Controller", 95.0, "Active", "JC"),
+                    ("STAFF-003", "Sarah Miller", "sarah@neural.ai", "Warehouse Lead", 88.0, "Offline", "SM"),
+                ]
+            )
+
+        cursor.execute("SELECT COUNT(*) FROM tasks")
+        if cursor.fetchone()[0] == 0:
+            cursor.executemany(
+                "INSERT INTO tasks (id, title, description, assignee_id, priority, status, deadline) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                [
+                    ("TASK-001", "Q3 Data Migration", "Migrate all legacy records to neural store", "STAFF-001", "High", "IN_PROGRESS", "2026-03-20"),
+                    ("TASK-002", "Tax Compliance Audit", "Review GST filings for Q2", "STAFF-002", "High", "TODO", "2026-03-25"),
+                    ("TASK-003", "Inventory Rebalancing", "Move stock to cluster 4", "STAFF-003", "Medium", "REVIEW", "2026-03-22"),
+                ]
+            )
+
+        cursor.execute("SELECT COUNT(*) FROM operational_schedules")
+        if cursor.fetchone()[0] == 0:
+            cursor.executemany(
+                "INSERT INTO operational_schedules (id, title, type, date, hours, role_requirement) VALUES (?, ?, ?, ?, ?, ?)",
+                [
+                    ("SCHED-001", "Morning Ops Sync", "SHIFT", "2026-03-15", "09:00 - 10:00", "All Leads"),
+                    ("SCHED-002", "Strategic Planning", "MILESTONE", "2026-03-16", "14:00 - 16:00", "Management"),
+                ]
             )
 
         conn.commit()

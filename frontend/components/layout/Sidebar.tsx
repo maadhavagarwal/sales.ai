@@ -43,6 +43,13 @@ const navItems = [
             { href: "/workspace?section=accounts", label: "Accounting Core", icon: "🏛️", roles: ["ADMIN", "FINANCE"] },
         ],
     },
+    {
+        section: "Human Capital & Ops",
+        roles: ["ADMIN"],
+        items: [
+            { href: "/operations", label: "Operations Hub", icon: "⚙️" },
+        ],
+    },
 ]
 
 export default function Sidebar() {

@@ -33,6 +33,7 @@ from app.engines.rag_engine import build_dataset_index, search_dataset, trigger_
 from app.engines.llm_engine import ask_llm
 from app.engines.intelligence_engine import IntelligenceEngine
 from app.services.integration_service import IntegrationService
+from app.engines.operations_engine import OperationsEngine
 
 # --- TELEMETRY ---
 try:
@@ -622,30 +623,29 @@ async def upload_csv(file: UploadFile = File(...), background_tasks: BackgroundT
 # Background processing function
 def _process_dataset_background(dataset_id: str, df: pd.DataFrame, filename: str, available_sheets: list):
     try:
-        # Build full pipeline response
-        pipeline = {
-            "status": "completed",
-            "confidence_score": 0.95,
-            "dataset_type": "sales_dataset",
-            "analytics": {
-                "row_count": len(df),
-                "column_count": len(df.columns),
-            }
-        }
-
+        print(f"🚀 Starting AI Pipeline for {dataset_id}...")
+        start_time = time.time()
+        
+        # Build full pipeline response using the actual service
+        pipeline = run_pipeline(df)
+        
         # Update session with processed data
-        _sessions[dataset_id].update({
-            "pipeline": pipeline,
-            "status": "completed",
-            "processed_at": time.time()
-        })
-
-        print(f"Background processing completed for dataset {dataset_id}")
+        if dataset_id in _sessions:
+            _sessions[dataset_id].update({
+                "pipeline": pipeline,
+                "status": "completed",
+                "processed_at": time.time(),
+                "execution_time": time.time() - start_time
+            })
+        
+        print(f"✅ Background processing completed for {dataset_id} in {time.time() - start_time:.2f}s")
 
     except Exception as e:
-        print(f"Background processing failed for {dataset_id}: {e}")
-        _sessions[dataset_id]["status"] = "error"
-        _sessions[dataset_id]["error"] = str(e)
+        print(f"❌ Background processing failed for {dataset_id}: {e}")
+        traceback.print_exc()
+        if dataset_id in _sessions:
+            _sessions[dataset_id]["status"] = "error"
+            _sessions[dataset_id]["error"] = str(e)
 
 @app.get("/upload-status/{dataset_id}")
 async def get_upload_status(dataset_id: str):
@@ -1465,6 +1465,27 @@ async def get_audit_logs():
     logs = [dict(row) for row in cursor.fetchall()]
     conn.close()
     return logs
+
+# --- Operations Hub Endpoints ---
+@app.get("/operations")
+async def get_operations():
+    """Fetches all operational domain data."""
+    return OperationsEngine.get_operations_data()
+
+@app.post("/operations/personnel")
+async def manage_personnel(op: str = Body(...), data: dict = Body(...)):
+    """CRUD for enterprise staff."""
+    return OperationsEngine.manage_personnel(op, data)
+
+@app.post("/operations/tasks")
+async def manage_tasks(op: str = Body(...), data: dict = Body(...)):
+    """CRUD for operational tasks and Kanban board."""
+    return OperationsEngine.manage_task(op, data)
+
+@app.post("/operations/schedules")
+async def manage_schedules(op: str = Body(...), data: dict = Body(...)):
+    """CRUD for shifts and project milestones."""
+    return OperationsEngine.manage_schedule(op, data)
 
 if __name__ == "__main__":
     import uvicorn
