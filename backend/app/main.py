@@ -7,6 +7,10 @@ import io
 import traceback
 from datetime import datetime
 from collections import defaultdict
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 import pandas as pd
 import numpy as np
@@ -34,6 +38,9 @@ from app.engines.llm_engine import ask_llm
 from app.engines.intelligence_engine import IntelligenceEngine
 from app.services.integration_service import IntegrationService
 from app.engines.operations_engine import OperationsEngine
+from app.engines.hr_engine import hr_engine
+from app.engines.finance_engine import finance_engine
+from app.engines.comm_engine import comm_engine
 
 # --- TELEMETRY ---
 try:
@@ -145,8 +152,7 @@ def get_current_user(request: Request):
     client_ip = request.client.host if request.client else "127.0.0.1"
     
     if not auth_header or not auth_header.startswith("Bearer "):
-        # Dev fallback (Restrict this in prod)
-        return {"id": 1, "email": "admin@enterprise.ai", "role": "ADMIN", "permissions": ["*"]}
+        raise HTTPException(status_code=401, detail="Authentication token required")
     
     try:
         token = auth_header.split(" ")[1]
@@ -173,6 +179,7 @@ def get_current_user(request: Request):
             "id": payload.get("id", 1),
             "email": user_email,
             "role": payload.get("role", "ADMIN"),
+            "company_id": payload.get("company_id"),
             "permissions": _get_perms(payload.get("role", "ADMIN"))
         }
     except jwt.ExpiredSignatureError:
@@ -334,8 +341,17 @@ async def update_company_profile(data: dict, current_user: dict = Depends(get_cu
     conn.close()
     return res
 
+@app.get("/api/workspace/integrity")
+async def get_workspace_integrity(current_user: dict = Depends(get_current_user)):
+    """Enterprise Health: Returns record counts across all segregated silos."""
+    return WorkspaceEngine.get_workspace_integrity(current_user['company_id'])
+
 @app.post("/workspace/universal-upload")
 async def universal_upload(files: List[UploadFile] = File(...), current_user: dict = Depends(get_current_user)):
+    """
+    Enterprise Data Nexus: Universal gateway for bulk CSV/Excel ingestion.
+    Supports auto-segregation of Invoices, Customers, Inventory, Staff, and Ledger.
+    """
     files_metadata = []
     for file in files:
         content = await file.read()
@@ -344,7 +360,7 @@ async def universal_upload(files: List[UploadFile] = File(...), current_user: di
             "content": content
         })
     
-    return WorkspaceEngine.process_universal_upload(current_user['id'], files_metadata)
+    return WorkspaceEngine.process_universal_upload(current_user['id'], current_user['company_id'], files_metadata)
 
 @app.get("/crm/health-scores")
 async def get_crm_health(current_user: dict = Depends(get_current_user)):
@@ -379,7 +395,7 @@ async def additional_csv_upload(
             "content": content
         })
 
-    result = WorkspaceEngine.process_universal_upload(current_user['id'], files_metadata)
+    result = WorkspaceEngine.process_universal_upload(current_user['id'], current_user['company_id'], files_metadata)
 
     # Send notification email about new data upload in the background
     if result.get('status') == 'SUCCESS':
@@ -421,6 +437,14 @@ async def websocket_live_kpis(websocket: WebSocket):
     except WebSocketDisconnect:
         if websocket in _active_websockets:
             _active_websockets.remove(websocket)
+
+@app.get("/api/user/state")
+async def get_user_state(current_user: dict = Depends(get_current_user)):
+    return WorkspaceEngine.manage_user_state(current_user['id'], "FETCH")
+
+@app.post("/api/user/state")
+async def save_user_state(state: dict = Body(...), current_user: dict = Depends(get_current_user)):
+    return WorkspaceEngine.manage_user_state(current_user['id'], "SAVE", state)
 
 @app.get("/health")
 async def health_check():
@@ -483,7 +507,7 @@ async def register_enterprise(
     }
 
     company_result = WorkspaceEngine.manage_company_profile("SAVE", company_data)
-    if not company_result.get('success'):
+    if "id" not in company_result:
         return JSONResponse(status_code=500, content={"error": "Failed to create company profile"})
 
     # Update user with company_id
@@ -502,33 +526,13 @@ async def register_enterprise(
         "exp": time.time() + 86400
     }, SECRET_KEY, algorithm=ALGORITHM)
 
-    # Send welcome email
-    welcome_subject = f"Welcome to NeuralBI - {company_data['name']}"
-    welcome_body = f"""
-Dear {company_data['contact_person']},
-
-Welcome to NeuralBI! Your enterprise account has been successfully created.
-
-Company Details:
-- Company: {company_data['name']}
-- Industry: {company_data['industry']}
-- Business Type: {company_data['business_type']}
-- Contact: {company_data['phone']}
-
-Your account is now ready. Please complete the data upload process to start using all features.
-
-Next Steps:
-1. Upload your business data (invoices, customers, inventory)
-2. Our AI will automatically categorize and integrate your data
-3. Access all enterprise features without re-uploading
-
-If you have any questions, please contact our support team.
-
-Best regards,
-NeuralBI Team
-    """
-
-    IntegrationService.send_email(email, welcome_subject, welcome_body)
+    # Send welcome email (Safe-Fail for Non-configured SMTP)
+    try:
+        welcome_subject = f"Welcome to NeuralBI - {company_data['name']}"
+        welcome_body = f"Welcome to NeuralBI! Your enterprise account for {company_data['name']} is ready."
+        IntegrationService.send_email(email, welcome_subject, welcome_body)
+    except:
+        pass # Registration should succeed even if welcome email fails
 
     return {
         "message": "Enterprise account created successfully",
@@ -768,6 +772,65 @@ async def update_expense(expense_id: int, data: dict = Body(...)): return Worksp
 @app.delete("/workspace/expenses/{expense_id}")
 async def delete_expense(expense_id: int): return WorkspaceEngine.delete_expense(expense_id)
 
+# --- HR MODUE ---
+@app.get("/workspace/hr/employees")
+async def get_employees(): return hr_engine.get_employees()
+
+@app.post("/workspace/hr/employees")
+async def add_employee(data: dict = Body(...)): return hr_engine.add_employee(data)
+
+@app.get("/workspace/hr/stats")
+async def get_hr_stats(): return hr_engine.get_hr_stats()
+
+# --- FINANCE MODULE ---
+@app.get("/workspace/finance/summary")
+async def get_finance_summary(dataset_id: str = None):
+    df = None
+    if dataset_id and dataset_id in _sessions:
+        df = _sessions[dataset_id]["df"]
+    return finance_engine.get_financial_summary(df)
+
+@app.get("/workspace/finance/budgets")
+async def get_budgets(): return finance_engine.get_budgets()
+
+# --- COMMUNICATION MODULE ---
+@app.get("/workspace/comm/messages")
+async def get_messages(current_user: dict = Depends(get_current_user)):
+    return comm_engine.get_messages(current_user['company_id'])
+
+@app.post("/workspace/comm/messages")
+async def post_message(sender: str = Body(...), text: str = Body(...), current_user: dict = Depends(get_current_user)):
+    return comm_engine.post_message(current_user['company_id'], sender, text)
+
+@app.get("/workspace/comm/meetings")
+async def get_meetings(current_user: dict = Depends(get_current_user)): 
+    return comm_engine.get_meetings(current_user['company_id'])
+
+@app.post("/workspace/comm/meetings")
+async def create_meeting(data: dict = Body(...), current_user: dict = Depends(get_current_user)):
+    return comm_engine.create_meeting(current_user['company_id'], data)
+
+@app.post("/workspace/comm/email/send")
+async def send_email(to: str = Body(...), subject: str = Body(...), body: str = Body(...), current_user: dict = Depends(get_current_user)):
+    # Persist and simulate professional broadcast
+    return comm_engine.record_outreach(current_user['company_id'], to, subject, body)
+
+@app.get("/workspace/comm/email/history")
+async def get_email_history(current_user: dict = Depends(get_current_user)):
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT * FROM outbound_outreach WHERE company_id = ? ORDER BY timestamp DESC",
+            (current_user['company_id'],)
+        )
+        rows = cursor.fetchall()
+        conn.close()
+        return [dict(row) for row in rows]
+    except Exception as e:
+        return {"error": str(e)}
+
 @app.get("/api/live-kpis")
 async def get_live_kpis():
     """Returns simulated live KPI data that updates every 30 seconds."""
@@ -936,24 +999,12 @@ async def update_marketing_campaign(id: int, data: dict = Body(...)): return Wor
 @app.delete("/workspace/marketing/campaigns/{id}")
 async def delete_marketing_campaign(id: int): return WorkspaceEngine.delete_marketing_campaign(id)
 
-@app.get("/workspace/accounting/daybook")
-async def get_daybook(): return WorkspaceEngine.get_daybook()
-@app.get("/workspace/accounting/trial-balance")
-async def get_trial_balance(): return WorkspaceEngine.get_trial_balance()
-@app.get("/workspace/accounting/pl")
-async def get_pl_statement(): return WorkspaceEngine.get_pl_statement()
-@app.get("/workspace/accounting/balance-sheet")
-async def get_balance_sheet(): return WorkspaceEngine.get_balance_sheet()
 @app.get("/workspace/accounting/customer-ledger/{customer_id}")
 async def get_customer_ledger(customer_id: str): return WorkspaceEngine.get_customer_ledger(customer_id)
 @app.post("/workspace/accounting/payments")
 async def record_payment(data: dict = Body(...)): return WorkspaceEngine.record_payment(data)
 @app.post("/workspace/accounting/reconcile")
 async def reconcile_bank_statement(data: dict = Body(...)): return WorkspaceEngine.reconcile_bank_statement(data.get("entries", []))
-@app.get("/workspace/accounting/gst")
-async def get_gst_reports(): return WorkspaceEngine.get_gst_reports()
-@app.get("/workspace/accounting/gst/gstr1-json")
-async def get_gstr1_json(): return WorkspaceEngine.get_gstr1_json()
 @app.get("/workspace/accounting/anomalies")
 async def get_anomalies(): return WorkspaceEngine.detect_anomalies()
 @app.get("/workspace/accounting/working-capital")
@@ -1356,30 +1407,149 @@ async def download_report(dataset_id: str):
 # --- INTELLIGENCE & STRATEGY (Competitive Moat) ---
 
 @app.get("/ai/intelligence/anomalies")
-async def detect_anomalies():
+async def detect_anomalies(current_user: dict = Depends(get_current_user)):
     """Proactive Anomaly Detection: Revenue, Margin, and Volume signals."""
-    return IntelligenceEngine.detect_anomalies()
+    return IntelligenceEngine.detect_anomalies(current_user['company_id'])
 
 @app.get("/ai/intelligence/cash-flow")
-async def get_cash_flow_forecast():
+async def get_cash_flow_forecast(current_user: dict = Depends(get_current_user)):
     """Working Capital Predictor: 90-day forward looking model."""
-    return IntelligenceEngine.get_cash_flow_forecast()
+    return IntelligenceEngine.get_cash_flow_forecast(current_user['company_id'])
+
+@app.get("/ai/intelligence/cfo-health")
+async def get_cfo_health(current_user: dict = Depends(get_current_user)):
+    """CFO Intelligence: Executive summary of financial health, ratios, and AI insights."""
+    return IntelligenceEngine.get_cfo_health(current_user['company_id'])
 
 @app.post("/ai/intelligence/what-if")
-async def simulate_what_if(data: dict = Body(...)):
+async def simulate_what_if(data: dict = Body(...), current_user: dict = Depends(get_current_user)):
     """Conversational What-If Simulator: Scenario impact analysis."""
     query = data.get("query", "")
-    return IntelligenceEngine.simulate_what_if(query)
+    return IntelligenceEngine.simulate_what_if(current_user['company_id'], query)
 
 @app.get("/workspace/analytics/scenarios")
-async def get_revenue_scenarios():
+async def get_revenue_scenarios(current_user: dict = Depends(get_current_user)):
     """Predictive Modeling: Pulls bull/bear/base scenarios based on current velocity."""
-    return IntelligenceEngine.get_revenue_scenarios()
+    return IntelligenceEngine.get_revenue_scenarios(current_user['company_id'])
 
 @app.get("/workspace/analytics/leaderboard")
-async def get_sales_leaderboard():
+async def get_sales_leaderboard(current_user: dict = Depends(get_current_user)):
     """Performance Monitoring: Real-time sales rep ranking and deal tracking."""
-    return IntelligenceEngine.get_sales_leaderboard()
+    return IntelligenceEngine.get_sales_leaderboard(current_user['company_id'])
+
+# --- AI ROADMAP PHASE 1 ---
+
+@app.get("/ai/intelligence/lead-score/{customer_id}")
+async def get_lead_score(customer_id: int, current_user: dict = Depends(get_current_user)):
+    """Predictive Lead Scoring: Deep Neural ranking for conversion probability."""
+    return IntelligenceEngine.predict_lead_score(current_user['company_id'], customer_id)
+
+@app.get("/ai/intelligence/churn-risk")
+async def get_churn_risk(current_user: dict = Depends(get_current_user)):
+    """Churn Prediction: Identify high-risk enterprise clients using historical patterns."""
+    return IntelligenceEngine.calculate_churn_risk(current_user['company_id'])
+
+@app.get("/ai/intelligence/fraud")
+async def detect_fraud(current_user: dict = Depends(get_current_user)):
+    """Neural Fraud Detection: Identify outlier transaction velocity and amount spikes."""
+    return IntelligenceEngine.detect_financial_fraud(current_user['company_id'])
+
+@app.get("/ai/intelligence/dynamic-pricing/{sku}")
+async def get_dynamic_pricing(sku: str, current_user: dict = Depends(get_current_user)):
+    """Dynamic Pricing Optimization: Real-time price adjustments based on scarcity and demand."""
+    return IntelligenceEngine.calculate_dynamic_pricing(current_user['company_id'], sku)
+
+@app.post("/ai/intelligence/outreach-draft")
+async def generate_outreach(data: dict = Body(...), current_user: dict = Depends(get_current_user)):
+    """Generative Sales Optimization: Create hyper-personalized outreach drafts."""
+    name = data.get("name", "Valued Client")
+    context = data.get("context", "Quarterly Sync")
+    return IntelligenceEngine.generate_outreach_copy(name, context)
+
+@app.get("/workspace/comm/sentiment")
+async def get_team_sentiment(current_user: dict = Depends(get_current_user)):
+    """NLP Sentiment Analysis: Monitor team morale via chat heuristics."""
+    return comm_engine.analyze_team_sentiment(current_user['company_id'])
+
+@app.post("/workspace/comm/meeting/summarize")
+async def summarize_meeting(data: dict = Body(...), current_user: dict = Depends(get_current_user)):
+    """Smart Meeting Summarizer: Automated decision and action item extraction."""
+    mid = data.get("meeting_id", "nexus_001")
+    notes = data.get("notes", "")
+    return comm_engine.summarize_meeting(mid, notes)
+
+# --- AI ROADMAP PHASE 2 ---
+
+@app.get("/ai/intelligence/inventory-forecast")
+async def get_inventory_forecast(current_user: dict = Depends(get_current_user)):
+    """Demand Forecasting (RNN/LSTM): Predict stockouts and supply chain volatility."""
+    return IntelligenceEngine.forecast_inventory_demand(current_user['company_id'])
+
+@app.get("/ai/intelligence/fraud-detection")
+async def get_fraud_alerts(current_user: dict = Depends(get_current_user)):
+    """Neural Fraud Detection: Identify geometric velocity and transaction anomalies."""
+    return IntelligenceEngine.detect_financial_fraud(current_user['company_id'])
+
+# --- AI ROADMAP PHASE 3 ---
+
+@app.get("/ai/intelligence/dynamic-pricing/{sku}")
+async def get_dynamic_price(sku: str, current_user: dict = Depends(get_current_user)):
+    """Dynamic Pricing Optimizer (Deep RL): Scarcity and velocity-based margin capture."""
+    return IntelligenceEngine.calculate_dynamic_pricing(current_user['company_id'], sku)
+
+@app.post("/workspace/comm/security/redact")
+async def redact_content(data: dict = Body(...), current_user: dict = Depends(get_current_user)):
+    """Neural PII Masking: Redact PAN, GSTIN, and Email for statutory privacy."""
+    text = data.get("text", "")
+    return {"redacted_text": comm_engine.mask_sensitive_pii(text)}
+
+# --- ACCOUNTING & REPORTING ---
+
+@app.get("/workspace/accounting/daybook")
+async def get_daybook(current_user: dict = Depends(get_current_user)):
+    """General Ledger: Cronological record of all business transactions."""
+    return WorkspaceEngine.get_daybook(current_user['company_id'])
+
+@app.get("/workspace/accounting/trial-balance")
+async def get_trial_balance(current_user: dict = Depends(get_current_user)):
+    """Financial Audit: Listing of all ledger balances for validation."""
+    return WorkspaceEngine.get_trial_balance(current_user['company_id'])
+
+@app.get("/workspace/accounting/pl-statement")
+async def get_pl_statement(current_user: dict = Depends(get_current_user)):
+    """Performance Monitoring: Profit and Loss statement tracking revenue vs costs."""
+    return WorkspaceEngine.get_pl_statement(current_user['company_id'])
+
+@app.get("/workspace/accounting/balance-sheet")
+async def get_balance_sheet(current_user: dict = Depends(get_current_user)):
+    """Solvency Audit: Snapshot of Assets, Liabilities, and Equity."""
+    return WorkspaceEngine.get_balance_sheet(current_user['company_id'])
+
+@app.get("/workspace/accounting/gst-reports")
+async def get_gst_reports(current_user: dict = Depends(get_current_user)):
+    """Compliance: GSTR-1, GSTR-3B summary and tax liability tracking."""
+    return WorkspaceEngine.get_gst_reports(current_user['company_id'])
+
+@app.get("/workspace/finance/solvency")
+async def audit_solvency(current_user: dict = Depends(get_current_user)):
+    """Neural Solvency Check: Cross-references fraud alerts with working capital."""
+    summary = finance_engine.get_financial_summary(current_user['company_id'])
+    fraud = IntelligenceEngine.detect_financial_fraud(current_user['company_id'])
+    return {
+        "score": summary['current_ratio'],
+        "fraud_risk": "HIGH" if len(fraud) > 0 else "LOW",
+        "alerts": fraud
+    }
+
+@app.get("/workspace/finance/budgets")
+async def get_finance_budgets(current_user: dict = Depends(get_current_user)):
+    """Operational Budgeting: Departmental allocation and burn tracking."""
+    return finance_engine.get_budgets(current_user['company_id'])
+
+@app.get("/workspace/accounting/working-capital")
+async def get_working_capital(current_user: dict = Depends(get_current_user)):
+    """Liquidity Analysis: Receivables vs Payables and Current Ratio."""
+    return finance_engine.get_financial_summary(current_user['company_id']) # Shared logic
 
 @app.get("/workspace/inventory/transfers")
 async def get_inventory_transfers():

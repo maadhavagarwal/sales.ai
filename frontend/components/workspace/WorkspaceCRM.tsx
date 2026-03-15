@@ -37,7 +37,9 @@ export default function WorkspaceCRM() {
             ])
             setCustomers(res)
             setHealthScores(grades || {})
-            setCrmInsights(insights || [])
+            // Ensure we handle both wrapped and unwrapped insights
+            const dataInsights = Array.isArray(insights) ? insights : (insights?.insights || [])
+            setCrmInsights(dataInsights)
         } catch (e) {
             console.error(e)
         }

@@ -1,0 +1,1 @@
+['id', 'company_id', 'invoice_number', 'customer_id', 'customer_gstin', 'customer_pan', 'date', 'due_date', 'payment_timeline', 'payment_days', 'items_json', 'subtotal', 'total_tax', 'cgst_total', 'sgst_total', 'igst_total', 'grand_total', 'status', 'irn', 'qr_code_data', 'payment_link', 'payment_status', 'notes', 'currency', 'created_at']

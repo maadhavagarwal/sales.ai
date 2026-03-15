@@ -1,2 +1,0 @@
-Torch initialization failed: [WinError 1114] A dynamic link library (DLL) initialization routine failed. Error loading "C:\Users\techa\AppData\Local\Programs\Python\Python312\Lib\site-packages\torch\lib\c10.dll" or one of its dependencies.. Falling back to simple RL.
-RAG Engine initialization failed: [WinError 1114] A dynamic link library (DLL) initialization routine failed. Error loading "C:\Users\techa\AppData\Local\Programs\Python\Python312\Lib\site-packages\torch\lib\c10.dll" or one of its dependencies.. Falling back to simple text matching.

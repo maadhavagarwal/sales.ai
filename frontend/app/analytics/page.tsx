@@ -18,6 +18,7 @@ import { useStore } from "@/store/useStore"
 import { motion } from "framer-motion"
 import SafeChart from "@/components/SafeChart"
 import { Card, Button, Badge } from "@/components/ui"
+import { Skeleton, SkeletonCard, SkeletonChart } from "@/components/ui/Skeleton"
 
 function MLResultsPanel({ ml }: { ml: Record<string, any> }) {
     if (!ml) return null
@@ -140,6 +141,7 @@ function TelemetryLine({ label, value }: { label: string, value: string }) {
 
 export default function AnalyticsPage() {
     const results = useStore(state => state.results)
+    const isUploading = useStore(state => state.isUploading)
     const fetchForecast = useStore(state => state.fetchForecast)
 
     useEffect(() => {
@@ -147,6 +149,27 @@ export default function AnalyticsPage() {
             fetchForecast(results.dataset_id)
         }
     }, [results?.dataset_id, results?.forecast, fetchForecast])
+
+    // Loading & Empty State Component
+    const LoadingState = () => (
+        <div className="space-y-12">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <Skeleton height={140} className="rounded-2xl" />
+                <Skeleton height={140} className="rounded-2xl" />
+                <Skeleton height={140} className="rounded-2xl" />
+                <Skeleton height={140} className="rounded-2xl" />
+            </div>
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                <SkeletonChart />
+                <SkeletonChart />
+            </div>
+            <SkeletonCard rows={4} />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <Skeleton height={300} className="rounded-2xl" />
+                <Skeleton height={300} className="rounded-2xl col-span-2" />
+            </div>
+        </div>
+    )
 
     return (
         <DashboardLayout
@@ -166,7 +189,18 @@ export default function AnalyticsPage() {
                 ) : null
             }
         >
-            {!results ? (
+            {isUploading ? (
+                <div className="space-y-10">
+                    <div className="flex items-center gap-4 mb-12 p-8 rounded-3xl bg-[--primary]/5 border border-[--primary]/10 animate-pulse">
+                        <div className="w-12 h-12 rounded-2xl bg-[--primary]/20 flex items-center justify-center text-2xl">⚡</div>
+                        <div>
+                            <h3 className="text-xl font-black text-white">Neural Processing Active</h3>
+                            <p className="text-sm font-medium text-[--text-muted]">Orchestrating multi-model pipeline and synthesizing strategic vectors...</p>
+                        </div>
+                    </div>
+                    <LoadingState />
+                </div>
+            ) : !results ? (
                 <div className="flex flex-col items-center justify-center min-h-[60vh] text-center gap-8">
                     <div className="w-24 h-24 rounded-3xl bg-white/[0.02] border border-white/5 flex items-center justify-center text-4xl shadow-inner relative">
                         <div className="absolute inset-0 bg-[--primary]/5 blur-2xl rounded-full" />

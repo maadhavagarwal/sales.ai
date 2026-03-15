@@ -1,0 +1,4 @@
+InvoiceNo,Date,CustomerName,TotalAmount,Tax,Status
+INV-001,2026-01-01,Global Corp,5000,900,Paid
+INV-002,2026-01-02,Nexus Ltd,12000,2160,Pending
+INV-003,2026-01-03,Prime Inc,3000,540,Paid

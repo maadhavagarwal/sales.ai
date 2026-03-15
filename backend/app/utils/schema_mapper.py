@@ -3,6 +3,8 @@ Universal Schema Mapper — handles ANY sales-related CSV dataset.
 Maps diverse column names to standard names via fuzzy keyword matching.
 """
 
+import pandas as pd
+
 # Expanded patterns for universal dataset support
 COLUMN_PATTERNS = {
     "date": [

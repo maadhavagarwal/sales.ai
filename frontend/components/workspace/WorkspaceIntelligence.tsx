@@ -11,10 +11,11 @@ export default function WorkspaceIntelligence() {
     const { currencySymbol } = useStore()
     const [scenarios, setScenarios] = useState<any[]>([])
     const [cashFlow, setCashFlow] = useState<any>(null)
+    const [anomalies, setAnomalies] = useState<any[]>([])
     const [whatIfInput, setWhatIfInput] = useState("")
     const [whatIfResult, setWhatIfResult] = useState<any>(null)
     const [loading, setLoading] = useState(false)
-    const [activeView, setActiveView] = useState<"scenarios" | "cashflow" | "whatif">("scenarios")
+    const [activeView, setActiveView] = useState<"scenarios" | "cashflow" | "whatif" | "anomalies">("scenarios")
 
     useEffect(() => {
         loadIntelligence()
@@ -23,12 +24,19 @@ export default function WorkspaceIntelligence() {
     const loadIntelligence = async () => {
         setLoading(true)
         try {
-            const [sRes, cRes] = await Promise.all([
+            const [sRes, cRes, aRes] = await Promise.all([
                 getRevenueScenarios(),
-                getCashFlowForecast()
+                getCashFlowForecast(),
+                (async () => {
+                    const res = await fetch("/api/ai/intelligence/anomalies", {
+                        headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
+                    });
+                    return await res.json();
+                })()
             ])
             setScenarios(sRes || [])
             setCashFlow(cRes)
+            setAnomalies(aRes?.alerts || [])
         } catch (e) {
             console.error(e)
         } finally {
@@ -75,10 +83,62 @@ export default function WorkspaceIntelligence() {
                     >
                         What-If Engine
                     </button>
+                    <button 
+                        onClick={() => setActiveView("anomalies")}
+                        className={`px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${activeView === 'anomalies' ? 'bg-[--primary] text-white shadow-[0_0_20px_rgba(99,102,241,0.4)]' : 'text-slate-500 hover:text-white'}`}
+                    >
+                        Anomalies
+                    </button>
                 </div>
             </div>
 
             <AnimatePresence mode="wait">
+                {activeView === "anomalies" && (
+                    <motion.div 
+                        key="anomalies"
+                        initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
+                        className="space-y-6"
+                    >
+                        <div className="flex items-center justify-between">
+                            <h4 className="text-xs font-black uppercase tracking-widest text-white/40">Neural Anomaly Detection (Isolation Forest)</h4>
+                            <Badge variant="outline" className="text-[9px] border-emerald-500/20 text-emerald-500 uppercase">Scanning Active</Badge>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {anomalies.length === 0 ? (
+                                <Card variant="glass" className="col-span-full p-12 text-center border-dashed border-white/5 opacity-30 italic">
+                                    No irregularities detected in recent cycles.
+                                </Card>
+                            ) : (
+                                anomalies.map((a, i) => (
+                                    <Card key={i} variant="bento" className="p-8 border-white/5 bg-white/[0.01] hover:border-[--primary]/20 transition-all">
+                                        <div className="flex justify-between items-start mb-6">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${a.severity === 'CRITICAL' ? 'bg-rose-500/20 text-rose-500' : 'bg-amber-500/20 text-amber-500'}`}>
+                                                    <AlertCircle className="w-5 h-5" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Neural Trigger</p>
+                                                    <h5 className="text-sm font-black text-white italic uppercase">{a.metric}</h5>
+                                                </div>
+                                            </div>
+                                            <Badge className={a.severity === 'CRITICAL' ? 'bg-rose-500/10 text-rose-500' : 'bg-amber-500/10 text-amber-500'}>
+                                                {a.severity}
+                                            </Badge>
+                                        </div>
+                                        <div className="space-y-4">
+                                            <p className="text-base font-bold text-white italic leading-relaxed">"{a.insight}"</p>
+                                            <div className="p-4 rounded-xl bg-black/40 border border-white/5">
+                                                <p className="text-[8px] font-black text-emerald-400 uppercase tracking-[0.2em] mb-1">Recommended Response</p>
+                                                <p className="text-[11px] font-medium text-slate-400 leading-relaxed">{a.recommendation}</p>
+                                            </div>
+                                            <p className="text-[9px] font-black text-white/20 uppercase tracking-widest mt-4">Detected on {a.date}</p>
+                                        </div>
+                                    </Card>
+                                ))
+                            )}
+                        </div>
+                    </motion.div>
+                )}
                 {activeView === "scenarios" && (
                     <motion.div 
                         key="scenarios"

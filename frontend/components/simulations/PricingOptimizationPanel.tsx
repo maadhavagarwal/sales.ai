@@ -32,7 +32,7 @@ export default function PricingOptimizationPanel() {
         }
     }
 
-    const adjustment = Number(result?.best_price_adjustment_percent ?? 0)
+    const adjustment = Number(result?.best_price_adjustment ?? 0)
     const impactValue = Math.abs(adjustment) * 12500
 
     const chartOption = {

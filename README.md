@@ -11,17 +11,20 @@ NeuralBI is a **production-ready AI platform** that transforms raw business data
 
 ## ✨ Key Features
 
-### 🤖 AI-Powered Analytics
-- **Universal Data Ingestion**: Automatically detects and structures CSV, Excel, and database exports
+### 🤖 AI-Powered Analytics & Nexus
+- **Enterprise Data Nexus**: Central command center for multi-silo data orchestration
+- **Neural Ingestion Engine**: Bulk multi-file upload with AI-driven automatic segregation
 - **Predictive Intelligence**: ML-driven forecasting, anomaly detection, and trend analysis
 - **Natural Language Queries**: Ask questions in plain English, get instant visualizations
 - **Autonomous Reporting**: AI-generated executive summaries and strategic recommendations
 
-### 💼 Enterprise Financial Management
+### 💼 Enterprise Management Silos
+- **Workforce Management (HR)**: Personnel mapping, payroll integrity, and workforce analytics
+- **Finance Center (Treasury)**: Deep ledger segregation and automated financial health auditing
+- **Communication Hub**: Integrated meetings and direct SMTP email integration
+- **Cross-Device Persistence**: Cloud-synced workspace sessions to resume work anywhere
 - **GST-Compliant Invoicing**: Automated tax calculations and E-invoicing support
-- **Multi-Entity Accounting**: Hierarchical P&L statements and balance sheets
-- **Bank Reconciliation**: Neural matching engine for automated BRS
-- **Inventory Intelligence**: Predictive stock optimization and demand forecasting
+- **Inventory Intelligence**: Multi-location stock optimization and demand forecasting
 
 ### 🔄 ERP Integration
 - **Tally Prime**: Native XML API integration for seamless sync

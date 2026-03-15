@@ -1,6 +1,7 @@
 
 import hashlib
 import os
+import traceback
 
 try:
     from diskcache import Cache
@@ -21,19 +22,38 @@ def mock_llm_response(prompt):
 
 def ask_llm(prompt):
     """
-    Ask the LLM a question with Enterprise Caching Layer functionality.
-    Avoids duplicate inference constraints by checking high-speed disk cache first.
-    Includes Synthetic Fallback if local Ollama is offline.
+    Unified AI Gateway: Orchestrates between Google Gemini (GPU Cloud), 
+    Local Ollama, and Synthetic Fallbacks with Enterprise Caching.
     """
     if HAS_CACHE:
-        # Generate SHA256 cryptographic hash of the prompt for the cache key
         prompt_hash = hashlib.sha256(prompt.encode('utf-8')).hexdigest()
-        
-        # Check cache
         cached_response = llm_cache.get(prompt_hash)
         if cached_response:
             return cached_response
 
+    # 1. GOOGLE GEMINI (GPU-Accelerated Cloud Intelligence)
+    api_key = os.getenv("GOOGLE_API_KEY")
+    if api_key:
+        try:
+            import google.generativeai as genai
+            genai.configure(api_key=api_key)
+            # Use 1.5-flash for maximum speed (Startup level latency)
+            model = genai.GenerativeModel('gemini-1.5-flash')
+            
+            # System instruction injection
+            full_prompt = f"System: You are NeuralBI CDO. Focus on ROI and EBITDA.\n\nUser: {prompt}"
+            
+            response = model.generate_content(full_prompt)
+            content = response.text
+            
+            if HAS_CACHE:
+                llm_cache.set(prompt_hash, content, expire=86400)
+            return content
+        except Exception as e:
+            print(f"Gemini API Error: {e}")
+            # Fall through to Ollama
+
+    # 2. LOCAL OLLAMA (Private On-Premise Backup)
     try:
         import ollama
         response = ollama.chat(
@@ -50,9 +70,8 @@ def ask_llm(prompt):
         
         if HAS_CACHE:
             llm_cache.set(prompt_hash, content, expire=86400)
-            
         return content
 
     except Exception:
-        # SYNTHETIC FALLBACK: Ensure the UI never feels broken
+        # 3. SYNTHETIC FALLBACK (Zero Latency Mock)
         return mock_llm_response(prompt)

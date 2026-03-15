@@ -11,7 +11,9 @@ const navItems = [
         section: "Intelligence Hub",
         roles: ["ADMIN", "SALES", "FINANCE"],
         items: [
+            { href: "/overview", label: "System Overview", icon: "🏠" },
             { href: "/dashboard", label: "Executive Nexus", icon: "📊" },
+            { href: "/demo", label: "Interactive Demo", icon: "🎯" },
             { href: "/analytics", label: "Synthetic Analytics", icon: "📈" },
         ],
     },
@@ -35,8 +37,7 @@ const navItems = [
         section: "Enterprise Stack",
         roles: ["ADMIN", "SALES", "FINANCE", "WAREHOUSE"],
         items: [
-            { href: "/workspace", label: "Global Workspace", icon: "🏢" },
-            { href: "/crm", label: "Predictive CRM", icon: "🤝", roles: ["ADMIN", "SALES"] },
+            { href: "/workspace", label: "Data Nexus", icon: "🧩" },
             { href: "/workspace?section=billing", label: "Financial Engine", icon: "🧾", roles: ["ADMIN", "FINANCE"] },
             { href: "/workspace/procurement", label: "Procurement & PO", icon: "🛒", roles: ["ADMIN", "FINANCE"] },
             { href: "/workspace?section=inventory", label: "Asset Lab", icon: "📦", roles: ["ADMIN", "WAREHOUSE"] },
@@ -48,6 +49,9 @@ const navItems = [
         roles: ["ADMIN"],
         items: [
             { href: "/operations", label: "Operations Hub", icon: "⚙️" },
+            { href: "/workspace?section=hr", label: "Workforce & HR", icon: "👥" },
+            { href: "/workspace?section=finance", label: "Finance Control", icon: "⚖️" },
+            { href: "/workspace?section=comm", label: "Comm Hub", icon: "📡" },
         ],
     },
 ]

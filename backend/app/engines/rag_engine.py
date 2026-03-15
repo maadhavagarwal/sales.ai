@@ -50,7 +50,6 @@ def _get_cross_encoder():
         return None
 
 def build_dataset_index(df):
-    global vector_stored_data
     
     print(f"RAG Engine: Rebuilding Index for {len(df)} records...")
     docs = []
@@ -101,7 +100,6 @@ def search_dataset(query, k=5):
     """
     Moat Grade Search: Vector Search + Cross-Encoder Re-ranking
     """
-    global vector_stored_data
     
     model, faiss, np, has_rag = _get_rag_model()
     
@@ -158,6 +156,6 @@ def search_dataset(query, k=5):
 
 def trigger_auto_refresh(df):
     """Automatically refreshes index if data is stale (older than 1 hour) or significant change."""
-    global vector_stored_data
+    
     if time.time() - vector_stored_data["last_updated"] > 3600 or len(df) != len(vector_stored_data["documents"]):
         build_dataset_index(df)

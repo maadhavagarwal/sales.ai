@@ -61,14 +61,21 @@ def init_workspace_db():
                 idle_timeout INTEGER DEFAULT 3600,
                 onboarding_complete INTEGER DEFAULT 0,
                 company_id INTEGER,
+                workspace_state TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
+        
+        # Migration: Add workspace_state if not exists
+        try:
+            conn.execute("ALTER TABLE users ADD COLUMN workspace_state TEXT")
+        except:
+            pass # Already exists
 
         # 2. Enterprise Company Profile
         conn.execute("""
             CREATE TABLE IF NOT EXISTS company_profiles (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id TEXT PRIMARY KEY,
                 name TEXT,
                 gstin TEXT,
                 industry TEXT,
@@ -83,6 +90,7 @@ def init_workspace_db():
             CREATE TABLE IF NOT EXISTS files_catalog (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id INTEGER,
+                company_id TEXT,
                 filename TEXT,
                 file_type TEXT, -- 'INVOICE', 'CUSTOMER', 'INVENTORY', 'UNSUPPORTED'
                 status TEXT, -- 'PENDING', 'PROCESSED', 'FAILED'
@@ -96,6 +104,7 @@ def init_workspace_db():
             CREATE TABLE IF NOT EXISTS audit_logs (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id INTEGER,
+                company_id TEXT,
                 action TEXT NOT NULL, 
                 module TEXT NOT NULL,
                 entity_id TEXT,
@@ -108,7 +117,8 @@ def init_workspace_db():
         conn.execute("""
             CREATE TABLE IF NOT EXISTS invoices (
                 id TEXT PRIMARY KEY,
-                invoice_number TEXT UNIQUE,
+                company_id TEXT,
+                invoice_number TEXT,
                 customer_id TEXT,
                 customer_gstin TEXT,
                 customer_pan TEXT,
@@ -191,7 +201,8 @@ def init_workspace_db():
         conn.execute("""
             CREATE TABLE IF NOT EXISTS customers (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT UNIQUE NOT NULL,
+                company_id TEXT,
+                name TEXT NOT NULL,
                 email TEXT,
                 phone TEXT,
                 address TEXT,
@@ -206,7 +217,8 @@ def init_workspace_db():
         conn.execute("""
             CREATE TABLE IF NOT EXISTS inventory (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                sku TEXT UNIQUE,
+                company_id TEXT,
+                sku TEXT,
                 name TEXT NOT NULL,
                 quantity INTEGER DEFAULT 0,
                 cost_price REAL,
@@ -234,6 +246,7 @@ def init_workspace_db():
         conn.execute("""
             CREATE TABLE IF NOT EXISTS ledger (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+                company_id TEXT,
                 account_name TEXT NOT NULL,
                 type TEXT,
                 amount REAL,
@@ -250,6 +263,7 @@ def init_workspace_db():
         conn.execute("""
             CREATE TABLE IF NOT EXISTS personnel (
                 id TEXT PRIMARY KEY,
+                company_id TEXT,
                 name TEXT NOT NULL,
                 email TEXT,
                 role TEXT,
@@ -286,11 +300,69 @@ def init_workspace_db():
             )
         """)
 
+        # 8. Communications Hub (Meetings, Chat, Outreach)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS meetings (
+                id TEXT PRIMARY KEY,
+                company_id TEXT,
+                title TEXT,
+                type TEXT DEFAULT 'Team',
+                start_time TEXT,
+                duration TEXT DEFAULT '30 min',
+                link TEXT,
+                participants TEXT, -- JSON string
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS team_chat (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                company_id TEXT,
+                sender_name TEXT,
+                message_text TEXT,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS outbound_outreach (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                company_id TEXT,
+                recipient TEXT,
+                subject TEXT,
+                body TEXT,
+                status TEXT DEFAULT 'SENT',
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        # 9. Marketing & Growth (Campaigns, Leads)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS marketing_campaigns (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                company_id TEXT,
+                name TEXT NOT NULL,
+                channel TEXT,
+                spend REAL DEFAULT 0.0,
+                conversions INTEGER DEFAULT 0,
+                revenue_generated REAL DEFAULT 0.0,
+                status TEXT DEFAULT 'ACTIVE', -- ACTIVE, PAUSED, COMPLETED
+                start_date TEXT,
+                end_date TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
         # Migration logic (Ensure columns exist in existing DB)
         cols_to_add = [
             ("users", "role", "TEXT DEFAULT 'ADMIN'"),
             ("invoices", "irn", "TEXT"),
             ("invoices", "qr_code_data", "TEXT"),
+            ("invoices", "company_id", "TEXT"),
+            ("customers", "company_id", "TEXT"),
+            ("inventory", "company_id", "TEXT"),
+            ("personnel", "company_id", "TEXT"),
+            ("ledger", "company_id", "TEXT"),
+            ("files_catalog", "company_id", "TEXT"),
             ("invoices", "payment_link", "TEXT"),
             ("invoices", "payment_status", "TEXT DEFAULT 'PENDING'"),
             ("inventory", "hsn_code", "TEXT"),

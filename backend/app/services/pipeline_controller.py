@@ -22,6 +22,11 @@ def run_pipeline(df):
     df, schema = map_schema(df)
     df = clean_data(df, schema)
     
+    if df.empty:
+        return {"error": "Cleaned dataset is empty"}
+
+    insights = []
+    
     # 2. Detect Dataset Type based on Standardized Schema
     dataset_type = detect_dataset_type(df)
 
@@ -40,7 +45,7 @@ def run_pipeline(df):
     import traceback
 
     def run_ai_tasks():
-        nonlocal anomalies_data, clusters_data, ml_results, simulation_results, strategy, insights, explanations, recommendations, market_data
+        nonlocal anomalies_data, clusters_data, ml_results, simulation_results, insights
         with ThreadPoolExecutor(max_workers=6) as executor:
             # 1. Standard AI Tasks
             from app.models.advanced_ai_models import detect_anomalies, run_clustering
@@ -111,7 +116,6 @@ def run_pipeline(df):
 
     # Initialize placeholders
     strategy = []
-    insights = []
     explanations = []
     recommendations = []
 

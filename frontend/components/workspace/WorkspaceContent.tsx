@@ -8,14 +8,18 @@ import WorkspaceCRM from "@/components/workspace/WorkspaceCRM"
 import WorkspaceMarketing from "@/components/workspace/WorkspaceMarketing"
 import WorkspaceInventory from "@/components/workspace/WorkspaceInventory"
 import WorkspaceAccounts from "@/components/workspace/WorkspaceAccounts"
+import WorkspaceHR from "@/components/workspace/WorkspaceHR"
+import WorkspaceFinance from "@/components/workspace/WorkspaceFinance"
+import WorkspaceCommHub from "@/components/workspace/WorkspaceCommHub"
+import WorkspaceNexus from "@/components/workspace/WorkspaceNexus"
 import { Card, Button, Badge } from "@/components/ui"
-import { uploadCSV, syncWorkspaceToDashboard } from "@/services/api"
+import { uploadCSV, syncWorkspaceToDashboard, getUserState, saveUserState } from "@/services/api"
 import { useStore } from "@/store/useStore"
 import { useToast } from "@/components/ui/Toast"
 
 import { useSearchParams } from "next/navigation"
 
-type SectionId = "billing" | "crm" | "marketing" | "inventory" | "accounts"
+type SectionId = "nexus" | "billing" | "crm" | "marketing" | "inventory" | "accounts" | "hr" | "finance" | "comm"
 
 interface Section {
     id: SectionId
@@ -27,25 +31,46 @@ interface Section {
 
 function WorkspaceContent() {
     const searchParams = useSearchParams()
-    const initialSection = (searchParams.get("section") as SectionId) || "billing"
+    const initialSection = (searchParams.get("section") as SectionId) || "nexus"
     const [activeSection, setActiveSection] = useState<SectionId>(initialSection)
 
-    // Load persisted section on mount
+    // Load persisted section on mount (Backend Sync)
     useEffect(() => {
-        const persistedSection = localStorage.getItem("workspace-active-section") as SectionId
-        if (persistedSection && ["billing", "crm", "marketing", "inventory", "accounts"].includes(persistedSection)) {
-            setActiveSection(persistedSection)
+        const syncState = async () => {
+            try {
+                const state = await getUserState()
+                if (state && state.activeSection && ["nexus", "billing", "crm", "marketing", "inventory", "accounts", "hr", "finance", "comm"].includes(state.activeSection)) {
+                    setActiveSection(state.activeSection as SectionId)
+                } else {
+                    // Fallback to localStorage if backend empty
+                    const persistedSection = localStorage.getItem("workspace-active-section") as SectionId
+                    if (persistedSection && ["nexus", "billing", "crm", "marketing", "inventory", "accounts", "hr", "finance", "comm"].includes(persistedSection)) {
+                        setActiveSection(persistedSection)
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to sync workspace state from backend")
+            }
         }
+        syncState()
     }, [])
 
     // Persist section changes
     useEffect(() => {
         localStorage.setItem("workspace-active-section", activeSection)
+        const syncToBackend = async () => {
+             try {
+                 await saveUserState({ activeSection })
+             } catch (err) {
+                 // Silent fail for background sync
+             }
+        }
+        syncToBackend()
     }, [activeSection])
 
     useEffect(() => {
         const section = searchParams.get("section") as SectionId
-        if (section && ["billing", "crm", "marketing", "inventory", "accounts"].includes(section)) {
+        if (section && ["nexus", "billing", "crm", "marketing", "inventory", "accounts", "hr", "finance", "comm"].includes(section)) {
             setActiveSection(section)
         }
     }, [searchParams])
@@ -58,11 +83,13 @@ function WorkspaceContent() {
     const { showToast } = useToast()
 
     const sections: Section[] = [
-        { id: "billing", label: "Financial Engine", icon: "FI", description: "GST Compliant Invoicing", color: "var(--primary)" },
-        { id: "crm", label: "Core Directory", icon: "CR", description: "Strategic Client CRM", color: "var(--accent-cyan)" },
-        { id: "marketing", label: "Marketing Hub", icon: "MK", description: "Growth & ROI Tracking", color: "var(--accent-violet)" },
-        { id: "inventory", label: "Asset Lab", icon: "ST", description: "Inventory & Stock Optimization", color: "var(--accent-amber)" },
-        { id: "accounts", label: "Ledger Core", icon: "AC", description: "Automated Bookkeeping", color: "var(--accent-emerald)" },
+        { id: "nexus", label: "Enterprise Nexus", icon: "NX", description: "Central Data Portal", color: "var(--primary)" },
+        { id: "billing", label: "Financial Engine", icon: "FI", description: "Invoicing & GST", color: "var(--accent-cyan)" },
+        { id: "hr", label: "Workforce", icon: "HR", description: "HR & Employees", color: "var(--accent-rose)" },
+        { id: "finance", label: "Finance Center", icon: "FN", description: "Treasury Center", color: "var(--accent-emerald)" },
+        { id: "comm", label: "Comm Hub", icon: "CH", description: "Meetings & Mail", color: "var(--accent-violet)" },
+        { id: "inventory", label: "Asset Lab", icon: "ST", description: "Stock Optimization", color: "var(--accent-amber)" },
+        { id: "accounts", label: "Ledger Core", icon: "AC", description: "Bookkeeping", color: "#64748b" },
     ]
 
     const handleFile = useCallback(async (file: File) => {
@@ -71,7 +98,7 @@ function WorkspaceContent() {
             const result = await uploadCSV(file)
             setSyncResult({ rows: result.rows, file: file.name })
             incrementSyncCount()
-            setResults(result.data)
+            setResults(result)
             setFileName(file.name)
             showToast("success", "Upload Successful", "Data uploaded successfully!")
         } catch (error) {
@@ -88,7 +115,7 @@ function WorkspaceContent() {
             const result = await syncWorkspaceToDashboard()
             setSyncResult({ rows: result.rows, file: "Current Dataset" })
             incrementSyncCount()
-            setResults(result.data)
+            setResults(result)
             setFileName("Current Dataset")
             showToast("success", "Sync Successful", "Workspace synced successfully!")
         } catch (error) {
@@ -180,7 +207,7 @@ function WorkspaceContent() {
                 </motion.div>
 
                 {/* ── Section Nav ── */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-4">
                     {sections.map((s) => (
                         <motion.div
                             key={s.id}
@@ -236,11 +263,15 @@ function WorkspaceContent() {
                         transition={{ duration: 0.3 }}
                         className="flex-1"
                     >
+                        {activeSection === "nexus" && <WorkspaceNexus />}
                         {activeSection === "billing" && <WorkspaceInvoicing />}
                         {activeSection === "crm" && <WorkspaceCRM />}
                         {activeSection === "marketing" && <WorkspaceMarketing />}
                         {activeSection === "inventory" && <WorkspaceInventory />}
                         {activeSection === "accounts" && <WorkspaceAccounts />}
+                        {activeSection === "hr" && <WorkspaceHR />}
+                        {activeSection === "finance" && <WorkspaceFinance />}
+                        {activeSection === "comm" && <WorkspaceCommHub />}
                     </motion.section>
                 </AnimatePresence>
             </div>

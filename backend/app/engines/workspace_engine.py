@@ -670,46 +670,6 @@ class WorkspaceEngine:
             conn.close()
 
     @staticmethod
-    def get_daybook():
-        conn = sqlite3.connect(DB_PATH)
-        conn.row_factory = sqlite3.Row
-        try:
-            cursor = conn.cursor()
-            cursor.execute("""
-                SELECT voucher_id, voucher_type, voucher_no, date, SUM(ABS(amount))/2 as total_quantum, 
-                       GROUP_CONCAT(account_name || ' (' || type || ')') as participating_ledgers
-                FROM ledger 
-                GROUP BY voucher_id 
-                ORDER BY date DESC, created_at DESC
-                LIMIT 1000
-            """)
-            return [dict(row) for row in cursor.fetchall()]
-        finally:
-            conn.close()
-
-    @staticmethod
-    def get_trial_balance():
-        conn = sqlite3.connect(DB_PATH)
-        conn.row_factory = sqlite3.Row
-        try:
-            cursor = conn.cursor()
-            cursor.execute("""
-                SELECT
-                    COALESCE(account_name, 'Unassigned Account') as account_name,
-                    COALESCE(type, 'UNCLASSIFIED') as type,
-                    ROUND(SUM(COALESCE(amount, 0)), 2) as balance
-                FROM ledger 
-                GROUP BY account_name, type
-                ORDER BY type, account_name
-            """)
-            return WorkspaceEngine._sanitize_payload([dict(row) for row in cursor.fetchall()])
-        except Exception as e:
-            traceback.print_exc()
-            return [{"account_name": "Trial Balance Error", "type": "ERROR", "balance": 0, "message": str(e)}]
-        finally:
-            conn.close()
-
-    @staticmethod
     def get_customer_ledger(customer_id: str):
         conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row
@@ -805,108 +765,7 @@ class WorkspaceEngine:
         finally:
             conn.close()
 
-    @staticmethod
-    def predict_cash_flow_gap():
-        """
-        Moat: 90-Day Cash Flow Gap Predictor.
-        Factors in: Open AR (Receivables), Open POs/Expenses (Payables), and Historical Burn.
-        """
-        conn = sqlite3.connect(DB_PATH)
-        try:
-            # 1. Current Bank Balance (Sum of Bank/Cash Assets)
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-            cursor.execute("SELECT SUM(amount) as bal FROM ledger WHERE account_name LIKE '%Bank%' OR account_name LIKE '%Cash%'")
-            current_cash = float(cursor.fetchone()['bal'] or 0)
-            
-            # 2. Predicted Receivables (Outstanding Invoices due in 90 days)
-            cursor.execute("SELECT SUM(grand_total) as ar FROM invoices WHERE status != 'PAID'")
-            receivables = float(cursor.fetchone()['ar'] or 0)
-            
-            # 3. Predicted Payables (Open POs + Avg Monthly Expenses * 3)
-            cursor.execute("SELECT SUM(total_amount) as ap FROM purchase_orders WHERE status = 'PENDING'")
-            pending_po = float(cursor.fetchone()['ap'] or 0)
-            
-            cursor.execute("SELECT AVG(amount) as avg_exp FROM ledger WHERE type = 'EXPENSE'")
-            avg_monthly_burn = float(cursor.fetchone()['avg_exp'] or 10000) * 3
-            
-            payables = pending_po + avg_monthly_burn
-            
-            payables = pending_po + avg_monthly_burn
-            
-            # Growth Factor Integration
-            growth_rate = 1.05 # 5% month-on-month growth assumption
-            receivables_90d = receivables * (growth_rate ** 2)
-            
-            projected = current_cash + (receivables_90d * 0.85) - payables # Factor 85% collection rate
-            
-            return {
-                "current_cash": current_cash,
-                "projected_90d": projected,
-                "receivables_pipeline": receivables_90d,
-                "payables_pipeline": payables,
-                "gap_detected": projected < 0,
-                "risk_level": "CRITICAL" if projected < -current_cash else ("WARNING" if projected < 0 else "HEALTHY"),
-                "insights": [
-                    f"Current Liquidity: ₹{current_cash:,.2f}",
-                    f"Projected 90D Inflow: ₹{receivables_90d * 0.85:,.2f} (85% recovery weighted)",
-                    f"Projected 90D Outflow: ₹{payables:,.2f} (Operations + Orders)",
-                    f"Net Liquidity Gap: ₹{abs(projected):,.2f}" if projected < 0 else "Liquidity Surplus Project: NeuralBI Strategic Reserve.",
-                ],
-                "recommendation": "Accelerate AR collection for top 5 debtors" if projected < 0 else "Evaluate short-term investment vehicles"
-            }
-        finally:
-            conn.close()
 
-    @staticmethod
-    def detect_anomalies():
-        """
-        AI Anomaly Detection: Identifies statistical outliers in Revenue and Margins.
-        Logic: Z-Score analysis (> 2.0 std dev)
-        """
-        df = WorkspaceEngine.get_enterprise_analytics_df()
-        if df.empty: return []
-        
-        anomalies = []
-        # 1. Revenue Anomalies
-        rev_mean = df['revenue'].mean()
-        rev_std = df['revenue'].std()
-        
-        if rev_std > 0:
-            outliers = df[(df['revenue'] - rev_mean).abs() > (2 * rev_std)]
-            for _, row in outliers.iterrows():
-                is_drop = row['revenue'] < rev_mean
-                anomalies.append({
-                    "type": "REVENUE_ANOMALY",
-                    "severity": "CRITICAL" if is_drop else "POSITIVE_SURGE",
-                    "date": row['date'],
-                    "entity": row['product'],
-                    "value": row['revenue'],
-                    "expected": rev_mean,
-                    "insight": f"{' Revenue drop' if is_drop else 'Sales surge'} of {abs(row['revenue']-rev_mean)/rev_mean*100:.1f}% detected.",
-                    "root_cause": "Low demand for SKU" if is_drop else "Promotion or seasonal spike",
-                    "action": "Investigate pricing or supply chain" if is_drop else "Ensure inventory availability for replenishment"
-                })
-
-        # 2. Margin Drop Detection
-        df['margin_pct'] = (df['revenue'] - df['cost']) / (df['revenue'] + 0.1)
-        margin_mean = df['margin_pct'].mean()
-        margin_std = df['margin_pct'].std()
-        
-        if margin_std > 0:
-            low_margins = df[df['margin_pct'] < (margin_mean - 1.5 * margin_std)]
-            for _, row in low_margins.iterrows():
-                anomalies.append({
-                    "type": "MARGIN_EROSION",
-                    "severity": "WARNING",
-                    "date": row['date'],
-                    "entity": row['product'],
-                    "value": row['margin_pct'] * 100,
-                    "expected": margin_mean * 100,
-                    "insight": f"Margin of {row['margin_pct']*100:.1f}% is significantly below average ({margin_mean*100:.1f}%)."
-                })
-        
-        return anomalies
 
     @staticmethod
     def get_working_capital():
@@ -942,69 +801,7 @@ class WorkspaceEngine:
                 "insight": "No financial data available. Please add invoices or ledger entries."
             }
 
-    @staticmethod
-    def get_gstr1_json():
-        """Generates real GSTR-1 Schema compatible JSON for portal upload."""
-        conn = sqlite3.connect(DB_PATH)
-        conn.row_factory = sqlite3.Row
-        try:
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM invoices WHERE status != 'CANCELLED'")
-            invoices = [dict(row) for row in cursor.fetchall()]
-            
-            b2b = []
-            for inv in invoices:
-                items = json.loads(inv['items_json'] or "[]")
-                itms = []
-                for idx, it in enumerate(items):
-                    itms.append({
-                        "num": idx + 1,
-                        "itm_det": {
-                            "ty": "G", # Goods
-                            "hsn_sc": it.get("hsn", "9900"),
-                            "txval": it.get("price", 0) * it.get("quantity", 0),
-                            "rt": 18,
-                            "iamt": inv.get("igst_total", 0),
-                            "camt": inv.get("cgst_total", 0),
-                            "samt": inv.get("sgst_total", 0)
-                        }
-                    })
-                
-                b2b.append({
-                    "ctin": inv.get("customer_gstin", "URP"), # Unregistered
-                    "inv": [{
-                        "inum": inv["invoice_number"],
-                        "idt": inv["date"],
-                        "val": inv["grand_total"],
-                        "pos": "27", # Default Maharashtra
-                        "rchrg": "N",
-                        "inv_typ": "R",
-                        "itms": itms
-                    }]
-                })
-            
-            return {
-                "gstin": "27AAAAA0000A1Z5",
-                "fp": datetime.now().strftime("%m%Y"),
-                "gt": 0.0,
-                "cur_gt": 0.0,
-                "b2b": b2b
-            }
-        finally:
-            conn.close()
 
-    @staticmethod
-    def get_cross_sell_recommendations(sku: str):
-        """
-        AI Feature: Market Basket Analysis stub.
-        Surface "Customers who bought this also bought X".
-        """
-        # Production: Use Association Rules (Apriori/FP-Growth) on invoice history
-        recommendations = {
-            "LAPTOP": [{"sku": "MOUSE", "name": "Wireless Mouse", "reason": "80% attachment rate"}, {"sku": "BAG", "name": "Laptop Bag", "reason": "Frequent bundle"}],
-            "SMARTPHONE": [{"sku": "COVER", "name": "Silicone Case", "reason": "High cross-buy"}, {"sku": "CHARGER", "name": "Fast Charger", "reason": "Complementary"}],
-        }
-        return recommendations.get(sku.upper(), [{"sku": "GENERAL", "name": "Extended Warranty", "reason": "Standard upsell"}])
 
     @staticmethod
     def manage_sales_targets(action: str, data: dict, user_id: int = 1):
@@ -1047,6 +844,8 @@ class WorkspaceEngine:
             return {"status": "success"}
         finally:
             conn.close()
+    @staticmethod
+    def transfer_inventory(data: dict, user_id: int = 1):
         """
         Multi-location Logistics: Transfers stock between nodes.
         """
@@ -1078,50 +877,6 @@ class WorkspaceEngine:
         finally:
             conn.close()
 
-    @staticmethod
-    def manage_deal(action: str, data: dict, user_id: int = 1):
-        """
-        Visual Deal Pipeline (Kanban): Manages the lifecycle of sales opportunities.
-        """
-        conn = sqlite3.connect(DB_PATH)
-        try:
-            if action == "CREATE":
-                deal_id = f"DEAL-{uuid.uuid4().hex[:6].upper()}"
-                conn.execute("""
-                    INSERT INTO deals (id, customer_id, deal_name, value, stage, probability, expected_close_date, notes)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                """, (
-                    deal_id, data.get('customer_id'), data.get('deal_name'),
-                    float(data.get('value', 0)), data.get('stage', 'QUALIFIED'),
-                    float(data.get('probability', 0.2)), data.get('expected_close_date'),
-                    data.get('notes')
-                ))
-                log_activity(user_id, "CREATE_DEAL", "CRM", entity_id=deal_id, details=data)
-            
-            elif action == "UPDATE":
-                did = data.get('id')
-                conn.execute("""
-                    UPDATE deals SET stage = ?, value = ?, probability = ?, notes = ?, expected_close_date = ?
-                    WHERE id = ?
-                """, (
-                    data.get('stage'), float(data.get('value', 0)), 
-                    float(data.get('probability', 0)), data.get('notes'),
-                    data.get('expected_close_date'), did
-                ))
-                log_activity(user_id, "UPDATE_DEAL", "CRM", entity_id=did, details=data)
-
-            elif action == "LIST":
-                conn.row_factory = sqlite3.Row
-                cursor = conn.cursor()
-                cursor.execute("SELECT * FROM deals ORDER BY created_at DESC")
-                return [dict(row) for row in cursor.fetchall()]
-
-            conn.commit()
-            return {"status": "success"}
-        except Exception as e:
-            return {"status": "error", "message": str(e)}
-        finally:
-            conn.close()
 
     @staticmethod
     def get_customer_health_scores():
@@ -1384,64 +1139,6 @@ class WorkspaceEngine:
         finally:
             conn.close()
 
-    @staticmethod
-    def get_pl_statement():
-        conn = sqlite3.connect(DB_PATH)
-        conn.row_factory = sqlite3.Row
-        try:
-            cursor = conn.cursor()
-            cursor.execute("SELECT account_name, SUM(amount) as balance FROM ledger WHERE type = 'INCOME' GROUP BY account_name")
-            revenue_items = [dict(row) for row in cursor.fetchall()]
-            total_revenue = sum(item['balance'] for item in revenue_items)
-
-            cursor.execute("SELECT account_name, SUM(amount) as balance FROM ledger WHERE type = 'EXPENSE' AND account_name LIKE 'COGS%' GROUP BY account_name")
-            cogs_items = [dict(row) for row in cursor.fetchall()]
-            total_cogs = sum(item['balance'] for item in cogs_items)
-
-            cursor.execute("SELECT account_name, SUM(amount) as balance FROM ledger WHERE type = 'EXPENSE' AND account_name NOT LIKE 'COGS%' GROUP BY account_name")
-            overhead_items = [dict(row) for row in cursor.fetchall()]
-            total_overheads = sum(item['balance'] for item in overhead_items)
-
-            return {
-                "revenue": {"items": revenue_items, "total": total_revenue},
-                "cogs": {"items": cogs_items, "total": total_cogs},
-                "gross_profit": total_revenue - total_cogs,
-                "overheads": {"items": overhead_items, "total": total_overheads},
-                "net_profit": total_revenue - total_cogs - total_overheads
-            }
-        finally:
-            conn.close()
-
-    @staticmethod
-    def get_balance_sheet():
-        conn = sqlite3.connect(DB_PATH)
-        conn.row_factory = sqlite3.Row
-        try:
-            cursor = conn.cursor()
-            cursor.execute("SELECT account_name, SUM(amount) as balance FROM ledger WHERE type = 'ASSET' GROUP BY account_name")
-            assets = [dict(row) for row in cursor.fetchall()]
-            total_assets = sum(item['balance'] for item in assets)
-
-            cursor.execute("SELECT account_name, SUM(amount) as balance FROM ledger WHERE type = 'LIABILITY' GROUP BY account_name")
-            liabilities = [dict(row) for row in cursor.fetchall()]
-            total_liab = sum(item['balance'] for item in liabilities)
-
-            cursor.execute("SELECT SUM(amount) FROM ledger WHERE type = 'INCOME'")
-            inc = cursor.fetchone()[0] or 0
-            cursor.execute("SELECT SUM(amount) FROM ledger WHERE type = 'EXPENSE'")
-            exp = cursor.fetchone()[0] or 0
-            retained_earnings = inc - exp
-
-            return {
-                "assets": {"items": assets, "total": total_assets},
-                "liabilities": {"items": liabilities, "total": total_liab},
-                "equity": {
-                    "retained_earnings": retained_earnings,
-                    "total": total_assets - total_liab
-                }
-            }
-        finally:
-            conn.close()
 
     @staticmethod
     def get_inventory_health():
@@ -1514,7 +1211,7 @@ class WorkspaceEngine:
                         elif days_diff <= 3: score += 10
                     except: pass
                     
-                    ledger_desc = (ledger_tx['description'] or '').lower()
+                    ledger_desc = str(ledger_tx.get('description') or '').lower()
                     if any(word in ledger_desc for word in bank_desc.split() if len(word) > 3): score += 20
                     
                     if score > best_score:
@@ -1612,25 +1309,6 @@ class WorkspaceEngine:
 
         return report_io.getvalue()
 
-    @staticmethod
-    def get_cfo_health_report():
-        conn = sqlite3.connect(DB_PATH)
-        try:
-            pl = WorkspaceEngine.get_pl_statement()
-            bs = WorkspaceEngine.get_balance_sheet()
-            ebitda = pl.get('net_profit', 0)
-            total_assets = bs.get('assets', {}).get('total', 0)
-            total_liab = bs.get('liabilities', {}).get('total', 0)
-            current_ratio = total_assets / (total_liab + 0.1)
-            
-            return {
-                "ebitda": ebitda,
-                "current_ratio": round(float(current_ratio), 2),
-                "business_health": "PRIME" if current_ratio > 1.5 else "STABLE" if current_ratio > 1.0 else "AT_RISK",
-                "revenue": pl.get('revenue', {}).get('total', 0)
-            }
-        finally:
-            conn.close()
 
     @staticmethod
     def export_to_csv(table_name: str):
@@ -1709,7 +1387,7 @@ class WorkspaceEngine:
         return output.getvalue()
 
     @staticmethod
-    def get_gst_reports():
+    def get_gst_reports(company_id: str = None):
         conn = None
         try:
             conn = sqlite3.connect(DB_PATH)
@@ -1726,19 +1404,24 @@ class WorkspaceEngine:
                     SUM(COALESCE(total_tax, 0)) as total_tax,
                     COUNT(*) as invoice_count
                 FROM invoices
-            """)
+                WHERE (? IS NULL OR company_id = ?)
+            """, (company_id, company_id) if company_id else ())
             row = cursor.fetchone()
             gstr1_summary = dict(row) if row else {}
             
             # GSTR-3B: ITC and Output summary
-            cursor.execute("SELECT SUM(COALESCE(amount, 0)) FROM ledger WHERE account_name LIKE 'GST Input%'")
+            itc_query = "SELECT SUM(COALESCE(amount, 0)) FROM ledger WHERE account_name LIKE 'GST Input%'"
+            if company_id:
+                itc_query += f" AND company_id = '{company_id}'"
+            cursor.execute(itc_query)
             itc_total_row = cursor.fetchone()
             itc_total = float(itc_total_row[0] or 0) if itc_total_row else 0.0
             
             # Extra safety: ensure all gstr1_summary values are serialized correctly
-            for k in gstr1_summary:
-                if gstr1_summary[k] is None:
-                    gstr1_summary[k] = 0
+            if isinstance(gstr1_summary, dict):
+                for k in list(gstr1_summary.keys()):
+                    if gstr1_summary[k] is None:
+                        gstr1_summary[k] = 0
             
             tax_total = float(gstr1_summary.get('total_tax') or 0)
             
@@ -1976,8 +1659,8 @@ class WorkspaceEngine:
                 # AI Deal Coaching Logic
                 for d in deals:
                     d_id = d['id']
-                    prob = d['probability']
-                    stage = d['stage']
+                    prob = float(d.get('probability') or 0.0)
+                    stage = str(d.get('stage') or '')
                     
                     # Compute deal age (mocked from record)
                     coaching = "Keep pushing for closure."
@@ -2220,6 +1903,25 @@ class WorkspaceEngine:
         return sanitized
 
     @staticmethod
+    def get_workspace_integrity(company_id: str):
+        """
+        Enterprise Health Monitor: Audits count across all core operation silos.
+        """
+        conn = sqlite3.connect(DB_PATH)
+        try:
+            counts = {}
+            tables = ["invoices", "customers", "inventory", "personnel", "ledger"]
+            for table in tables:
+                try:
+                    res = conn.execute(f"SELECT COUNT(*) FROM {table} WHERE company_id = ?", (company_id,)).fetchone()
+                    counts[table] = res[0] if res else 0
+                except:
+                    counts[table] = 0
+            return counts
+        finally:
+            conn.close()
+
+    @staticmethod
     def check_session_validity(last_active_str: str, ip: str, allowed_ips: list = None):
         """Security Core: Session timeout and IP whitelisting."""
         if allowed_ips and ip not in allowed_ips:
@@ -2230,6 +1932,23 @@ class WorkspaceEngine:
              return False, "SESSION_TIMED_OUT"
              
         return True, "VALID"
+
+    @staticmethod
+    def manage_user_state(user_id: int, action: str, state: dict | None = None):
+        """
+        Persistence Layer: Manages user's operational state (active section, filters, etc).
+        """
+        conn = sqlite3.connect(DB_PATH)
+        try:
+            if action == "SAVE" and state is not None:
+                conn.execute("UPDATE users SET workspace_state = ? WHERE id = ?", (json.dumps(state), user_id))
+                conn.commit()
+                return {"status": "SAVED"}
+            else:
+                res = conn.execute("SELECT workspace_state FROM users WHERE id = ?", (user_id,)).fetchone()
+                return json.loads(res[0]) if res and res[0] else {}
+        finally:
+            conn.close()
 
     @staticmethod
     def identify_and_segregate_data(df: pd.DataFrame) -> str:
@@ -2246,15 +1965,25 @@ class WorkspaceEngine:
             
         # 2. CUSTOMER / CRM Pattern
         customer_signatures = {'customername', 'partyname', 'client', 'email', 'phone', 'contact', 'gstin', 'pan', 'address'}
-        if len(set(cols).intersection(customer_signatures)) >= 3:
+        if len(set(cols).intersection(customer_signatures)) >= 2:
             return 'CUSTOMER'
             
         # 3. INVENTORY / STOCK Pattern
         inventory_signatures = {'sku', 'partno', 'itemcode', 'stock', 'onhand', 'costprice', 'saleprice', 'hsn', 'category'}
         if len(set(cols).intersection(inventory_signatures)) >= 2:
             return 'INVENTORY'
+
+        # 4. STAFF / PERSONNEL Pattern
+        staff_signatures = {'employee', 'staff', 'salary', 'designation', 'role', 'efficiency', 'empname', 'joineddate'}
+        if len(set(cols).intersection(staff_signatures)) >= 2:
+            return 'STAFF'
+
+        # 5. LEDGER / FINANCE Pattern
+        ledger_signatures = {'ledger', 'accountname', 'account', 'voucher', 'vouchertype', 'debit', 'credit', 'balance', 'txn'}
+        if len(set(cols).intersection(ledger_signatures)) >= 2:
+            return 'LEDGER'
             
-        # 4. Fallback: Check sample data if headers are vague
+        # 6. Fallback: Check sample data if headers are vague
         if 'amount' in cols or 'total' in cols: return 'INVOICE'
         if 'name' in cols and ('email' in cols or 'phone' in cols): return 'CUSTOMER'
             
@@ -2262,7 +1991,7 @@ class WorkspaceEngine:
 
 
     @staticmethod
-    def process_universal_upload(user_id: int, files_metadata: list):
+    def process_universal_upload(user_id: int, company_id: str, files_metadata: list):
         """
         Enterprise Data Ingestion: Processes multi-file streams, segregates based on neural signatures,
         and populates the Global Workspace Ledger.
@@ -2285,9 +2014,9 @@ class WorkspaceEngine:
                     
                     # Log in catalog
                     conn.execute("""
-                        INSERT INTO files_catalog (user_id, filename, file_type, status, record_count)
-                        VALUES (?, ?, ?, ?, ?)
-                    """, (user_id, fname, category, 'PROCESSED' if category != 'UNSUPPORTED' else 'IGNORED', len(df)))
+                        INSERT INTO files_catalog (user_id, company_id, filename, file_type, status, record_count)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                    """, (user_id, company_id, fname, category, 'PROCESSED' if category != 'UNSUPPORTED' else 'IGNORED', len(df)))
                     
                     if category == 'INVOICE':
                         # Advanced mapping for various ERP exports (Tally/Zoho/Generic)
@@ -2330,9 +2059,9 @@ class WorkspaceEngine:
                                 dt = datetime.now().strftime("%Y-%m-%d")
                             
                             conn.execute("""
-                                INSERT OR REPLACE INTO invoices (id, invoice_number, customer_id, date, grand_total, status)
-                                VALUES (?, ?, ?, ?, ?, ?)
-                            """, (f"UP-{inv_no}", inv_no, party, dt, amount, 'PAID'))
+                                INSERT OR REPLACE INTO invoices (id, company_id, invoice_number, customer_id, date, grand_total, status)
+                                VALUES (?, ?, ?, ?, ?, ?, ?)
+                            """, (f"UP-{inv_no}", company_id, inv_no, party, dt, amount, 'PAID'))
                             record_count += 1
                         
                     elif category == 'CUSTOMER':
@@ -2345,7 +2074,7 @@ class WorkspaceEngine:
                             if not name or name == 'nan': continue
                             email = str(row.get(email_col, ''))
                             gst = str(row.get(gst_col, ''))
-                            conn.execute("INSERT OR IGNORE INTO customers (name, email, gstin) VALUES (?, ?, ?)", (name, email, gst))
+                            conn.execute("INSERT OR IGNORE INTO customers (company_id, name, email, gstin) VALUES (?, ?, ?, ?)", (company_id, name, email, gst))
                             record_count += 1
                             
                     elif category == 'INVENTORY':
@@ -2357,14 +2086,42 @@ class WorkspaceEngine:
                             sku = str(row.get(sku_col or 'SKU', uuid.uuid4().hex[:6].upper()))
                             name = str(row.get(name_col or 'Item', sku))
                             qty = WorkspaceEngine._safe_number(row.get(qty_col or 'Quantity', 0))
-                            conn.execute("INSERT OR REPLACE INTO inventory (sku, name, quantity) VALUES (?, ?, ?)", (sku, name, qty))
+                            conn.execute("INSERT OR REPLACE INTO inventory (company_id, sku, name, quantity) VALUES (?, ?, ?, ?)", (company_id, sku, name, qty))
+                            record_count += 1
+
+                    elif category == 'STAFF':
+                        name_col = next((c for c in df.columns if 'name' in c.lower() or 'staff' in c.lower() or 'emp' in c.lower()), None)
+                        role_col = next((c for c in df.columns if 'role' in c.lower() or 'desig' in c.lower()), None)
+                        email_col = next((c for c in df.columns if 'email' in c.lower()), None)
+                        
+                        for _, row in df.iterrows():
+                            name = str(row.get(name_col))
+                            if not name or name == 'nan': continue
+                            role = str(row.get(role_col, 'Executive'))
+                            email = str(row.get(email_col, ''))
+                            staff_id = f"STAFF-{uuid.uuid4().hex[:4].upper()}"
+                            conn.execute("INSERT OR REPLACE INTO personnel (id, company_id, name, role, email) VALUES (?, ?, ?, ?, ?)", (staff_id, company_id, name, role, email))
+                            record_count += 1
+
+                    elif category == 'LEDGER':
+                        acc_col = next((c for c in df.columns if 'account' in c.lower() or 'ledger' in c.lower() or 'head' in c.lower()), None)
+                        amt_col = next((c for c in df.columns if 'amount' in c.lower() or 'balance' in c.lower() or 'debit' in c.lower() or 'credit' in c.lower()), None)
+                        type_col = next((c for c in df.columns if 'type' in c.lower() or 'group' in c.lower()), None)
+                        
+                        for _, row in df.iterrows():
+                            acc = str(row.get(acc_col))
+                            if not acc or acc == 'nan': continue
+                            amt = WorkspaceEngine._safe_number(row.get(amt_col, 0))
+                            atype = str(row.get(type_col, 'EXPENSE'))
+                            vch_id = f"BULK-{uuid.uuid4().hex[:4].upper()}"
+                            conn.execute("INSERT INTO ledger (company_id, account_name, amount, type, voucher_id, voucher_type) VALUES (?, ?, ?, ?, ?, ?)", (company_id, acc, amt, atype, vch_id, 'OPENING'))
                             record_count += 1
 
                     results.append({"name": fname, "category": category, "records": record_count, "status": "SUCCESS"})
                     
                     # Audit Catalog
-                    conn.execute("INSERT INTO files_catalog (user_id, filename, file_type, record_count) VALUES (?, ?, ?, ?)", 
-                                (user_id, fname, category, record_count))
+                    conn.execute("INSERT INTO files_catalog (user_id, company_id, filename, file_type, record_count) VALUES (?, ?, ?, ?, ?)", 
+                                (user_id, company_id, fname, category, record_count))
                                 
                 except Exception as e:
                     traceback.print_exc()
@@ -2474,5 +2231,110 @@ class WorkspaceEngine:
                 "complete": bool(status['onboarding_complete']),
                 "profile": status.get('profile')
             }
+        finally:
+            conn.close()
+
+    @staticmethod
+    def get_daybook(company_id: str):
+        """Daybook: All transactions in chronological order."""
+        conn = sqlite3.connect(DB_PATH); conn.row_factory = sqlite3.Row
+        try:
+            res = conn.execute("""
+                SELECT 'INVOICE' as category, invoice_number as doc_id, date, customer_id as party, grand_total as amount, status
+                FROM invoices WHERE company_id = ?
+                UNION ALL
+                SELECT type as category, COALESCE(voucher_no, voucher_id) as doc_id, date, account_name as party, amount, 'PAID' as status
+                FROM ledger WHERE company_id = ? AND voucher_type != 'INVOICE'
+                ORDER BY date DESC
+            """, (company_id, company_id)).fetchall()
+            return [dict(r) for r in res]
+        finally:
+            conn.close()
+
+    @staticmethod
+    def get_trial_balance(company_id: str = None):
+        """Trial Balance: Summary of all ledger account balances."""
+        conn = sqlite3.connect(DB_PATH); conn.row_factory = sqlite3.Row
+        try:
+            res = conn.execute("""
+                SELECT account_name, SUM(CASE WHEN type = 'ASSET' OR type = 'EXPENSE' THEN amount ELSE -amount END) as balance
+                FROM ledger WHERE company_id = ?
+                GROUP BY account_name
+            """, (company_id,)).fetchall()
+            return [dict(r) for r in res]
+        finally:
+            conn.close()
+
+    @staticmethod
+    def get_pl_statement(company_id: str = None):
+        """P&L: Revenue vs Expenses summary."""
+        conn = sqlite3.connect(DB_PATH); conn.row_factory = sqlite3.Row
+        try:
+            where_clause = "WHERE company_id = ?" if company_id else "WHERE 1=1"
+            params = (company_id,) if company_id else ()
+            
+            revenue = conn.execute(f"SELECT SUM(amount) FROM ledger {where_clause} AND account_name = 'Sales Revenue'", params).fetchone()[0] or 0
+            cogs = conn.execute(f"SELECT SUM(amount) FROM ledger {where_clause} AND account_name = 'Cost of Goods Sold'", params).fetchone()[0] or 0
+            expenses = conn.execute(f"SELECT SUM(amount) FROM ledger {where_clause} AND type = 'EXPENSE' AND account_name != 'Cost of Goods Sold'", params).fetchone()[0] or 0
+            
+            return {
+                "revenue": {"total": revenue},
+                "cogs": {"total": cogs},
+                "gross_profit": revenue - cogs,
+                "operating_expenses": expenses,
+                "net_profit": revenue - cogs - expenses,
+                "period": "Current Fiscal Year"
+            }
+        finally:
+            conn.close()
+
+    @staticmethod
+    def get_balance_sheet(company_id: str = None):
+        """Balance Sheet: Assets = Liabilities + Equity."""
+        conn = sqlite3.connect(DB_PATH); conn.row_factory = sqlite3.Row
+        try:
+            where_clause = "WHERE company_id = ?" if company_id else "WHERE 1=1"
+            params = (company_id,) if company_id else ()
+            
+            assets_rows = conn.execute(f"SELECT account_name, amount FROM ledger {where_clause} AND type = 'ASSET'", params).fetchall()
+            liabilities_rows = conn.execute(f"SELECT account_name, amount FROM ledger {where_clause} AND type = 'LIABILITY'", params).fetchall()
+            equity_rows = conn.execute(f"SELECT account_name, amount FROM ledger {where_clause} AND type = 'EQUITY'", params).fetchall()
+            
+            assets = [dict(a) for a in assets_rows]
+            liabilities = [dict(l) for l in liabilities_rows]
+            equity = [dict(e) for e in equity_rows]
+            
+            total_assets = sum(a['amount'] for a in assets)
+            total_liabilities = sum(l['amount'] for l in liabilities)
+            total_equity = sum(e['amount'] for e in equity)
+            
+            return {
+                "assets": {"items": assets, "total": total_assets},
+                "liabilities": {"items": liabilities, "total": total_liabilities},
+                "equity": {"items": equity, "total": total_equity},
+                "total_assets": total_assets,
+                "total_liabilities_equity": total_liabilities + total_equity
+            }
+        finally:
+            conn.close()
+    @staticmethod
+    def manage_sales_targets(action: str, data: dict, user_id: int = 1):
+        conn = sqlite3.connect(DB_PATH)
+        try:
+            if action == "SET":
+                conn.execute("""
+                    INSERT INTO sales_targets (rep_id, month_year, target_revenue, current_attainment)
+                    VALUES (?, ?, ?, ?)
+                """, (data.get('rep_id'), data.get('month'), data.get('target'), 0.0))
+                conn.commit()
+                return {"status": "success"}
+            elif action == "GET_ATTAINMENT":
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+                cursor.execute("SELECT * FROM sales_targets WHERE rep_id = ? AND month_year = ?", (data.get('rep_id'), data.get('month')))
+                row = cursor.fetchone()
+                if not row:
+                    return {"rep_id": data.get('rep_id'), "attainment": 0.0, "status": "No target set"}
+                return dict(row)
         finally:
             conn.close()

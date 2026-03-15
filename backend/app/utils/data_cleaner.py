@@ -67,7 +67,18 @@ def clean_data(df, detected_columns):
             
         if is_standard or is_likely_numeric:
             try:
-                df[col_name] = df[col_name].apply(clean_numeric_string)
+                # Vectorized cleaning for speed
+                # Convert to string, remove non-numeric chars, and convert to numeric
+                s_col = df[col_name].astype(str).str.strip()
+                
+                # Handle comma/space separators by taking the first part
+                s_col = s_col.str.split(',').str[0].str.split(' ').str[0]
+                
+                # Fast regex replacement for non-numeric characters
+                s_col = s_col.str.replace(r'[^\d.-]', '', regex=True)
+                
+                # Convert to numeric, errors='coerce' turns bad strings to NaN
+                df[col_name] = pd.to_numeric(s_col, errors='coerce').fillna(0)
             except Exception:
                 pass
 

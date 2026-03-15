@@ -26,12 +26,18 @@
     --radius-xl: var(--radius-xl);
 
     --transition-bounce: var(--transition-bounce);
+    --transition-smooth: var(--transition-smooth);
 }
 
 :root {
     /* --- CORE PALETTE (Professional Midnight) --- */
     --background: #020617;
     --foreground: #f8fafc;
+
+    /* Mesh Gradients */
+    --mesh-1: #6366f1;
+    --mesh-2: #8b5cf6;
+    --mesh-3: #0ea5e9;
 
     /* Surfaces */
     --surface-0: #020617;
@@ -47,6 +53,8 @@
     --accent-emerald: #10b981;
     --accent-violet: #8b5cf6;
     --accent-rose: #f43f5e;
+    --accent-cyan: #22d3ee;
+    --accent-amber: #f59e0b;
 
     /* Text */
     --text-primary: #f8fafc;
@@ -60,18 +68,12 @@
     --border-strong: rgba(255, 255, 255, 0.12);
     --border-accent: rgba(99, 102, 241, 0.3);
 
-    /* Shadows & Effects */
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.1);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
-    --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
-    --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.15);
-
     /* Radius */
-    --radius-xs: 6px;
-    --radius-sm: 10px;
-    --radius-md: 14px;
-    --radius-lg: 20px;
-    --radius-xl: 32px;
+    --radius-xs: 8px;
+    --radius-sm: 12px;
+    --radius-md: 18px;
+    --radius-lg: 24px;
+    --radius-xl: 40px;
 
     /* Spacing System */
     --space-1: 0.25rem;
@@ -83,10 +85,8 @@
     --space-12: 3rem;
 
     /* Transitions */
-    --transition-fast: 150ms cubic-bezier(0.2, 0, 0, 1);
-    --transition-base: 300ms cubic-bezier(0.2, 0, 0, 1);
-    --transition-slow: 500ms cubic-bezier(0.2, 0, 0, 1);
-    --transition-bounce: 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    --transition-bounce: 600ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    --transition-smooth: 400ms cubic-bezier(0.4, 0, 0.2, 1);
 
     /* Typography Clamp System */
     --text-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.8125rem);
@@ -139,24 +139,32 @@ pre,
 
 /* ===== Professional Glass Utilities ===== */
 .glass-pro {
-    background: rgba(2, 6, 23, 0.7);
-    backdrop-filter: blur(12px) saturate(180%);
-    -webkit-backdrop-filter: blur(12px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
-    transition: all var(--transition-base);
+    background: rgba(255, 255, 255, 0.02);
+    backdrop-filter: blur(24px) saturate(200%);
+    -webkit-backdrop-filter: blur(24px) saturate(200%);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 12px 64px -12px rgba(0, 0, 0, 0.6);
+    transition: all var(--transition-smooth);
 }
 
 .glass-pro:hover {
     border-color: var(--primary);
-    background: rgba(2, 6, 23, 0.85);
+    background: rgba(255, 255, 255, 0.04);
+    transform: translateY(-2px);
 }
 
-.glass-pro-thick {
-    background: rgba(15, 23, 42, 0.85);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid var(--border-strong);
+.glass-card {
+    background: rgba(15, 23, 42, 0.3);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    border-radius: var(--radius-lg);
+    transition: all var(--transition-smooth);
+}
+
+.glass-card:hover {
+    border-color: var(--primary);
+    background: rgba(15, 23, 42, 0.5);
+    box-shadow: 0 0 40px rgba(99, 102, 241, 0.15);
 }
 
 .chart-card {
@@ -217,17 +225,18 @@ pre,
 .bento-card {
     position: relative;
     overflow: hidden;
-    background: var(--surface-1);
-    border: 1px solid var(--border-default);
+    background: rgba(255, 255, 255, 0.01);
+    border: 1px solid rgba(255, 255, 255, 0.03);
     border-radius: var(--radius-lg);
-    padding: var(--space-6);
+    padding: 2rem;
     transition: all var(--transition-bounce);
 }
 
 .bento-card:hover {
-    transform: translateY(-4px) scale(1.01);
-    border-color: var(--border-accent);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), var(--shadow-glow);
+    transform: translateY(-6px) scale(1.01);
+    border-color: var(--primary);
+    background: rgba(255, 255, 255, 0.03);
+    box-shadow: 0 32px 64px -16px rgba(0, 0, 0, 0.8), 0 0 40px rgba(99, 102, 241, 0.2);
 }
 
 /* ===== Text Gradient Effects ===== */
@@ -1042,5 +1051,15 @@ pre,
         font-size: 0.7rem;
         padding: 0.4rem 0.75rem;
         white-space: nowrap;
+    }
+}
+
+/* ===== Shimmer Animation for Skeletons ===== */
+@keyframes shimmer {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
     }
 }

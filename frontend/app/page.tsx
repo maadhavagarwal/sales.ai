@@ -125,9 +125,11 @@ export default function LandingPage() {
                    Launch Platform
                 </Button>
               </Link>
-              <Button variant="outline" size="xl" className="w-full sm:w-auto px-12 py-6 text-lg font-bold bg-white/5 border-white/10 hover:bg-white/10 text-white">
-                Book a Demo
-              </Button>
+              <Link href="/demo" className="w-full sm:w-auto">
+                <Button variant="outline" size="xl" className="w-full sm:w-auto px-12 py-6 text-lg font-bold bg-white/5 border-white/10 hover:bg-white/10 text-white">
+                  Book a Demo
+                </Button>
+              </Link>
             </motion.div>
           </div>
 
