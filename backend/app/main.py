@@ -65,6 +65,15 @@ app = FastAPI(title="NeuralBI Enterprise API", version="3.7.0")
 if Instrumentator:
     Instrumentator().instrument(app).expose(app, endpoint="/metrics")
 
+@app.get("/")
+async def root():
+    return {
+        "message": "Welcome to NeuralBI Enterprise AI API",
+        "version": "3.7.0",
+        "docs": "/docs",
+        "health": "/health"
+    }
+
 # --- LIVE DATA SIMULATOR (WEBSOCKETS) ---
 import asyncio
 
@@ -420,8 +429,19 @@ NeuralBI Team
 
 @app.get("/api/live-kpis")
 async def get_live_kpis():
-    """Fallback HTTP endpoint for live KPIs."""
+    """Returns simulated live KPI data that updates frequently."""
     return _live_data_state
+
+@app.get("/api/modules-status")
+async def get_modules_status():
+    """Returns the status and basic metrics of all system modules."""
+    return [
+        {"id": "analytics", "status": "active", "label": "Analytics Hub"},
+        {"id": "crm", "status": "active", "label": "CRM Terminal"},
+        {"id": "workspace", "status": "active", "label": "Workspace Core"},
+        {"id": "ai_pipeline", "status": "active", "label": "AI Engine"},
+        {"id": "operations", "status": "active", "label": "Ops Nexus"}
+    ]
 
 @app.websocket("/api/ws/live-kpis")
 async def websocket_live_kpis(websocket: WebSocket):
@@ -445,17 +465,6 @@ async def get_user_state(current_user: dict = Depends(get_current_user)):
 @app.post("/api/user/state")
 async def save_user_state(state: dict = Body(...), current_user: dict = Depends(get_current_user)):
     return WorkspaceEngine.manage_user_state(current_user['id'], "SAVE", state)
-
-@app.get("/health")
-async def health_check():
-    return {
-        "status": "online",
-        "engines": {
-            "workspace": "active",
-            "financial": "active",
-            "ai_pipeline": "active"
-        }
-    }
 
 # --- AUTH ENDPOINTS ---
 @app.post("/register")
@@ -831,14 +840,6 @@ async def get_email_history(current_user: dict = Depends(get_current_user)):
     except Exception as e:
         return {"error": str(e)}
 
-@app.get("/api/live-kpis")
-async def get_live_kpis():
-    """Returns simulated live KPI data that updates every 30 seconds."""
-    return {
-        "kpis": _live_data_state["kpis"],
-        "last_updated": _live_data_state["last_updated"],
-        "update_interval_seconds": 30
-    }
 
 # --- SYNC: Tally / External ERP Integration ---
 

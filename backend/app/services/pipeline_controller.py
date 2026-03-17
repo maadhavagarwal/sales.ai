@@ -45,7 +45,7 @@ def run_pipeline(df):
     import traceback
 
     def run_ai_tasks():
-        nonlocal anomalies_data, clusters_data, ml_results, simulation_results, insights
+        nonlocal anomalies_data, clusters_data, ml_results, simulation_results
         with ThreadPoolExecutor(max_workers=6) as executor:
             # 1. Standard AI Tasks
             from app.models.advanced_ai_models import detect_anomalies, run_clustering

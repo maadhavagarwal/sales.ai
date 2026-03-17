@@ -381,7 +381,7 @@ export default function OverviewDashboard() {
                         <div className="text-[10px] text-red-300">{risk.alert}</div>
                       </div>
                     </div>
-                    <Badge variant="error" className="text-[10px]">{Math.round(risk.probability * 100)}% Risk</Badge>
+                    <Badge variant="danger" className="text-[10px]">{Math.round(risk.probability * 100)}% Risk</Badge>
                   </div>
                 ))}
               </div>
@@ -401,7 +401,7 @@ export default function OverviewDashboard() {
                     <div key={i} className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-xl">
                       <div className="flex justify-between items-start mb-2">
                         <span className="text-xs font-bold text-white tracking-wide">{alert.reason}</span>
-                        <Badge variant="error" className="text-[9px]">CRITICAL</Badge>
+                        <Badge variant="danger" className="text-[9px]">CRITICAL</Badge>
                       </div>
                       <div className="text-[10px] text-orange-200/70 mb-3">Anomaly detected in transaction flow involving Mumbai cluster. Amount spike exceeds 99th percentile.</div>
                       <div className="flex space-x-2">

@@ -76,16 +76,48 @@ export const deleteCustomer = async (customerId: number) => {
   return res.data
 }
 
-export const getInvoices = async () => {
+export const getInvoices = async (datasetId?: string) => {
     if (isDemoMode()) return getDemoInvoices()
-  const res = await api.get('/workspace/invoices')
+  const res = await api.get('/workspace/invoices', { params: { dataset_id: datasetId } })
   return res.data
 }
+
+export const createInvoice = async (data: any) => {
+    const res = await api.post('/workspace/invoices', data)
+    return res.data
+}
+
+export const updateInvoice = async (invoiceId: string, data: any) => {
+    const res = await api.put(`/workspace/invoices/${invoiceId}`, data)
+    return res.data
+}
+
+export const deleteInvoice = async (invoiceId: string) => {
+    const res = await api.delete(`/workspace/invoices/${invoiceId}`)
+    return res.data
+}
+
+
 
 export const getInventory = async () => {
     if (isDemoMode()) return getDemoInventory()
   const res = await api.get('/workspace/inventory')
   return res.data
+}
+
+export const getInventoryHealth = async () => {
+    const res = await api.get('/workspace/inventory/health')
+    return res.data
+}
+
+export const addInventoryItem = async (data: any) => {
+    const res = await api.post('/workspace/inventory', data)
+    return res.data
+}
+
+export const deleteInventoryItem = async (itemId: string | number) => {
+    const res = await api.delete(`/workspace/inventory/${itemId}`)
+    return res.data
 }
 
 export const getLedger = async () => {
@@ -234,7 +266,7 @@ export const getInventoryItem = async (itemId: string) => {
   return res.data
 }
 
-export const updateInventoryItem = async (itemId: string, data: any) => {
+export const updateInventoryItem = async (itemId: string | number, data: any) => {
   const res = await api.put(`/workspace/inventory/${itemId}`, data)
   return res.data
 }
@@ -274,12 +306,12 @@ export const addLedgerEntry = async (data: any) => {
   return res.data
 }
 
-export const updateLedgerEntry = async (entryId: string, data: any) => {
+export const updateLedgerEntry = async (entryId: string | number, data: any) => {
   const res = await api.put(`/workspace/ledger/entries/${entryId}`, data)
   return res.data
 }
 
-export const deleteLedgerEntry = async (entryId: string) => {
+export const deleteLedgerEntry = async (entryId: string | number) => {
   const res = await api.delete(`/workspace/ledger/entries/${entryId}`)
   return res.data
 }
@@ -336,9 +368,10 @@ export const getCustomerLedger = async (customerId: string) => {
 }
 
 export const sendPaymentReminder = async (invoiceId: string) => {
-  const res = await api.post(`/workspace/accounting/reminders/send/${invoiceId}`)
+  const res = await api.post(`/workspace/accounting/reminders/${invoiceId}`)
   return res.data
 }
+export const sendInvoiceReminder = sendPaymentReminder
 
 export const getCFOHealthReport = async () => {
   const res = await api.get('/workspace/accounting/cfo-report')
@@ -426,6 +459,10 @@ export const getHealthScores = async () => {
 export const getPredictiveCRMInsights = async () => {
     const res = await api.get("/crm/predictive-insights")
     return res.data.insights || []
+}
+
+export const downloadBusinessReport = () => {
+  window.open(buildApiUrl(`/workspace/business-report/download`), "_blank")
 }
 
 export const getDeals = async () => {
@@ -577,6 +614,11 @@ export const getDynamicPrice = async (sku: string) => {
   return res.data
 }
 
+export const getDerivativesSnapshot = async (data: any = {}) => {
+    const res = await api.post("/workspace/accounting/derivatives", data)
+    return res.data
+}
+
 export const redactPII = async (text: string) => {
   const res = await api.post('/workspace/comm/security/redact', { text })
   return res.data
@@ -585,4 +627,14 @@ export const redactPII = async (text: string) => {
 export const getTeamSentiment = async () => {
   const res = await api.get('/workspace/comm/sentiment')
   return res.data
+}
+
+export const getTallySyncStatus = async () => {
+    const res = await api.get("/workspace/sync")
+    return res.data
+}
+
+export const triggerTallySync = async () => {
+    const res = await api.post("/workspace/sync")
+    return res.data
 }

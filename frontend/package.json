@@ -33,6 +33,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "type-check": "tsc --noEmit",
     "clean": "rimraf .next",
     "clean:dev": "rimraf .next && next dev"
   }
