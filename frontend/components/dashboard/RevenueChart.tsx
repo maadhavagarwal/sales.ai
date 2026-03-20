@@ -7,11 +7,8 @@ import { useStore } from "@/store/useStore"
 
 export default function RevenueChart({ data }: { data: Record<string, number> }) {
     const { currencySymbol } = useStore()
-    if (!data) return null
-
-    const entries = Object.entries(data).sort((a, b) => b[1] - a[1])
-
-    const option = React.useMemo(() => ({
+    const entries = useMemo(() => data ? Object.entries(data).sort((a, b) => b[1] - a[1]) : [], [data])
+    const option = useMemo(() => ({
         backgroundColor: "transparent",
         tooltip: {
             trigger: "axis",
@@ -80,6 +77,8 @@ export default function RevenueChart({ data }: { data: Record<string, number> })
         animationEasing: "elasticOut",
         animationDuration: 1200,
     }), [entries, currencySymbol])
+
+    if (!data || entries.length === 0) return null
 
     return (
         <motion.div

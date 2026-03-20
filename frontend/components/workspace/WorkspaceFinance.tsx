@@ -6,13 +6,14 @@ import { motion } from "framer-motion"
 import { Card, Button, Badge } from "@/components/ui"
 import { getFinanceSummary, getBudgets } from "@/services/api"
 import { useStore } from "@/store/useStore"
-import { Wallet, PieChart, TrendingUp, ShieldAlert, CreditCard, Banknote } from "lucide-react"
+import { Wallet, PieChart, ShieldAlert, CreditCard, Banknote } from "lucide-react"
 
 export default function WorkspaceFinance() {
     const { datasetId, currencySymbol } = useStore()
     const [summary, setSummary] = useState<any>(null)
     const [budgets, setBudgets] = useState<any>(null)
     const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
 
     useEffect(() => {
         fetchFinanceData()
@@ -20,49 +21,50 @@ export default function WorkspaceFinance() {
 
     const fetchFinanceData = async () => {
         setLoading(true)
+        setError(null)
         try {
-            const [sData, bData] = await Promise.all([
-                getFinanceSummary(datasetId || undefined), 
-                getBudgets()
-            ])
+            const sData = await getFinanceSummary(datasetId || undefined).catch(() => null)
+            const bData = await getBudgets().catch(() => null)
             setSummary(sData)
             setBudgets(bData)
         } catch (e) {
             console.error(e)
+            setError("Could not load financial data")
         } finally {
             setLoading(false)
         }
     }
 
-    if (loading) return <div className="p-12 text-center animate-pulse">Loading Financial Intelligence...</div>
+    if (loading) return <div className="p-12 text-center animate-pulse text-white/50">Loading Financial Intelligence...</div>
+    if (error) return <div className="p-12 text-center text-red-400">{error}</div>
 
     return (
         <div className="space-y-12 animate-fade-in">
             {/* Top Row: Financial Pulse */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FinanceMetric 
-                        label="EBITDA" 
-                        value={`${currencySymbol}${summary?.ebitda?.toLocaleString()}`} 
-                        trend="+12.4% vs prev sync" 
+                    <FinanceMetric
+                        label="EBITDA"
+                        value={fmt(currencySymbol, summary?.ebitda)}
+                        trend="+12.4% vs prev sync"
                         icon={<Wallet className="w-5 h-5 text-emerald-400" />}
                     />
-                    <FinanceMetric 
-                        label="Net Profit (Est)" 
-                        value={`${currencySymbol}${summary?.net_profit?.toLocaleString()}`} 
-                        trend="After 25% Prov" 
+                    <FinanceMetric
+                        label="Net Profit (Est)"
+                        value={fmt(currencySymbol, summary?.net_profit)}
+                        trend="After 25% Prov"
                         icon={<Banknote className="w-5 h-5 text-blue-400" />}
                     />
-                    <FinanceMetric 
-                        label="Working Capital" 
-                        value={`${currencySymbol}${summary?.working_capital?.toLocaleString()}`} 
-                        trend={`Ratio: ${summary?.current_ratio?.toFixed(2)}`} 
+                    <FinanceMetric
+                        label="Working Capital"
+                        value={fmt(currencySymbol, summary?.working_capital)}
+                        trend={`Ratio: ${summary?.current_ratio != null ? Number(summary.current_ratio).toFixed(2) : "N/A"}`}
                         icon={<PieChart className="w-5 h-5 text-purple-400" />}
                     />
-                    <FinanceMetric 
-                        label="Receivables (AR)" 
-                        value={`${currencySymbol}${summary?.receivables?.toLocaleString()}`} 
-                        trend="Outstanding Sync" 
+                    <FinanceMetric
+                        label="Receivables (AR)"
+                        value={fmt(currencySymbol, summary?.receivables)}
+                        trend="Outstanding Sync"
                         icon={<ShieldAlert className="w-5 h-5 text-amber-400" />}
                     />
                 </div>
@@ -70,9 +72,10 @@ export default function WorkspaceFinance() {
                 <Card variant="bento" className="p-8 border-[--primary]/20 bg-gradient-to-br from-[--primary]/10 to-transparent relative overflow-hidden h-full flex flex-col justify-between">
                     <div>
                         <h3 className="text-xl font-black text-white mb-2">Treasury Controls</h3>
-                        <p className="text-sm text-white/50 mb-8 leading-relaxed">Centralized liquidity management and credit line oversight for {datasetId || 'Enterprise'}.</p>
+                        <p className="text-sm text-white/50 mb-8 leading-relaxed">
+                            Centralized liquidity management for {datasetId?.slice(0, 12) || "Enterprise"}.
+                        </p>
                     </div>
-                    
                     <div className="space-y-4 relative z-10">
                         <Button className="w-full bg-white text-black hover:bg-white/90 font-black tracking-widest text-[10px] uppercase h-12">
                             Initialize Fund Transfer
@@ -90,10 +93,11 @@ export default function WorkspaceFinance() {
                 <div className="flex justify-between items-end mb-8">
                     <div>
                         <h2 className="text-3xl font-black text-white tracking-tight italic uppercase">Budgetary Authorization Matrix</h2>
-                        <p className="text-[10px] font-black text-[--text-muted] tracking-[0.3em] uppercase mt-2">Departmental Allocation • Real-time Burn Tracking</p>
+                        <p className="text-[10px] font-black text-[--text-muted] tracking-[0.3em] uppercase mt-2">
+                            Departmental Allocation • Real-time Burn Tracking
+                        </p>
                     </div>
                 </div>
-
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     {budgets && Object.entries(budgets).map(([dept, amount]: [any, any]) => (
                         <Card key={dept} variant="glass" className="p-6 border-white/5 hover:border-white/20 transition-all hover:-translate-y-1">
@@ -101,13 +105,9 @@ export default function WorkspaceFinance() {
                                 <span className="text-[10px] font-black uppercase tracking-widest text-white/40">{dept}</span>
                                 <CreditCard className="w-4 h-4 text-white/20" />
                             </div>
-                            <p className="text-2xl font-black text-white tracking-tighter mb-1">{currencySymbol}{amount.toLocaleString()}</p>
+                            <p className="text-2xl font-black text-white tracking-tighter mb-1">{fmt(currencySymbol, amount)}</p>
                             <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden mt-4">
-                                <motion.div 
-                                    initial={{ width: 0 }} 
-                                    animate={{ width: "65%" }} 
-                                    className="h-full bg-[--primary]" 
-                                />
+                                <motion.div initial={{ width: 0 }} animate={{ width: "65%" }} className="h-full bg-[--primary]" />
                             </div>
                             <p className="text-[9px] font-bold text-white/30 mt-2 uppercase tracking-tight">65% Authorized Burn Used</p>
                         </Card>
@@ -118,7 +118,14 @@ export default function WorkspaceFinance() {
     )
 }
 
-function FinanceMetric({ label, value, trend, icon }: { label: string, value: string, trend: string, icon: any }) {
+/** Null-safe currency formatter — never shows ₹undefined or ₹NaN */
+function fmt(symbol: string, value: any): string {
+    const n = Number(value)
+    if (value == null || isNaN(n)) return `${symbol}0`
+    return `${symbol}${n.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`
+}
+
+function FinanceMetric({ label, value, trend, icon }: { label: string; value: string; trend: string; icon: any }) {
     return (
         <Card variant="glass" className="p-6 border-white/5 flex flex-col justify-between">
             <div className="flex justify-between items-start mb-4">

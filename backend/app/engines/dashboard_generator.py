@@ -1,6 +1,3 @@
-import pandas as pd
-
-
 def detect_columns(df):
 
     numeric_cols = df.select_dtypes(include=["int64", "float64"]).columns.tolist()
@@ -18,10 +15,7 @@ def generate_kpis(df):
 
     for col in numeric_cols[:4]:
 
-        kpis.append({
-            "title": f"Total {col}",
-            "value": float(df[col].sum())
-        })
+        kpis.append({"title": f"Total {col}", "value": float(df[col].sum())})
 
     return kpis
 
@@ -35,53 +29,56 @@ def generate_dashboard_charts(df):
     # BAR chart
     if numeric_cols and categorical_cols:
 
-        charts.append({
-            "chart_type": "bar",
-            "x": categorical_cols[0],
-            "y": numeric_cols[0],
-            "title": f"{numeric_cols[0]} by {categorical_cols[0]}"
-        })
+        charts.append(
+            {
+                "chart_type": "bar",
+                "x": categorical_cols[0],
+                "y": numeric_cols[0],
+                "title": f"{numeric_cols[0]} by {categorical_cols[0]}",
+            }
+        )
 
     # PIE chart
     if categorical_cols and numeric_cols:
 
-        charts.append({
-            "chart_type": "pie",
-            "category": categorical_cols[0],
-            "value": numeric_cols[0],
-            "title": f"{numeric_cols[0]} distribution by {categorical_cols[0]}"
-        })
+        charts.append(
+            {
+                "chart_type": "pie",
+                "category": categorical_cols[0],
+                "value": numeric_cols[0],
+                "title": f"{numeric_cols[0]} distribution by {categorical_cols[0]}",
+            }
+        )
 
     # SCATTER chart
     if len(numeric_cols) >= 2:
 
-        charts.append({
-            "chart_type": "scatter",
-            "x": numeric_cols[0],
-            "y": numeric_cols[1],
-            "title": f"{numeric_cols[0]} vs {numeric_cols[1]}"
-        })
+        charts.append(
+            {
+                "chart_type": "scatter",
+                "x": numeric_cols[0],
+                "y": numeric_cols[1],
+                "title": f"{numeric_cols[0]} vs {numeric_cols[1]}",
+            }
+        )
 
     # HISTOGRAM
     if numeric_cols:
 
-        charts.append({
-            "chart_type": "histogram",
-            "column": numeric_cols[0],
-            "title": f"{numeric_cols[0]} distribution"
-        })
+        charts.append(
+            {
+                "chart_type": "histogram",
+                "column": numeric_cols[0],
+                "title": f"{numeric_cols[0]} distribution",
+            }
+        )
 
     return charts
 
 
 def generate_dashboard_layout(kpis, charts):
 
-    layout = {
-
-        "kpi_section": kpis,
-
-        "charts": charts
-    }
+    layout = {"kpi_section": kpis, "charts": charts}
 
     return layout
 

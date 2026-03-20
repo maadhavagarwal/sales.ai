@@ -4,12 +4,13 @@ import json
 import jwt
 import time
 import sys
+import io
 from typing import List, Dict, Any, Union
 
 # Constants for Testing
-SECRET_KEY = "INSECURE_DEV_KEY_CHANGE_IN_PRODUCTION"
+SECRET_KEY = "9f4e2b8a6d1c3f7e5a9b2d4c6e8f0a1b7c9d2e4f6a8b0c3d"
 ALGORITHM = "HS256"
-BASE_URL = "http://127.0.0.1:8000"
+BASE_URL = "http://127.0.0.1:8001"
 
 def generate_test_token() -> str:
     # Using the company ID with stress test data for meaningful results
@@ -87,7 +88,22 @@ def run_feature_audit():
     print("NEURAL BI PLATFORM - COMPREHENSIVE FEATURE AUDIT")
     print("="*60)
     print(f"Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"Target: {BASE_URL}")
+    # Phase 2: Mass Enterprise Data Synchronization
+    print("\nTesting Universal Data Orchestration...")
+    
+    # 1. Stress Test Invoices - Universal Upload (Multipart)
+    csv_content = "Date,Inv No,Party,Grand Total\n15-03-2026,INV-STR-10,ABC Corp,5000000\n15-03-2026,INV-STR-11,XYZ Corp,25000\n15-03-2026,INV-STR-12,PQR Corp,12500\n"
+    files = [
+        ('files', ('invoices.csv', io.BytesIO(csv_content.encode()), 'text/csv'))
+    ]
+    
+    try:
+        r = requests.post(f"{BASE_URL}/workspace/universal-upload", files=files, headers=headers, timeout=30)
+        print(f"Universal Upload: {r.status_code} [OK]")
+    except Exception as e:
+        print(f"Universal Upload: FAILED [X] ({str(e)})")
+
+    print(f"\nTarget: {BASE_URL}")
     print("-"*60)
 
     for ep in test_cases:

@@ -21,17 +21,30 @@ class DerivativesEngine:
         portfolio_beta: float = 0.95,
         hedge_ratio_target: float = 1.0,
     ):
-        cfg = DerivativesEngine.UNDERLYINGS.get(underlying.upper(), DerivativesEngine.UNDERLYINGS["NIFTY"])
-        underlying = underlying.upper() if underlying.upper() in DerivativesEngine.UNDERLYINGS else "NIFTY"
+        cfg = DerivativesEngine.UNDERLYINGS.get(
+            underlying.upper(), DerivativesEngine.UNDERLYINGS["NIFTY"]
+        )
+        underlying = (
+            underlying.upper()
+            if underlying.upper() in DerivativesEngine.UNDERLYINGS
+            else "NIFTY"
+        )
         expiries = DerivativesEngine._generate_expiries()
         expiry = expiry or expiries[0]
-        days_to_expiry = max((datetime.strptime(expiry, "%Y-%m-%d").date() - datetime.utcnow().date()).days, 1)
+        days_to_expiry = max(
+            (
+                datetime.strptime(expiry, "%Y-%m-%d").date() - datetime.utcnow().date()
+            ).days,
+            1,
+        )
         time_to_expiry = days_to_expiry / 365
 
         prices = DerivativesEngine._generate_price_series(cfg["spot"], underlying)
         indicators = DerivativesEngine._compute_indicators(prices)
         spot = round(float(prices.iloc[-1]), 2)
-        realized_vol = max(float(prices.pct_change().dropna().std() * math.sqrt(252)), 0.08)
+        realized_vol = max(
+            float(prices.pct_change().dropna().std() * math.sqrt(252)), 0.08
+        )
         option_chain = DerivativesEngine._build_option_chain(
             spot=spot,
             step=cfg["step"],
@@ -53,12 +66,36 @@ class DerivativesEngine:
 
         atm_row = min(option_chain, key=lambda row: abs(row["strike"] - spot))
         factor_cards = [
-            {"name": "Delta", "value": round(atm_row["call_greeks"]["delta"], 3), "description": "Directional hedge exposure"},
-            {"name": "Gamma", "value": round(atm_row["call_greeks"]["gamma"], 4), "description": "Convexity and re-hedge risk"},
-            {"name": "Theta", "value": round(atm_row["call_greeks"]["theta"], 3), "description": "Time carry cost"},
-            {"name": "Vega", "value": round(atm_row["call_greeks"]["vega"], 3), "description": "Volatility sensitivity"},
-            {"name": "Beta", "value": round(portfolio_beta, 3), "description": "Portfolio market sensitivity"},
-            {"name": "Confidence", "value": "98.4%", "description": "Model convergence and backtest accuracy"},
+            {
+                "name": "Delta",
+                "value": round(atm_row["call_greeks"]["delta"], 3),
+                "description": "Directional hedge exposure",
+            },
+            {
+                "name": "Gamma",
+                "value": round(atm_row["call_greeks"]["gamma"], 4),
+                "description": "Convexity and re-hedge risk",
+            },
+            {
+                "name": "Theta",
+                "value": round(atm_row["call_greeks"]["theta"], 3),
+                "description": "Time carry cost",
+            },
+            {
+                "name": "Vega",
+                "value": round(atm_row["call_greeks"]["vega"], 3),
+                "description": "Volatility sensitivity",
+            },
+            {
+                "name": "Beta",
+                "value": round(portfolio_beta, 3),
+                "description": "Portfolio market sensitivity",
+            },
+            {
+                "name": "Confidence",
+                "value": "98.4%",
+                "description": "Model convergence and backtest accuracy",
+            },
         ]
 
         return {
@@ -83,7 +120,7 @@ class DerivativesEngine:
                 for idx, val in prices.tail(90).items()
             ],
             "model_confidence": 0.984,
-            "engine_status": "synced"
+            "engine_status": "synced",
         }
 
     @staticmethod
@@ -130,8 +167,14 @@ class DerivativesEngine:
         bb_upper = bb_mid + (2 * std_20)
         bb_lower = bb_mid - (2 * std_20)
         returns = prices.pct_change().dropna()
-        benchmark = pd.Series(np.linspace(-0.01, 0.015, len(returns)), index=returns.index)
-        beta = float(np.cov(returns, benchmark)[0, 1] / np.var(benchmark)) if len(returns) > 5 else 1.0
+        benchmark = pd.Series(
+            np.linspace(-0.01, 0.015, len(returns)), index=returns.index
+        )
+        beta = (
+            float(np.cov(returns, benchmark)[0, 1] / np.var(benchmark))
+            if len(returns) > 5
+            else 1.0
+        )
         alpha = float((returns.mean() - beta * benchmark.mean()) * 252 * 100)
 
         trend_bias = "Bullish" if sma_20.iloc[-1] > sma_50.iloc[-1] else "Defensive"
@@ -158,7 +201,15 @@ class DerivativesEngine:
         }
 
     @staticmethod
-    def _build_option_chain(spot: float, step: int, lot_size: int, time_to_expiry: float, sigma: float, rate: float, underlying: str):
+    def _build_option_chain(
+        spot: float,
+        step: int,
+        lot_size: int,
+        time_to_expiry: float,
+        sigma: float,
+        rate: float,
+        underlying: str,
+    ):
         center = round(spot / step) * step
         strikes = [center + (i * step) for i in range(-5, 6)]
         chain = []
@@ -167,50 +218,83 @@ class DerivativesEngine:
         # Realistic OI/Volume skew generation
         # Adding a drift towards put-buying or call-buying depending on the seed to simulate market regimes
         skew_bias = (seed % 100) / 100.0  # value 0.0 to 1.0
-        
+
         for idx, strike in enumerate(strikes):
-            call = DerivativesEngine._black_scholes(spot, strike, time_to_expiry, rate, sigma, "call")
-            put = DerivativesEngine._black_scholes(spot, strike, time_to_expiry, rate, sigma, "put")
-            
+            call = DerivativesEngine._black_scholes(
+                spot, strike, time_to_expiry, rate, sigma, "call"
+            )
+            put = DerivativesEngine._black_scholes(
+                spot, strike, time_to_expiry, rate, sigma, "put"
+            )
+
             # Real options chains often have heavy put OI low down (hedging) and heavy call OI up high (speculation/covered calls)
             # Below ATM: Puts dominate. Above ATM: Calls dominate.
             is_otm_call = strike > spot
             is_otm_put = strike < spot
-            
+
             call_base = 15000 if is_otm_call else 4000
             put_base = 18000 if is_otm_put else 5000
-            
+
             # Apply overall market skew
-            call_oi = int(call_base + (rng.integers(0, 50000) * (1.5 if skew_bias > 0.6 else 1.0)))
-            put_oi = int(put_base + (rng.integers(0, 50000) * (1.5 if skew_bias < 0.4 else 1.0)))
-            
+            call_oi = int(
+                call_base + (rng.integers(0, 50000) * (1.5 if skew_bias > 0.6 else 1.0))
+            )
+            put_oi = int(
+                put_base + (rng.integers(0, 50000) * (1.5 if skew_bias < 0.4 else 1.0))
+            )
+
             note = DerivativesEngine._hedge_note(strike, spot)
-            chain.append({
-                "strike": strike,
-                "call_oi": call_oi,
-                "put_oi": put_oi,
-                "call_volume": int(call_oi * 0.28),
-                "put_volume": int(put_oi * 0.31),
-                "call_iv": round((sigma + (idx * 0.002)) * 100, 2),
-                "put_iv": round((sigma + ((len(strikes) - idx) * 0.002)) * 100, 2),
-                "call_ltp": round(call["price"], 2),
-                "put_ltp": round(put["price"], 2),
-                "call_greeks": {k: round(v, 4) for k, v in call.items() if k != "price"},
-                "put_greeks": {k: round(v, 4) for k, v in put.items() if k != "price"},
-                "hedge_note": note,
-                "max_pain_weight": round(abs(call_oi - put_oi) / max(call_oi + put_oi, 1), 3),
-                "lot_size": lot_size,
-            })
+            chain.append(
+                {
+                    "strike": strike,
+                    "call_oi": call_oi,
+                    "put_oi": put_oi,
+                    "call_volume": int(call_oi * 0.28),
+                    "put_volume": int(put_oi * 0.31),
+                    "call_iv": round((sigma + (idx * 0.002)) * 100, 2),
+                    "put_iv": round((sigma + ((len(strikes) - idx) * 0.002)) * 100, 2),
+                    "call_ltp": round(call["price"], 2),
+                    "put_ltp": round(put["price"], 2),
+                    "call_greeks": {
+                        k: round(v, 4) for k, v in call.items() if k != "price"
+                    },
+                    "put_greeks": {
+                        k: round(v, 4) for k, v in put.items() if k != "price"
+                    },
+                    "hedge_note": note,
+                    "max_pain_weight": round(
+                        abs(call_oi - put_oi) / max(call_oi + put_oi, 1), 3
+                    ),
+                    "lot_size": lot_size,
+                }
+            )
         return chain
 
     @staticmethod
-    def _build_portfolio_hedge(portfolio_value: float, beta: float, hedge_ratio_target: float, spot: float, lot_size: int, option_chain: list[dict], days_to_expiry: int):
+    def _build_portfolio_hedge(
+        portfolio_value: float,
+        beta: float,
+        hedge_ratio_target: float,
+        spot: float,
+        lot_size: int,
+        option_chain: list[dict],
+        days_to_expiry: int,
+    ):
         atm_row = min(option_chain, key=lambda row: abs(row["strike"] - spot))
-        downside_put = next((row for row in option_chain if row["strike"] < spot and row["put_greeks"]["delta"] > -0.45), atm_row)
+        downside_put = next(
+            (
+                row
+                for row in option_chain
+                if row["strike"] < spot and row["put_greeks"]["delta"] > -0.45
+            ),
+            atm_row,
+        )
         hedge_notional = portfolio_value * beta * hedge_ratio_target
         per_contract_notional = spot * lot_size
         contracts = max(int(round(hedge_notional / per_contract_notional)), 1)
-        delta_offset = round(abs(downside_put["put_greeks"]["delta"]) * contracts * lot_size, 2)
+        delta_offset = round(
+            abs(downside_put["put_greeks"]["delta"]) * contracts * lot_size, 2
+        )
         recommended_structure = f"Protective put hedge using {contracts} lots of {downside_put['strike']} PE"
         if contracts > 12:
             recommended_structure = f"Put spread overlay using {contracts} long {downside_put['strike']} PE and short lower strikes for cost efficiency"
@@ -247,10 +331,19 @@ class DerivativesEngine:
         return math.exp(-0.5 * x * x) / math.sqrt(2.0 * math.pi)
 
     @staticmethod
-    def _black_scholes(spot: float, strike: float, time_to_expiry: float, rate: float, sigma: float, option_type: str):
+    def _black_scholes(
+        spot: float,
+        strike: float,
+        time_to_expiry: float,
+        rate: float,
+        sigma: float,
+        option_type: str,
+    ):
         time_to_expiry = max(time_to_expiry, 1 / 365)
         sigma = max(sigma, 0.0001)
-        d1 = (math.log(spot / strike) + (rate + 0.5 * sigma * sigma) * time_to_expiry) / (sigma * math.sqrt(time_to_expiry))
+        d1 = (
+            math.log(spot / strike) + (rate + 0.5 * sigma * sigma) * time_to_expiry
+        ) / (sigma * math.sqrt(time_to_expiry))
         d2 = d1 - sigma * math.sqrt(time_to_expiry)
         pdf = DerivativesEngine._norm_pdf(d1)
         cdf_d1 = DerivativesEngine._norm_cdf(d1)
@@ -263,15 +356,32 @@ class DerivativesEngine:
                 -(spot * pdf * sigma) / (2 * math.sqrt(time_to_expiry))
                 - rate * strike * math.exp(-rate * time_to_expiry) * cdf_d2
             ) / 365
-            rho = (strike * time_to_expiry * math.exp(-rate * time_to_expiry) * cdf_d2) / 100
+            rho = (
+                strike * time_to_expiry * math.exp(-rate * time_to_expiry) * cdf_d2
+            ) / 100
         else:
-            price = strike * math.exp(-rate * time_to_expiry) * DerivativesEngine._norm_cdf(-d2) - spot * DerivativesEngine._norm_cdf(-d1)
+            price = strike * math.exp(
+                -rate * time_to_expiry
+            ) * DerivativesEngine._norm_cdf(-d2) - spot * DerivativesEngine._norm_cdf(
+                -d1
+            )
             delta = cdf_d1 - 1
             theta = (
                 -(spot * pdf * sigma) / (2 * math.sqrt(time_to_expiry))
-                + rate * strike * math.exp(-rate * time_to_expiry) * DerivativesEngine._norm_cdf(-d2)
+                + rate
+                * strike
+                * math.exp(-rate * time_to_expiry)
+                * DerivativesEngine._norm_cdf(-d2)
             ) / 365
-            rho = -(strike * time_to_expiry * math.exp(-rate * time_to_expiry) * DerivativesEngine._norm_cdf(-d2)) / 100
+            rho = (
+                -(
+                    strike
+                    * time_to_expiry
+                    * math.exp(-rate * time_to_expiry)
+                    * DerivativesEngine._norm_cdf(-d2)
+                )
+                / 100
+            )
 
         gamma = pdf / (spot * sigma * math.sqrt(time_to_expiry))
         vega = (spot * pdf * math.sqrt(time_to_expiry)) / 100

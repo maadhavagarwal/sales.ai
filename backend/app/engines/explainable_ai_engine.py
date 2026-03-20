@@ -1,5 +1,6 @@
 from app.utils.currency import fmt as _fmt
 
+
 def explain_predictions(df, analytics, ml_results):
     """
     Explainability Layer: Converts complex ML signals into executive reasoning.
@@ -39,10 +40,14 @@ def explain_predictions(df, analytics, ml_results):
     # 5. Data Quality and Confidence Score
     confidence = ml_results.get("confidence_score")
     if confidence:
-        explanations.append(f"Aggregate predictive confidence is indexed at **{confidence*100:.1f}%** based on signal-to-noise ratios.")
+        explanations.append(
+            f"Aggregate predictive confidence is indexed at **{confidence*100:.1f}%** based on signal-to-noise ratios."
+        )
 
     # Fallback
     if not explanations:
-        explanations.append("Inference was generated via the enterprise-grade neural pipeline with cross-validated weights.")
+        explanations.append(
+            "Inference was generated via the enterprise-grade neural pipeline with cross-validated weights."
+        )
 
     return explanations

@@ -1,0 +1,9 @@
+DEBUG: Processing file test_customers.csv, detected category: CUSTOMER, rows: 5
+DEBUG: Data Columns: ['name', 'email', 'phone', 'total_spend', 'status']
+DEBUG: Sample Row: {'name': 'Tesla Motors', 'email': 'billing@tesla.com', 'phone': 1234567890, 'total_spend': 590000, 'status': 'Lead'}
+DEBUG: Processing file test_inventory.csv, detected category: INVENTORY, rows: 5
+DEBUG: Data Columns: ['sku', 'name', 'category', 'cost_price', 'sale_price', 'quantity', 'location']
+DEBUG: Sample Row: {'sku': 'SKU-001', 'name': 'Neural Processor A1', 'category': 'Hardware', 'cost_price': 5000, 'sale_price': 12000, 'quantity': 150, 'location': 'Warehouse Alpha'}
+DEBUG: Processing file test_invoices.csv, detected category: INVOICE, rows: 5
+DEBUG: Data Columns: ['invoice_id', 'customer_name', 'date', 'subtotal', 'tax', 'grand_total', 'status', 'due_date']
+DEBUG: Sample Row: {'invoice_id': 'INV-001', 'customer_name': 'Tesla Motors', 'date': '2026-03-01', 'subtotal': 500000, 'tax': 90000, 'grand_total': 590000, 'status': 'PAID', 'due_date': '2026-03-15'}

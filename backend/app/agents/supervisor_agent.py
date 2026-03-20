@@ -34,7 +34,4 @@ Generate a clear answer combining all agent outputs.
 
     answer = ask_llm(context)
 
-    return {
-        "answer": answer,
-        "agent_outputs": results
-    }
+    return {"answer": answer, "agent_outputs": results}

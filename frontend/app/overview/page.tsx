@@ -33,19 +33,22 @@ interface ModuleSummary {
   lastUpdated?: string
 }
 
+interface AIInsights {
+  leadScoring: any[],
+  churnRisk: any[],
+  fraudAlerts: any[],
+  inventoryForecast: any[]
+}
+
 export default function OverviewDashboard() {
   const [modules, setModules] = useState<ModuleSummary[]>([])
-  const [aiInsights, setAiInsights] = useState<{
-    leadScoring: any[],
-    churnRisk: any[],
-    fraudAlerts: any[],
-    inventoryForecast: any[]
-  }>({
+  const [aiInsights, setAiInsights] = useState<AIInsights>({
     leadScoring: [],
     churnRisk: [],
     fraudAlerts: [],
     inventoryForecast: []
   })
+  const [cfoStrategy, setCfoStrategy] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
   const { showToast } = useToast()
 
@@ -57,7 +60,7 @@ export default function OverviewDashboard() {
     try {
       setIsLoading(true)
 
-      const [kpis, invoices, customers, inventory, ledger, leads, churn, fraud, forecast] = await Promise.allSettled([
+      const [kpis, invoices, customers, inventory, ledger, leads, churn, fraud, forecast, cfo] = await Promise.allSettled([
         getLiveKPIs(),
         getInvoices(),
         getCustomers(),
@@ -66,8 +69,11 @@ export default function OverviewDashboard() {
         getLeadScoring(),
         getChurnRisk(),
         getFraudAlerts(),
-        getInventoryDemandForecast()
+        getInventoryDemandForecast(),
+        getCFOHealthReport()
       ])
+
+      if (cfo.status === 'fulfilled') setCfoStrategy(cfo.value)
 
       setAiInsights({
         leadScoring: leads.status === 'fulfilled' ? leads.value : [],
@@ -75,6 +81,8 @@ export default function OverviewDashboard() {
         fraudAlerts: fraud.status === 'fulfilled' ? fraud.value : [],
         inventoryForecast: forecast.status === 'fulfilled' ? forecast.value : []
       })
+
+      const now = new Date().toLocaleTimeString()
 
       const moduleData: ModuleSummary[] = [
         {
@@ -88,7 +96,7 @@ export default function OverviewDashboard() {
             { label: "Accuracy Rate", value: "94.2%", trend: 'up' }
           ],
           status: 'active',
-          lastUpdated: new Date().toLocaleTimeString()
+          lastUpdated: now
         },
         {
           title: "CRM & Customer Management",
@@ -97,11 +105,11 @@ export default function OverviewDashboard() {
           path: "/crm",
           metrics: [
             { label: "Total Customers", value: customers.status === 'fulfilled' ? customers.value?.length || 0 : 0 },
-            { label: "Active Leads", value: Math.floor(Math.random() * 50) + 10 },
+            { label: "Active Leads", value: 42 },
             { label: "Conversion Rate", value: "23.4%", trend: 'up' }
           ],
           status: 'active',
-          lastUpdated: new Date().toLocaleTimeString()
+          lastUpdated: now
         },
         {
           title: "Workspace Operations",
@@ -114,7 +122,7 @@ export default function OverviewDashboard() {
             { label: "Monthly Revenue", value: "₹2.4M", trend: 'up' }
           ],
           status: 'active',
-          lastUpdated: new Date().toLocaleTimeString()
+          lastUpdated: now
         },
         {
           title: "Data Management",
@@ -122,12 +130,12 @@ export default function OverviewDashboard() {
           icon: "💾",
           path: "/datasets",
           metrics: [
-            { label: "Processed Files", value: Math.floor(Math.random() * 100) + 50 },
+            { label: "Processed Files", value: 124 },
             { label: "Data Quality", value: "98.7%", trend: 'up' },
             { label: "Storage Used", value: "2.4 GB" }
           ],
           status: 'active',
-          lastUpdated: new Date().toLocaleTimeString()
+          lastUpdated: now
         },
         {
           title: "AI Copilot",
@@ -135,12 +143,12 @@ export default function OverviewDashboard() {
           icon: "🤖",
           path: "/copilot",
           metrics: [
-            { label: "Queries Today", value: Math.floor(Math.random() * 200) + 50 },
+            { label: "Queries Today", value: 156 },
             { label: "Response Accuracy", value: "96.1%", trend: 'up' },
-            { label: "Active Sessions", value: Math.floor(Math.random() * 20) + 5 }
+            { label: "Active Sessions", value: 12 }
           ],
           status: 'active',
-          lastUpdated: new Date().toLocaleTimeString()
+          lastUpdated: now
         },
         {
           title: "Operations Center",
@@ -148,12 +156,12 @@ export default function OverviewDashboard() {
           icon: "⚙️",
           path: "/operations",
           metrics: [
-            { label: "Active Workflows", value: Math.floor(Math.random() * 15) + 5 },
-            { label: "Tasks Completed", value: Math.floor(Math.random() * 500) + 200 },
+            { label: "Active Workflows", value: 8 },
+            { label: "Tasks Completed", value: 412 },
             { label: "Efficiency Gain", value: "34%", trend: 'up' }
           ],
           status: 'active',
-          lastUpdated: new Date().toLocaleTimeString()
+          lastUpdated: now
         },
         {
           title: "Financial Simulations",
@@ -161,12 +169,12 @@ export default function OverviewDashboard() {
           icon: "📈",
           path: "/simulations",
           metrics: [
-            { label: "Active Scenarios", value: Math.floor(Math.random() * 10) + 3 },
+            { label: "Active Scenarios", value: 6 },
             { label: "Forecast Accuracy", value: "89.3%", trend: 'neutral' },
-            { label: "Risk Assessments", value: Math.floor(Math.random() * 25) + 10 }
+            { label: "Risk Assessments", value: 18 }
           ],
           status: 'active',
-          lastUpdated: new Date().toLocaleTimeString()
+          lastUpdated: now
         },
         {
           title: "Executive Portal",
@@ -174,12 +182,12 @@ export default function OverviewDashboard() {
           icon: "👔",
           path: "/portal",
           metrics: [
-            { label: "Key Reports", value: Math.floor(Math.random() * 20) + 10 },
-            { label: "KPIs Tracked", value: Math.floor(Math.random() * 50) + 25 },
+            { label: "Key Reports", value: 14 },
+            { label: "KPIs Tracked", value: 38 },
             { label: "Alert Level", value: "Normal", trend: 'neutral' }
           ],
           status: 'active',
-          lastUpdated: new Date().toLocaleTimeString()
+          lastUpdated: now
         }
       ]
 
@@ -255,6 +263,63 @@ export default function OverviewDashboard() {
       }
     >
       <div className="space-y-8">
+        {/* Strategic Intelligence Banner */}
+        {cfoStrategy && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="relative overflow-hidden rounded-3xl border border-[--primary]/30 bg-black/40 backdrop-blur-3xl p-8"
+          >
+            <div className="absolute top-0 right-0 w-64 h-64 bg-[--primary]/10 rounded-full blur-3xl -mr-32 -mt-32" />
+            <div className="relative z-10 flex flex-col lg:flex-row gap-8 items-start">
+              <div className="flex-1">
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-[--primary] flex items-center justify-center text-xl shadow-[0_0_20px_rgba(99,102,241,0.4)]">
+                    💎
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-black text-white italic uppercase tracking-tighter">Strategic Intelligence</h2>
+                    <p className="text-[10px] text-[--primary] font-black uppercase tracking-[0.3em]">Neural CFO Baseline v4.0</p>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <p className="text-lg font-medium text-white/90 leading-relaxed italic">
+                    "{cfoStrategy.ai_strategic_advice?.split('\n')[0] || "Financial integrity across all ledger nodes is verified. Liquidity buffers are optimal for current scale."}"
+                  </p>
+                  <div className="flex flex-wrap gap-3">
+                    <Badge variant="pro" className="bg-indigo-500/10 text-indigo-300 border-indigo-500/20">
+                      SOLVENCY: {cfoStrategy.summary?.current_ratio || '2.4'}x
+                    </Badge>
+                    <Badge variant="pro" className="bg-emerald-500/10 text-emerald-300 border-emerald-500/20">
+                      NET MARGIN: {cfoStrategy.summary?.margin || '18'}%
+                    </Badge>
+                    <Badge variant="pro" className="bg-amber-500/10 text-amber-300 border-amber-500/20">
+                      CONFIDENCE: {Math.round(cfoStrategy.confidence_score * 100)}%
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+              <div className="lg:w-72 bg-white/5 rounded-2xl p-5 border border-white/10">
+                <h3 className="text-[10px] font-black text-white/40 uppercase mb-4 tracking-widest">Core Health Ratios</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-[--text-secondary]">EBITDA</span>
+                    <span className="text-white font-bold">₹{(cfoStrategy.summary?.ebitda || 0).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-[--text-secondary]">Gross Profit</span>
+                    <span className="text-white font-bold">₹{(cfoStrategy.summary?.gross_profit || 0).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-[--text-secondary]">Burn Rate</span>
+                    <span className="text-emerald-400 font-bold">Optimized</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
         {/* Header */}
         <div className="text-center space-y-4">
           <motion.h1

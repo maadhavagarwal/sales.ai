@@ -5,7 +5,4 @@ def run_ml_agent(df):
 
     ml_results = run_ml_pipeline(df)
 
-    return {
-        "agent": "ml_agent",
-        "result": ml_results
-    }
+    return {"agent": "ml_agent", "result": ml_results}

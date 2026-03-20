@@ -76,7 +76,7 @@ cp .env.example .env
 alembic upgrade head
 
 # Start the server
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 **3. Frontend Setup**
@@ -92,6 +92,26 @@ npm run dev
 - **Health Check**: http://localhost:8000/health
 
 ### Production Deployment
+
+### Real-World Launch Profile (No Demo Behavior)
+
+Set these values in your environment before launch:
+
+```bash
+ERP_SYNC_MODE=tally
+ENABLE_DEMO_SEED_DATA=false
+ENABLE_LIVE_KPI_SIMULATOR=false
+NEURALBI_STRICT_PRODUCTION=true
+NEXT_PUBLIC_ENABLE_DEMO_MODE=false
+```
+
+Expected behavior in this profile:
+- No demo dataset auto-seeding
+- No synthetic KPI simulator streaming
+- No synthetic LLM fallback responses (AI returns explicit service error if provider is not configured)
+- Frontend demo mode disabled
+- Unified chat fallback responses are blocked (returns explicit service errors when inference fails)
+- Mock-only Meetings and Messaging route modules are disabled until backed by persistent services
 
 **Docker Deployment**
 ```bash
@@ -116,11 +136,20 @@ TALLY_URL=https://your-tally-server.com
 ZOHO_CLIENT_ID=your-zoho-client-id
 ERP_SYNC_MODE=tally
 
+# Meetings Provider
+MEETING_PROVIDER=jitsi
+DAILY_API_KEY=your-daily-api-key
+
 # Email
 SMTP_SERVER=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USERNAME=your-email@gmail.com
 SMTP_PASSWORD=your-app-password
+
+# Payments
+RAZORPAY_KEY_ID=your-razorpay-key-id
+RAZORPAY_KEY_SECRET=your-razorpay-key-secret
+STRIPE_SECRET_KEY=your-stripe-secret-key
 
 # Monitoring
 SENTRY_DSN=your-sentry-dsn

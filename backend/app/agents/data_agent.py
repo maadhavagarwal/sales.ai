@@ -5,7 +5,4 @@ def run_data_agent(question):
 
     results = search_dataset(question)
 
-    return {
-        "agent": "data_agent",
-        "result": results
-    }
+    return {"agent": "data_agent", "result": results}

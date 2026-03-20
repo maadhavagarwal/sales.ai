@@ -1,0 +1,6 @@
+sku,name,category,cost_price,sale_price,quantity,location
+SKU-001,Neural Processor A1,Hardware,5000,12000,150,Warehouse Alpha
+SKU-002,Quantum Sensor X,Electronics,2500,6500,80,Warehouse Beta
+SKU-003,Liquid Cooling Unit,Cooling,1200,3000,200,Warehouse Alpha
+SKU-004,Graphene Shield,Materials,800,2200,500,Warehouse Gamma
+SKU-005,Fusion Cell Mini,Energy,15000,45000,10,Vault 1

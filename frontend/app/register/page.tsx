@@ -5,9 +5,11 @@ import { motion } from "framer-motion"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Building2, Upload, FileSpreadsheet, CheckCircle2, ArrowRight, Mail, Phone, MapPin, Users } from "lucide-react"
+import { useStore } from "@/store/useStore"
 
 export default function Register() {
     const router = useRouter()
+    const { setUser, setOnboardingComplete } = useStore()
     const [step, setStep] = useState(1)
     const [formData, setFormData] = useState({
         email: "",
@@ -44,8 +46,8 @@ export default function Register() {
         setFiles(files.filter((_, i) => i !== index))
     }
 
-    const handleRegister = async (e: React.FormEvent) => {
-        e.preventDefault()
+    const handleRegister = async (e?: React.FormEvent | React.MouseEvent) => {
+        if (e) e.preventDefault()
         if (formData.password !== formData.confirmPassword) {
             setError("Passwords do not match")
             return
@@ -88,6 +90,17 @@ export default function Register() {
 
             const registerData = await registerRes.json()
             const token = registerData.token
+
+            // Persist session
+            localStorage.setItem('token', token)
+            localStorage.setItem('user', JSON.stringify({
+                name: formData.contactPerson || formData.companyName || formData.email.split('@')[0] || 'User',
+                email: formData.email,
+                role: registerData.role || 'ADMIN',
+                company: formData.companyName,
+            }))
+            setUser(formData.email, registerData.role || "ADMIN")
+            setOnboardingComplete(true)
 
             // Step 2: Upload business data
             const formDataUpload = new FormData()
@@ -721,7 +734,8 @@ export default function Register() {
                                 Back
                             </button>
                             <button
-                                type="submit"
+                                type="button"
+                                onClick={handleRegister}
                                 disabled={loading || files.length === 0}
                                 style={{
                                     flex: 1,

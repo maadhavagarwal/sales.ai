@@ -85,6 +85,8 @@ function WorkspaceContent() {
     const sections: Section[] = [
         { id: "nexus", label: "Enterprise Nexus", icon: "NX", description: "Central Data Portal", color: "var(--primary)" },
         { id: "billing", label: "Financial Engine", icon: "FI", description: "Invoicing & GST", color: "var(--accent-cyan)" },
+        { id: "crm", label: "Sales CRM", icon: "CR", description: "Deals & Targets", color: "#f97316" },
+        { id: "marketing", label: "Growth Ops", icon: "MK", description: "Campaign Intelligence", color: "#14b8a6" },
         { id: "hr", label: "Workforce", icon: "HR", description: "HR & Employees", color: "var(--accent-rose)" },
         { id: "finance", label: "Finance Center", icon: "FN", description: "Treasury Center", color: "var(--accent-emerald)" },
         { id: "comm", label: "Comm Hub", icon: "CH", description: "Meetings & Mail", color: "var(--accent-violet)" },

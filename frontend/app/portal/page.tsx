@@ -22,22 +22,49 @@ import Input from "@/components/ui/Input";
 export default function CustomerPortal() {
   const [invoices, setInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Simulated fetch for customer's own invoices
-    setTimeout(() => {
-      setInvoices([
-        { id: "INV-8821", date: "2024-03-10", amount: 45000, status: "UNPAID", due_in: "5 days" },
-        { id: "INV-8750", date: "2024-02-25", amount: 12500, status: "PAID", due_in: "-" },
-        { id: "INV-8610", date: "2024-02-10", amount: 8900, status: "PAID", due_in: "-" },
-      ]);
-      setLoading(false);
-    }, 800);
+    const fetchPortalData = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch("/api/portal/dashboard", {
+          headers: {
+            "Authorization": `Bearer ${typeof window !== "undefined" ? localStorage.getItem("token") || "" : ""}`
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          // Extract invoices from dashboard data if available
+          if (data && typeof data === "object") {
+            const invoiceList = data.recent_invoices || data.invoices || [];
+            setInvoices(Array.isArray(invoiceList) ? invoiceList : []);
+          }
+        } else {
+          setError("Unable to load portal data. Please login with a valid account.");
+          setInvoices([]);
+        }
+      } catch (err) {
+        console.warn("Failed to fetch portal data:", err);
+        setError("Portal service unavailable. Please retry shortly.");
+        setInvoices([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPortalData();
   }, []);
 
   return (
     <div className="min-h-screen bg-[#050510] text-slate-100 p-8">
       <div className="max-w-6xl mx-auto space-y-8">
+        {error && (
+          <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+            {error}
+          </div>
+        )}
         {/* Header */}
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>

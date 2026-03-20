@@ -1,14 +1,13 @@
 # ml_engine.py
 
 import pandas as pd
-from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error
+from sklearn.model_selection import train_test_split
 
-from app.models.model_monitor import log_model_metrics, check_model_drift
-from app.models.model_manager import save_model, load_model, model_exists
 from app.engines.automl_engine import run_automl
-
+from app.models.model_manager import load_model, model_exists, save_model
+from app.models.model_monitor import check_model_drift, log_model_metrics
 
 MODEL_NAME = "sales_prediction_model"
 
@@ -77,11 +76,13 @@ def train_prediction_model(df):
 
     drift_detected = check_model_drift(mae)
 
-    log_model_metrics({
-        "model": "RandomForest",
-        "mae": float(mae),
-        "drift_detected": drift_detected,
-    })
+    log_model_metrics(
+        {
+            "model": "RandomForest",
+            "mae": float(mae),
+            "drift_detected": drift_detected,
+        }
+    )
 
     return {
         "model": "RandomForest",
@@ -107,9 +108,7 @@ def predict_with_saved_model(df):
 
     predictions = model.predict(df[["month", "year"]])
 
-    return {
-        "predictions": predictions.tolist()
-    }
+    return {"predictions": predictions.tolist()}
 
 
 # -----------------------------
@@ -119,8 +118,8 @@ def run_ml_pipeline(df):
     """
     Enterprise Pipeline: AutoML + Anomaly Detection + Interpretability
     """
-    from sklearn.ensemble import IsolationForest
     import numpy as np
+    from sklearn.ensemble import IsolationForest
 
     # 1. Run AutoML for forecasting/regression
     try:
@@ -140,15 +139,23 @@ def run_ml_pipeline(df):
                 preds = model_if.fit_predict(num_df)
                 outliers = df[preds == -1]
                 for idx, row in outliers.head(5).iterrows():
-                    anomalies.append(f"Anomaly detected in record {idx}: Revenue ₹{row.get('revenue', 0)} deviates from cluster mean.")
-    except: pass
+                    anomalies.append(
+                        f"Anomaly detected in record {idx}: Revenue ₹{row.get('revenue', 0)} deviates from cluster mean."
+                    )
+    except:
+        pass
 
     # 3. FEATURE IMPORTANCE (Explainability)
-    importance = {"month": 0.4, "year": 0.1, "category": 0.3, "price": 0.2} # Dynamic fallback
-    
+    importance = {
+        "month": 0.4,
+        "year": 0.1,
+        "category": 0.3,
+        "price": 0.2,
+    }  # Dynamic fallback
+
     # 4. Multi-Scenario Scenario Planning (Bull/Base/Bear)
     # Stubbing logic for 30-day scenarios
-    
+
     # Return consolidated intelligence
     if model_exists(MODEL_NAME):
         try:
@@ -165,8 +172,8 @@ def run_ml_pipeline(df):
             "scenarios": {
                 "bull": "Optimistic (+15% gain if market stabilizes)",
                 "base": "Projected Growth (Mean)",
-                "bear": "Pessimistic (-10% risk if churn increases)"
-            }
+                "bear": "Pessimistic (-10% risk if churn increases)",
+            },
         }
 
     else:

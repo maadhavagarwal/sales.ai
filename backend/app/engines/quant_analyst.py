@@ -1,32 +1,43 @@
-from app.engines.llm_engine import ask_llm
-from app.engines.market_dynamics_engine import MarketDynamicsEngine
 import pandas as pd
+
+from app.engines.llm_engine import ask_llm
+from app.core.strict_mode import require_real_services
+
 
 def run_quant_analysis(df, analytics, market_data):
     """
     Executes a high-fidelity Quantitative Audit of market data.
     Synthesizes Technical Indicators, Greeks, and Sentiment into a Strategic Brief.
     """
-    
+
     # 1. Indicator Context
     indicators = market_data.get("indicators", pd.DataFrame())
     pcr = market_data.get("pcr", {})
-    
+
     # Optional implicit volatility approximation if IV not provided
     implied_vol_proxy = "Low"
-    if not indicators.empty and "bb_upper" in indicators.columns and "bb_lower" in indicators.columns and "sma_20" in indicators.columns:
-        bb_width = (indicators["bb_upper"].iloc[-1] - indicators["bb_lower"].iloc[-1]) / indicators["sma_20"].iloc[-1]
-        if bb_width > 0.15: implied_vol_proxy = "High"
-        elif bb_width > 0.08: implied_vol_proxy = "Elevated"
-    
+    if (
+        not indicators.empty
+        and "bb_upper" in indicators.columns
+        and "bb_lower" in indicators.columns
+        and "sma_20" in indicators.columns
+    ):
+        bb_width = (
+            indicators["bb_upper"].iloc[-1] - indicators["bb_lower"].iloc[-1]
+        ) / indicators["sma_20"].iloc[-1]
+        if bb_width > 0.15:
+            implied_vol_proxy = "High"
+        elif bb_width > 0.08:
+            implied_vol_proxy = "Elevated"
+
     # 2. Extract Sentiment
     pcr_val = pcr.get("pcr_oi", "N/A")
     sentiment = pcr.get("sentiment", "Neutral")
-    
+
     latest_rsi = "N/A"
     if not indicators.empty and "rsi" in indicators.columns:
         latest_rsi = round(indicators["rsi"].iloc[-1], 2)
-        
+
     # 3. LLM Prompting for Trading Strategy
     context = f"""
 You are the Lead Quantitative Strategist and CDO.
@@ -53,33 +64,44 @@ Focus on 'Alpha Generation' and 'Capital Protection'. Use markdown bolding for k
     try:
         report = ask_llm(context)
         if "unavailable" in report.lower() or "ollama" in report.lower():
-            report = _generate_fallback_quant_report(indicators, pcr, analytics, implied_vol_proxy)
+            report = _generate_fallback_quant_report(
+                indicators, pcr, analytics, implied_vol_proxy
+            )
     except Exception:
-        report = _generate_fallback_quant_report(indicators, pcr, analytics, implied_vol_proxy)
+        report = _generate_fallback_quant_report(
+            indicators, pcr, analytics, implied_vol_proxy
+        )
 
-    return {
-        "report": report,
-        "sentiment": sentiment,
-        "pcr": pcr_val
-    }
+    return {"report": report, "sentiment": sentiment, "pcr": pcr_val}
 
-def _generate_fallback_quant_report(indicators, pcr, analytics, implied_vol_proxy="Low"):
+
+def _generate_fallback_quant_report(
+    indicators, pcr, analytics, implied_vol_proxy="Low"
+):
     """Rule-based heuristic fallback for Trading Intelligence including Multi-Leg Structuring."""
-    
+    require_real_services("Quant analyst fallback report")
+
     rep = "### 📈 Quantitative Strategy Brief (Advanced Options Framing)\n\n"
-    
+
     # 1. Technical Boundary Analysis
     rep += "### 1. Market Physics & Volatility Boundaries\n"
     rsi = 50.0
     if not indicators.empty and "rsi" in indicators.columns:
         rsi = indicators["rsi"].iloc[-1]
         rep += f"The current **RSI is indexed at {rsi:.2f}**. "
-        if rsi > 70: rep += "The market has entered a 'Hyper-Extended' zone, suggesting imminent resistance and exhaustion. "
-        elif rsi < 30: rep += "The asset is currently 'Oversold', indicating a significant probability of a mean-reversion bounce. "
-        else: rep += "The momentum remains established within the median quadrant, supporting trend continuation. "
-        
-    if not indicators.empty and "close" in indicators.columns and "bb_upper" in indicators.columns:
-        close = indicators["close"].iloc[-1]
+        if rsi > 70:
+            rep += "The market has entered a 'Hyper-Extended' zone, suggesting imminent resistance and exhaustion. "
+        elif rsi < 30:
+            rep += "The asset is currently 'Oversold', indicating a significant probability of a mean-reversion bounce. "
+        else:
+            rep += "The momentum remains established within the median quadrant, supporting trend continuation. "
+
+    if (
+        not indicators.empty
+        and "close" in indicators.columns
+        and "bb_upper" in indicators.columns
+    ):
+        indicators["close"].iloc[-1]
         upper = indicators["bb_upper"].iloc[-1]
         lower = indicators["bb_lower"].iloc[-1]
         rep += f"Price action is compressed between a **resistance ceiling of {upper:.2f}** and **support floor of {lower:.2f}** (Bollinger 2σ). "
@@ -99,9 +121,9 @@ def _generate_fallback_quant_report(indicators, pcr, analytics, implied_vol_prox
     # 3. Multi-Leg Options & Capital Directive
     rep += "### 3. Alpha-Weighted Capital Directive (Multi-Leg Output)\n"
     rep += "**Automated Structuring Recommendation:**\n"
-    
+
     high_iv = implied_vol_proxy in ["High", "Elevated"]
-    
+
     if high_iv and pcr_val > 1.2:
         rep += "> **Bull Put Spread (Credit)**: Implied volatility is elevated alongside extreme fear (Oversold). Sell an At-The-Money (ATM) Put and buy a deeper Out-of-The-Money (OTM) Put to synthetically capture Premium crush as price reverts upward.\n\n"
     elif high_iv and pcr_val < 0.6:

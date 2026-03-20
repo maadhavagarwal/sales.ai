@@ -4,13 +4,12 @@ def run_visualization_agent(analytics):
 
     if "region_sales" in analytics:
 
-        charts.append({
-            "chart": "bar",
-            "title": "Revenue by Region",
-            "data": analytics["region_sales"]
-        })
+        charts.append(
+            {
+                "chart": "bar",
+                "title": "Revenue by Region",
+                "data": analytics["region_sales"],
+            }
+        )
 
-    return {
-        "agent": "visualization_agent",
-        "result": charts
-    }
+    return {"agent": "visualization_agent", "result": charts}

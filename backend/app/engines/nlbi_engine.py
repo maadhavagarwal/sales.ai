@@ -105,30 +105,38 @@ def generate_chart_from_question(question, df):
             "data": data.to_dict(orient="records"),
         }
 
-    return {"error": "Could not understand chart request. Try mentioning specific column names."}
+    return {
+        "error": "Could not understand chart request. Try mentioning specific column names."
+    }
+
 
 def run_nl_query(query: str, df: pd.DataFrame):
- 
+
     q = query.lower()
-    
+
     if df is None or df.empty:
         return "Neural Link established, but the data stream is offline. Please synchronize your Workspace first."
 
     # 1. Financial Health Logic
     if "health" in q or "margin" in q or "ebitda" in q:
         from app.engines.workspace_engine import WorkspaceEngine
+
         health = WorkspaceEngine.get_cfo_health_report()
         return f"### Enterprise Health: {health['business_health']}\n\nOur current **EBITDA** stands at ₹{health['ebitda']:,.2f}. The **Current Ratio** is {health['current_ratio']}, indicating we are {health['business_health'].lower()} for short-term liquidity. Focus on receivables optimization."
 
     # 2. SKU / Inventory Risk
     if "risk" in q or "stock" in q:
-        risk_items = df[df.get('days_remaining', 999).astype(float) < 15] if 'days_remaining' in df.columns else []
+        risk_items = (
+            df[df.get("days_remaining", 999).astype(float) < 15]
+            if "days_remaining" in df.columns
+            else []
+        )
         if len(risk_items) > 0:
             return f"Strategic Alert: I've identified **{len(risk_items)} SKUs** at critical stockout risk. You should initiate procurement cycles immediately."
 
     # 3. Simple Table Aggregations (Fallback)
     if "total" in q or "sum" in q:
-        cols = df.select_dtypes(include=['number']).columns.tolist()
+        cols = df.select_dtypes(include=["number"]).columns.tolist()
         if cols:
             val = df[cols[0]].sum()
             return f"Found matching metric: Total {cols[0]} across active context is **₹{val:,.2f}**."

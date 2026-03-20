@@ -144,8 +144,8 @@ export default function TallySyncPage() {
       </div>
 
       {/* Main Sync Component */}
-      <Card className="glass-pro-thick bg-gradient-to-b from-slate-900/60 to-black/80 border-slate-800 relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500 animate-gradient-x opacity-30" />
+      <Card className="glass-pro-thick bg-linear-to-b from-slate-900/60 to-black/80 border-slate-800 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-blue-500 via-purple-500 to-blue-500 animate-gradient-x opacity-30" />
 
         <CardHeader className="text-center pb-2">
           <CardTitle className="text-2xl">Manual Delta reconciliation</CardTitle>

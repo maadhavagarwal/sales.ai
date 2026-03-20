@@ -45,7 +45,7 @@ export const SkeletonCard: React.FC<{ rows?: number }> = ({ rows = 3 }) => {
       </div>
       <div className="space-y-3 pt-4">
         {Array.from({ length: rows }).map((_, i) => (
-          <Skeleton key={i} height={10} width={`${Math.random() * 40 + 60}%`} />
+          <Skeleton key={i} height={10} width={`${75 + (i % 3) * 10}%`} />
         ))}
       </div>
     </div>

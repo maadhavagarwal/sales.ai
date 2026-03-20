@@ -6,10 +6,7 @@ import { useStore } from "@/store/useStore"
 
 export default function TopProductsChart({ data }: { data: Record<string, number> }) {
     const { currencySymbol } = useStore()
-    if (!data || Object.keys(data).length === 0) return null
-
-    const entries = Object.entries(data).sort((a, b) => b[1] - a[1])
-
+    const entries = useMemo(() => data ? Object.entries(data).sort((a, b) => b[1] - a[1]) : [], [data])
     const option = useMemo(() => ({
         backgroundColor: "transparent",
         tooltip: {
@@ -63,6 +60,8 @@ export default function TopProductsChart({ data }: { data: Record<string, number
         animationEasing: "elasticOut",
         animationDuration: 1200,
     }), [entries, currencySymbol])
+
+    if (!data || entries.length === 0) return null
 
     return (
         <motion.div

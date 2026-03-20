@@ -1,0 +1,6 @@
+name,email,phone,total_spend,status
+Tesla Motors,billing@tesla.com,1234567890,590000,Lead
+SpaceX,finance@spacex.com,9876543210,1416000,Customer
+Apple Inc,accounts@apple.com,5556667777,354000,Customer
+Google,procurement@google.com,4443332222,944000,Lead
+Amazon,orders@amazon.com,1112223333,531000,Customer

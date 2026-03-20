@@ -1,24 +1,13 @@
-
 import sqlite3
 import os
-import sys
 
-# Add the backend directory to sys.path
-sys.path.append(os.path.abspath(os.path.join(os.getcwd(), 'backend')))
-
-from app.core.database_manager import DB_PATH
-
-print(f"Checking DB at: {DB_PATH}")
-if not os.path.exists(DB_PATH):
-    print("DB file NOT found!")
-    sys.exit(1)
-
+DB_PATH = r"c:\Users\techa\OneDrive\Desktop\sales ai platfrom\backend\data\enterprise.db"
 conn = sqlite3.connect(DB_PATH)
 cursor = conn.cursor()
-cursor.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='customers'")
-res = cursor.fetchone()
-if res:
-    print(res[0])
-else:
-    print("Table 'customers' NOT found!")
+for table in ["team_chat", "meetings", "outbound_outreach", "invoices", "customers", "users"]:
+    print(f"Schema for {table}:")
+    cursor.execute(f"PRAGMA table_info({table})")
+    print(cursor.fetchall())
+    cursor.execute(f"SELECT sql FROM sqlite_master WHERE type='table' AND name='{table}'")
+    print(cursor.fetchone())
 conn.close()

@@ -10,12 +10,14 @@ import {
     getTeamMessages, 
     sendTeamMessage, 
     sendDirectEmail,
-    getOutboundEmails
+    getOutboundEmails,
+    getCommSentiment,
+    summarizeMeeting
 } from "@/services/api"
 import { 
     Video, Mail, MessageSquare, Send, Plus, Calendar, 
     ExternalLink, Link as LinkIcon, Mic, Video as VideoIcon, 
-    PhoneOff, Users, Monitor, ShieldCheck, History
+    PhoneOff, Users, Monitor, ShieldCheck, History, FileText
 } from "lucide-react"
 
 export default function WorkspaceCommHub() {
@@ -27,6 +29,9 @@ export default function WorkspaceCommHub() {
     const [email, setEmail] = useState({ to: "", subject: "", body: "" })
     const [showCreateMeeting, setShowCreateMeeting] = useState(false)
     const [newMeet, setNewMeet] = useState({ title: "", type: "Team", start: "", duration: "30 min" })
+    const [sentiment, setSentiment] = useState<{score: number, label: string, count: number} | null>(null)
+    const [isSummarizing, setIsSummarizing] = useState(false)
+    const [meetingSummary, setMeetingSummary] = useState<string | null>(null)
     
     // Meeting Nexus State
     const [activeMeet, setActiveMeet] = useState<any>(null)
@@ -49,8 +54,12 @@ export default function WorkspaceCommHub() {
 
     const fetchCommData = async () => {
         try {
-            const meetData = await getMeetings()
+            const [meetData, sentimentData] = await Promise.all([
+                getMeetings(),
+                getCommSentiment()
+            ])
             setMeetings(meetData)
+            setSentiment(sentimentData)
             fetchMessages()
         } catch (e) { console.error(e) }
     }
@@ -96,6 +105,18 @@ export default function WorkspaceCommHub() {
             setShowCreateMeeting(false)
             fetchCommData()
         } catch (e) { console.error(e) }
+    }
+
+    const handleSummarize = async (meet: any) => {
+        try {
+            setIsSummarizing(true)
+            const result = await summarizeMeeting(meet.id, "Simulated meeting notes for orchestration...")
+            setMeetingSummary(result.summary)
+        } catch (e) {
+            console.error(e)
+        } finally {
+            setIsSummarizing(false)
+        }
     }
 
     const joinMeeting = (meet: any) => {
@@ -274,8 +295,11 @@ export default function WorkspaceCommHub() {
                                             >
                                                 <ExternalLink className="w-3 h-3" /> Initiate Sync
                                             </button>
-                                            <button onClick={() => { navigator.clipboard.writeText(m.link); alert("Nexus Link Copied!"); }} className="p-3 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 transition-all">
+                                            <button onClick={() => { navigator.clipboard.writeText(m.link); alert("Nexus Link Copied!"); }} className="p-3 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 transition-all" title="Copy Link">
                                                 <LinkIcon className="w-3 h-3 text-white/40" />
+                                            </button>
+                                            <button onClick={() => handleSummarize(m)} className="p-3 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 transition-all" title="Summarize Session">
+                                                <FileText className={`w-3 h-3 text-white/40 ${isSummarizing ? 'animate-spin' : ''}`} />
                                             </button>
                                         </div>
                                     </Card>
@@ -299,10 +323,16 @@ export default function WorkspaceCommHub() {
                                         </div>
                                     </div>
                                 </div>
-                                <div className="flex gap-2">
-                                    <Badge className="bg-white/5 border-white/10 text-white/40 px-3 uppercase text-[9px]">256-BIT AES</Badge>
+                                    <div className="flex gap-2">
+                                        {sentiment && (
+                                            <Badge variant="pro" className={`${sentiment.label === 'POSITIVE' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'} border-none px-3 uppercase text-[9px] flex items-center gap-2`}>
+                                                <div className={`w-1.5 h-1.5 rounded-full ${sentiment.label === 'POSITIVE' ? 'bg-emerald-400' : 'bg-amber-400'} animate-pulse`} />
+                                                Team Vibe: {sentiment.label} ({Math.round(sentiment.score * 100)}%)
+                                            </Badge>
+                                        )}
+                                        <Badge className="bg-white/5 border-white/10 text-white/40 px-3 uppercase text-[9px]">256-BIT AES</Badge>
+                                    </div>
                                 </div>
-                            </div>
                             <div className="flex-1 overflow-y-auto p-8 flex flex-col gap-6 custom-scrollbar bg-[radial-gradient(circle_at_bottom_right,rgba(99,102,241,0.05),transparent_50%)]">
                                 {messages.length === 0 && (
                                      <div className="flex-1 flex flex-col items-center justify-center opacity-10">
@@ -437,6 +467,19 @@ export default function WorkspaceCommHub() {
                                 <Button className="flex-1 h-16 font-black uppercase tracking-[0.2em] text-white/40" variant="ghost" onClick={() => setShowCreateMeeting(false)}>Abort</Button>
                             </div>
                         </div>
+                    </Card>
+                </div>
+            )}
+
+            {meetingSummary && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-xl z-[300] flex items-center justify-center p-4">
+                    <Card variant="bento" className="w-full max-w-2xl p-12 border-white/10 shadow-2xl relative overflow-hidden">
+                         <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 blur-[60px]" />
+                         <h3 className="text-3xl font-black text-white mb-6 tracking-tighter italic uppercase">AI Strategic Summary</h3>
+                         <div className="prose prose-invert max-h-96 overflow-y-auto custom-scrollbar pr-4 text-white/80 whitespace-pre-wrap font-medium">
+                             {meetingSummary}
+                         </div>
+                         <Button variant="pro" className="w-full mt-8 h-16 font-black uppercase" onClick={() => setMeetingSummary(null)}>Dismiss Analysis</Button>
                     </Card>
                 </div>
             )}

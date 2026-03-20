@@ -1,13 +1,16 @@
 # simulation_engine.py
 
-import pandas as pd
-import numpy as np
+from app.core.strict_mode import require_real_services
 
 
 def simulate_price_change(df, percentage):
     df_sim = df.copy()
-    
-    scenario_name = f"Price_Appreciation_{percentage}%" if percentage > 0 else f"Price_Markdown_{abs(percentage)}%"
+
+    scenario_name = (
+        f"Price_Appreciation_{percentage}%"
+        if percentage > 0
+        else f"Price_Markdown_{abs(percentage)}%"
+    )
 
     if "revenue" not in df_sim.columns:
         return {"error": "Revenue column required", "scenario": scenario_name}
@@ -21,10 +24,15 @@ def simulate_price_change(df, percentage):
         "estimated_revenue": total_revenue,
     }
 
+
 def simulate_demand_change(df, percentage):
     df_sim = df.copy()
-    
-    scenario_name = f"Volume_Expansion_{percentage}%" if percentage > 0 else f"Volume_Contraction_{abs(percentage)}%"
+
+    scenario_name = (
+        f"Volume_Expansion_{percentage}%"
+        if percentage > 0
+        else f"Volume_Contraction_{abs(percentage)}%"
+    )
 
     if "quantity" not in df_sim.columns:
         return {"error": "Quantity column required", "scenario": scenario_name}
@@ -46,10 +54,12 @@ def simulate_demand_change(df, percentage):
 
 def run_simulations(df):
     """Run what-if simulations on the dataset."""
+    require_real_services("Simulation engine")
 
     # Generate features if needed
     try:
         from feature_store import generate_features
+
         df = generate_features(df)
     except Exception:
         pass

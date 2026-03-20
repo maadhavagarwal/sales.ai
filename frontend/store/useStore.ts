@@ -142,6 +142,7 @@ interface AppState {
     setUser: (email: string | null, role: string | null) => void
     setOnboardingComplete: (complete: boolean) => void
     setResults: (results: UploadResults) => void
+    setDatasetId: (id: string | null) => void
     setIsUploading: (loading: boolean) => void
     setUploadProgress: (progress: number) => void
     setFileName: (name: string | null) => void
@@ -219,6 +220,7 @@ export const useStore = create<AppState>((set) => ({
     },
 
     setResults: (results) => set({ results, datasetId: results.dataset_id || null }),
+    setDatasetId: (datasetId) => set({ datasetId }),
     setIsUploading: (isUploading) => set({ isUploading }),
     setUploadProgress: (uploadProgress) => set({ uploadProgress }),
     setFileName: (fileName) => set({ fileName }),

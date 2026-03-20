@@ -34,6 +34,15 @@ const navItems = [
         ],
     },
     {
+        section: "Collaboration Hub",
+        roles: ["ADMIN", "SALES", "FINANCE", "WAREHOUSE"],
+        items: [
+            { href: "/management", label: "Management Dashboard", icon: "👤" },
+            { href: "/messaging", label: "Messaging Center", icon: "💬" },
+            { href: "/meetings", label: "Meetings & Calendar", icon: "📅" },
+        ],
+    },
+    {
         section: "Enterprise Stack",
         roles: ["ADMIN", "SALES", "FINANCE", "WAREHOUSE"],
         items: [
@@ -42,6 +51,14 @@ const navItems = [
             { href: "/workspace/procurement", label: "Procurement & PO", icon: "🛒", roles: ["ADMIN", "FINANCE"] },
             { href: "/workspace?section=inventory", label: "Asset Lab", icon: "📦", roles: ["ADMIN", "WAREHOUSE"] },
             { href: "/workspace?section=accounts", label: "Accounting Core", icon: "🏛️", roles: ["ADMIN", "FINANCE"] },
+        ],
+    },
+    {
+        section: "Analysis & Automation",
+        roles: ["ADMIN", "SALES", "FINANCE"],
+        items: [
+            { href: "/segments", label: "Segment Analysis", icon: "🎯" },
+            { href: "/documents", label: "Document Engine", icon: "📄" },
         ],
     },
     {
@@ -71,7 +88,7 @@ export default function Sidebar() {
             {/* Mobile Menu Button */}
             <button
                 onClick={() => setMobileOpen(!mobileOpen)}
-                className="fixed top-6 left-6 z-[100] md:hidden p-3 rounded-2xl bg-black/40 backdrop-blur-xl border border-white/10 shadow-2xl"
+                className="fixed top-6 left-6 z-100 md:hidden p-3 rounded-2xl bg-black/40 backdrop-blur-xl border border-white/10 shadow-2xl"
                 aria-label="Toggle menu"
             >
                 <div className="w-6 h-6 flex flex-col justify-center items-center relative gap-1.5">
@@ -97,7 +114,7 @@ export default function Sidebar() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/80 backdrop-blur-md z-[80] md:hidden"
+                        className="fixed inset-0 bg-black/80 backdrop-blur-md z-80 md:hidden"
                         onClick={() => setMobileOpen(false)}
                     />
                 )}
@@ -108,11 +125,11 @@ export default function Sidebar() {
                 className={`
                     fixed md:sticky
                     top-0 left-0
-                    w-[300px] md:w-72
+                    w-72 md:w-72
                     h-screen
                     bg-black/20 backdrop-blur-xl md:bg-black/10
                     border-r border-white/5
-                    z-[90]
+                    z-90
                     transition-transform duration-700
                     flex flex-col
                     ${mobileOpen ? 'translate-x-0 shadow-[20px_0_80px_rgba(0,0,0,0.5)]' : '-translate-x-full md:translate-x-0'}
@@ -121,7 +138,7 @@ export default function Sidebar() {
                 {/* Logo Section */}
                 <div className="p-10 pb-6">
                     <Link href="/" onClick={() => setMobileOpen(false)} className="flex items-center gap-4 group">
-                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[--primary] to-[--accent-violet] flex items-center justify-center font-black text-white text-xl">
+                        <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-[--primary] to-[--accent-violet] flex items-center justify-center font-black text-white text-xl">
                             N
                         </div>
                         <div>
@@ -150,7 +167,7 @@ export default function Sidebar() {
                                                 relative flex items-center gap-4 px-5 py-4 rounded-2xl text-sm font-bold transition-all group overflow-hidden
                                                 ${isActive
                                                     ? 'bg-white/5 text-white border border-white/10'
-                                                    : 'text-[--text-muted] hover:text-white hover:bg-white/[0.02]'
+                                                    : 'text-[--text-muted] hover:text-white hover:bg-white/2'
                                                 }
                                             `}
                                         >
@@ -177,7 +194,7 @@ export default function Sidebar() {
                 <div className="mt-auto p-8 border-t border-white/5 bg-black/40">
                     <button
                         onClick={toggleTheme}
-                        className="w-full flex items-center justify-between p-4 rounded-2xl bg-white/[0.03] border border-white/5 text-white text-xs font-black hover:bg-white/[0.06] transition-all group"
+                        className="w-full flex items-center justify-between p-4 rounded-2xl bg-white/3 border border-white/5 text-white text-xs font-black hover:bg-white/6 transition-all gro"
                     >
                         <div className="flex items-center gap-4">
                             <div className="w-8 h-8 rounded-xl bg-black/40 flex items-center justify-center text-lg">

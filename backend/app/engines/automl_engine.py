@@ -7,30 +7,31 @@ and price_per_unit / margin signals.
 
 import numpy as np
 import pandas as pd
-
-from sklearn.model_selection import cross_val_score, train_test_split
-from sklearn.metrics import mean_absolute_error, r2_score
 from sklearn.ensemble import (
-    RandomForestRegressor,
-    GradientBoostingRegressor,
     ExtraTreesRegressor,
+    GradientBoostingRegressor,
     HistGradientBoostingRegressor,
+    RandomForestRegressor,
 )
 from sklearn.linear_model import Ridge
-from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import mean_absolute_error, r2_score
+from sklearn.model_selection import cross_val_score, train_test_split
 from sklearn.pipeline import Pipeline as SKPipeline
+from sklearn.preprocessing import StandardScaler
 
 from app.models.model_manager import save_model
 
 # ── Optional heavy boosters ────────────────────────────────────────────────────
 try:
     from xgboost import XGBRegressor
+
     HAS_XGBOOST = True
 except ImportError:
     HAS_XGBOOST = False
 
 try:
     from lightgbm import LGBMRegressor
+
     HAS_LIGHTGBM = True
 except ImportError:
     HAS_LIGHTGBM = False
@@ -64,7 +65,9 @@ def prepare_features(df: pd.DataFrame) -> pd.DataFrame:
     if "revenue" in df.columns and "quantity" in df.columns:
         df["price_per_unit"] = df["revenue"] / df["quantity"].replace(0, np.nan)
     if "revenue" in df.columns and "cost" in df.columns:
-        df["gross_margin"] = (df["revenue"] - df["cost"]) / df["revenue"].replace(0, np.nan)
+        df["gross_margin"] = (df["revenue"] - df["cost"]) / df["revenue"].replace(
+            0, np.nan
+        )
         df["markup_ratio"] = df["revenue"] / df["cost"].replace(0, np.nan)
 
     # --- Lag & rolling features (sorted by date if available) ---
@@ -100,7 +103,9 @@ def run_automl(df: pd.DataFrame) -> dict:
 
     # Drop rows where target or too many features are NaN
     combined = pd.concat([X, y], axis=1).dropna(subset=["revenue"])
-    X = combined.drop(columns=["revenue"]).fillna(combined.drop(columns=["revenue"]).median())
+    X = combined.drop(columns=["revenue"]).fillna(
+        combined.drop(columns=["revenue"]).median()
+    )
     y = combined["revenue"]
 
     if len(X) < 10:
@@ -122,36 +127,55 @@ def run_automl(df: pd.DataFrame) -> dict:
     # ── Model Candidates ──────────────────────────────────────────────────────
     candidates: dict = {
         "RandomForest": RandomForestRegressor(
-            n_estimators=100, max_features="sqrt",
-            min_samples_leaf=2, random_state=42, n_jobs=-1
+            n_estimators=100,
+            max_features="sqrt",
+            min_samples_leaf=2,
+            random_state=42,
+            n_jobs=-1,
         ),
         "ExtraTrees": ExtraTreesRegressor(
-            n_estimators=100, max_features="sqrt",
-            min_samples_leaf=2, random_state=42, n_jobs=-1
+            n_estimators=100,
+            max_features="sqrt",
+            min_samples_leaf=2,
+            random_state=42,
+            n_jobs=-1,
         ),
         "HistGBM": HistGradientBoostingRegressor(
-            max_iter=100, learning_rate=0.05,
-            max_leaf_nodes=31, random_state=42
+            max_iter=100, learning_rate=0.05, max_leaf_nodes=31, random_state=42
         ),
         "GradientBoosting": GradientBoostingRegressor(
-            n_estimators=100, learning_rate=0.05,
-            max_depth=4, subsample=0.8, random_state=42
+            n_estimators=100,
+            learning_rate=0.05,
+            max_depth=4,
+            subsample=0.8,
+            random_state=42,
         ),
-        "Ridge": SKPipeline([
-            ("scaler", StandardScaler()),
-            ("model", Ridge(alpha=10.0)),
-        ]),
+        "Ridge": SKPipeline(
+            [
+                ("scaler", StandardScaler()),
+                ("model", Ridge(alpha=10.0)),
+            ]
+        ),
     }
     if HAS_XGBOOST:
         candidates["XGBoost"] = XGBRegressor(
-            n_estimators=100, learning_rate=0.05, max_depth=5,
-            subsample=0.8, colsample_bytree=0.8,
-            random_state=42, verbosity=0, n_jobs=-1
+            n_estimators=100,
+            learning_rate=0.05,
+            max_depth=5,
+            subsample=0.8,
+            colsample_bytree=0.8,
+            random_state=42,
+            verbosity=0,
+            n_jobs=-1,
         )
     if HAS_LIGHTGBM:
         candidates["LightGBM"] = LGBMRegressor(
-            n_estimators=100, learning_rate=0.05, num_leaves=31,
-            random_state=42, n_jobs=-1, verbose=-1
+            n_estimators=100,
+            learning_rate=0.05,
+            num_leaves=31,
+            random_state=42,
+            n_jobs=-1,
+            verbose=-1,
         )
 
     results: dict = {}
@@ -165,8 +189,7 @@ def run_automl(df: pd.DataFrame) -> dict:
         try:
             # Cross-validated R² on training set
             cv_scores = cross_val_score(
-                model, X_train, y_train, cv=cv_folds,
-                scoring="r2", n_jobs=-1
+                model, X_train, y_train, cv=cv_folds, scoring="r2", n_jobs=-1
             )
             model.fit(X_train, y_train)
             preds = model.predict(X_test)
@@ -185,7 +208,13 @@ def run_automl(df: pd.DataFrame) -> dict:
                 best_model = model
                 best_name = name
         except Exception as e:
-            results[name] = {"r2_cv": 0.0, "r2_test": 0.0, "r2_blended": 0.0, "mae": None, "error": str(e)}
+            results[name] = {
+                "r2_cv": 0.0,
+                "r2_test": 0.0,
+                "r2_blended": 0.0,
+                "mae": None,
+                "error": str(e),
+            }
 
     if best_model is not None:
         save_model(best_model, "best_automl_model")
@@ -212,7 +241,9 @@ def forecast_sales(df: pd.DataFrame, periods: int = 12) -> dict:
         return {"error": "Not enough data points for forecasting"}
 
     df["time_index"] = (df["date"] - df["date"].min()).dt.days
-    model = HistGradientBoostingRegressor(max_iter=200, learning_rate=0.05, random_state=42)
+    model = HistGradientBoostingRegressor(
+        max_iter=200, learning_rate=0.05, random_state=42
+    )
     X = df[["time_index"]]
     y = df["revenue"]
     model.fit(X, y)

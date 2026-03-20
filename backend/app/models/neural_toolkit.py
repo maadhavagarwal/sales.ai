@@ -6,6 +6,7 @@ try:
     import torch
     import torch.nn as nn
     import torch.optim as optim
+
     HAS_TORCH = True
 except Exception as e:
     print(f"⚠️ Neural Toolkit initialization failed: {e}. Model training disabled.")
@@ -13,6 +14,7 @@ except Exception as e:
 
 
 if HAS_TORCH:
+
     class FeedForwardNN(nn.Module):
 
         def __init__(self, input_size):
@@ -23,7 +25,7 @@ if HAS_TORCH:
                 nn.ReLU(),
                 nn.Linear(64, 32),
                 nn.ReLU(),
-                nn.Linear(32, 1)
+                nn.Linear(32, 1),
             )
 
         def forward(self, x):

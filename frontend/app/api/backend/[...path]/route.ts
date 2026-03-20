@@ -2,7 +2,24 @@ import { NextRequest, NextResponse } from "next/server"
 
 export const runtime = "nodejs"
 
-const BACKEND_URL = process.env.BACKEND_INTERNAL_URL || process.env.NEXT_PUBLIC_BACKEND_INTERNAL_URL || "http://127.0.0.1:8000"
+const resolveBackendUrl = () => {
+  const rawCandidates = [
+    process.env.BACKEND_INTERNAL_URL,
+    process.env.NEXT_PUBLIC_BACKEND_INTERNAL_URL,
+    process.env.NEXT_PUBLIC_API_URL,
+    "http://127.0.0.1:8000",
+  ]
+
+  for (const candidate of rawCandidates) {
+    const value = (candidate || "").trim()
+    if (!value || !/^https?:\/\//i.test(value)) continue
+    // If someone passes a public proxy URL here, map it to backend root.
+    return value.replace(/\/api\/backend\/?$/i, "")
+  }
+  return "http://127.0.0.1:8000"
+}
+
+const BACKEND_URL = resolveBackendUrl()
 
 async function proxy(request: NextRequest, path: string[]) {
   const targetUrl = new URL(`${BACKEND_URL}/${path.join("/")}`)

@@ -1,9 +1,9 @@
 # autonomous_analyst.py
 
-from app.engines.analytics_engine import generate_analytics
-from app.engines.simulation_engine import run_simulations
 from app.engines.insight_engine import generate_insights
 from app.engines.llm_engine import ask_llm
+from app.engines.simulation_engine import run_simulations
+from app.core.strict_mode import require_real_services
 
 
 def profile_dataset(df):
@@ -69,20 +69,22 @@ Do not use conversational filler. Be direct, authoritative, and data-driven. Use
         "report": report,
     }
 
+
 def _generate_fallback_report(profile, analytics, insights, ml_results):
     """Generate a high-grade rule-based report when LLM generation fails."""
-    
+    require_real_services("Autonomous analyst fallback report")
+
     rep = "### Executive Diagnostics Brief\n\n"
-    
+
     # 1. Infrastructure & Ingestion
     shape = f"{profile.get('rows', 0):,} rows across {len(profile.get('columns', []))} dimensional axes"
     rep += "### 1. Data Infrastructure & Ingestion\n"
     rep += f"The analytical pipeline has successfully ingested and compiled a foundational dataset consisting of **{shape}**. "
-    if len(profile.get('missing_values', {})) > 0:
-         missing = sum(profile['missing_values'].values())
-         rep += f"Automated sanitization routines have mitigated {missing} null vectors, establishing a high-confidence environment for predictive modeling.\n\n"
+    if len(profile.get("missing_values", {})) > 0:
+        missing = sum(profile["missing_values"].values())
+        rep += f"Automated sanitization routines have mitigated {missing} null vectors, establishing a high-confidence environment for predictive modeling.\n\n"
     else:
-         rep += "The schema integrity is absolute, requiring zero imputation interventions prior to ML parsing.\n\n"
+        rep += "The schema integrity is absolute, requiring zero imputation interventions prior to ML parsing.\n\n"
 
     # 2. Empirical Performance & Capital Trajectory
     rep += "### 2. Empirical Performance & Financial Trajectory\n"
@@ -91,10 +93,18 @@ def _generate_fallback_report(profile, analytics, insights, ml_results):
     if "average_revenue" in analytics:
         rep += f"Unit economics remain stabilized with a mean transaction velocity (MTV) of **₹{analytics['average_revenue']:,.2f}**. "
     if "top_products" in analytics:
-        top_sku = list(analytics["top_products"].keys())[0] if analytics["top_products"] else "Core products"
+        top_sku = (
+            list(analytics["top_products"].keys())[0]
+            if analytics["top_products"]
+            else "Core products"
+        )
         rep += f"The asset portfolio is currently heavily indexed towards **'{top_sku}'**, which functions as the primary catalyst for yield generation.\n\n"
     elif "region_sales" in analytics:
-        best_reg = max(analytics["region_sales"], key=analytics["region_sales"].get) if analytics["region_sales"] else "Key regions"
+        best_reg = (
+            max(analytics["region_sales"], key=analytics["region_sales"].get)
+            if analytics["region_sales"]
+            else "Key regions"
+        )
         rep += f"Geospatial heatmap analysis isolates **'{best_reg}'** as the dominant expansion vector.\n\n"
 
     # 3. 🎯 Marketing Suggested Method
@@ -111,12 +121,12 @@ def _generate_fallback_report(profile, analytics, insights, ml_results):
 
     # 5. Algorithmic Directives
     if insights:
-         rep += "### 5. Algorithmic Directives\n"
-         for i in insights:
-             rep += f"- **Direct Action:** {i}\n"
-             
+        rep += "### 5. Algorithmic Directives\n"
+        for i in insights:
+            rep += f"- **Direct Action:** {i}\n"
+
     if ml_results and "time_series_forecast" in ml_results:
-         rep += "\n**Predictive Forecasting:** Time-series propagation engines indicate continued trajectory convergence. Refer to ML panels for quantitative day-by-day outputs.\n"
+        rep += "\n**Predictive Forecasting:** Time-series propagation engines indicate continued trajectory convergence. Refer to ML panels for quantitative day-by-day outputs.\n"
 
     rep += "\n*Systems note: Deep-learning generation offline. Output constrained to heuristic synthesis.*"
     return rep

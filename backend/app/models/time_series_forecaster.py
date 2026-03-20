@@ -3,12 +3,13 @@ Time Series Forecaster — High-Accuracy Revenue Prediction
 Uses an ensemble of HistGradientBoosting + ExtraTrees with rich lag/rolling/cyclical features.
 Falls back gracefully if data is too sparse.
 """
-import pandas as pd
-import numpy as np
+
 from datetime import timedelta
 
-from sklearn.ensemble import HistGradientBoostingRegressor, ExtraTreesRegressor
-from sklearn.metrics import r2_score, mean_absolute_error
+import numpy as np
+import pandas as pd
+from sklearn.ensemble import ExtraTreesRegressor, HistGradientBoostingRegressor
+from sklearn.metrics import mean_absolute_error, r2_score
 
 
 def _build_features(daily: pd.DataFrame) -> pd.DataFrame:
@@ -44,12 +45,29 @@ def _build_features(daily: pd.DataFrame) -> pd.DataFrame:
 
 
 FEATURE_COLS = [
-    "day_of_year", "day_of_week", "month", "quarter", "is_weekend",
-    "month_sin", "month_cos", "dow_sin", "dow_cos",
-    "lag_1", "lag_3", "lag_7", "lag_14", "lag_28",
-    "roll_mean_7", "roll_std_7", "roll_max_7",
-    "roll_mean_14", "roll_std_14", "roll_max_14",
-    "roll_mean_30", "roll_std_30", "roll_max_30",
+    "day_of_year",
+    "day_of_week",
+    "month",
+    "quarter",
+    "is_weekend",
+    "month_sin",
+    "month_cos",
+    "dow_sin",
+    "dow_cos",
+    "lag_1",
+    "lag_3",
+    "lag_7",
+    "lag_14",
+    "lag_28",
+    "roll_mean_7",
+    "roll_std_7",
+    "roll_max_7",
+    "roll_mean_14",
+    "roll_std_14",
+    "roll_max_14",
+    "roll_mean_30",
+    "roll_std_30",
+    "roll_max_30",
     "pct_change_7",
 ]
 
@@ -89,13 +107,18 @@ def forecast_revenue(df: pd.DataFrame, days_ahead: int = 30) -> list:
 
         # ── Ensemble: HistGBM + ExtraTrees ──────────────────────────────────
         hgbm = HistGradientBoostingRegressor(
-            max_iter=400, learning_rate=0.04,
-            max_leaf_nodes=31, l2_regularization=1.0,
-            random_state=42
+            max_iter=400,
+            learning_rate=0.04,
+            max_leaf_nodes=31,
+            l2_regularization=1.0,
+            random_state=42,
         )
         etrees = ExtraTreesRegressor(
-            n_estimators=300, max_features="sqrt",
-            min_samples_leaf=2, random_state=42, n_jobs=-1
+            n_estimators=300,
+            max_features="sqrt",
+            min_samples_leaf=2,
+            random_state=42,
+            n_jobs=-1,
         )
         hgbm.fit(X_train, y_train)
         etrees.fit(X_train, y_train)
@@ -114,10 +137,13 @@ def forecast_revenue(df: pd.DataFrame, days_ahead: int = 30) -> list:
         for i in range(1, days_ahead + 1):
             future_date = last_date + timedelta(days=i)
             extended = _build_features(
-                pd.concat([
-                    history,
-                    pd.DataFrame({"date": [future_date], "revenue": [np.nan]})
-                ], ignore_index=True)
+                pd.concat(
+                    [
+                        history,
+                        pd.DataFrame({"date": [future_date], "revenue": [np.nan]}),
+                    ],
+                    ignore_index=True,
+                )
             )
             row = extended.iloc[[-1]][available_cols].fillna(
                 extended[available_cols].median()
@@ -127,21 +153,29 @@ def forecast_revenue(df: pd.DataFrame, days_ahead: int = 30) -> list:
             pred_et = float(etrees.predict(row)[0])
             pred = max(0.0, w_hg * pred_hg + w_et * pred_et)
 
-            results.append({
-                "date": future_date.strftime("%Y-%m-%d"),
-                "predicted_revenue": round(pred, 2)
-            })
+            results.append(
+                {
+                    "date": future_date.strftime("%Y-%m-%d"),
+                    "predicted_revenue": round(pred, 2),
+                }
+            )
             # Feed prediction back into history for next step
-            history = pd.concat([
-                history,
-                pd.DataFrame({"date": [future_date], "revenue": [pred]})
-            ], ignore_index=True)
+            history = pd.concat(
+                [history, pd.DataFrame({"date": [future_date], "revenue": [pred]})],
+                ignore_index=True,
+            )
 
         # ── Explainability Layer ──────────────────────────────────────────
         # Generate human-readable reasoning for the forecast
-        recent_trend = "upward" if y_train.iloc[-5:].mean() > y_train.iloc[-10:-5].mean() else "downward"
-        confidence = "High" if blended_r2 > 0.7 else ("Medium" if blended_r2 > 0.4 else "Low")
-        
+        recent_trend = (
+            "upward"
+            if y_train.iloc[-5:].mean() > y_train.iloc[-10:-5].mean()
+            else "downward"
+        )
+        confidence = (
+            "High" if blended_r2 > 0.7 else ("Medium" if blended_r2 > 0.4 else "Low")
+        )
+
         # Calculate simplistic 80% confidence intervals based on MAE
         mae = mean_absolute_error(y_train, hgbm.predict(X_train))
         for r in results:
@@ -151,9 +185,17 @@ def forecast_revenue(df: pd.DataFrame, days_ahead: int = 30) -> list:
         return {
             "forecast": results,
             "logic": f"Revenue is projected on an {recent_trend} trajectory based on historical cyclicity. Model confidence: {confidence} (R²={blended_r2:.2f}).",
-            "feature_importance": {"Seasonality": 0.45, "Recent_Lags": 0.35, "Day_of_Week": 0.20}
+            "feature_importance": {
+                "Seasonality": 0.45,
+                "Recent_Lags": 0.35,
+                "Day_of_Week": 0.20,
+            },
         }
 
     except Exception as e:
         print(f"[Forecasting Error] {e}")
-        return {"forecast": [], "logic": "Analytic forecasting offline.", "error": str(e)}
+        return {
+            "forecast": [],
+            "logic": "Analytic forecasting offline.",
+            "error": str(e),
+        }

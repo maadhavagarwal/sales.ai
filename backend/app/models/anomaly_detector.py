@@ -4,7 +4,7 @@ from sklearn.ensemble import IsolationForest
 def detect_anomalies(df):
 
     if "revenue" not in df.columns:
-        return {"error":"Revenue column missing"}
+        return {"error": "Revenue column missing"}
 
     model = IsolationForest(contamination=0.05)
 
@@ -12,6 +12,4 @@ def detect_anomalies(df):
 
     anomalies = df[df["anomaly"] == -1]
 
-    return {
-        "anomalies_detected": len(anomalies)
-    }
+    return {"anomalies_detected": len(anomalies)}

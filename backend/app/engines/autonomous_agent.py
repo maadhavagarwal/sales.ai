@@ -12,13 +12,7 @@ def run_agent(question, df, analytics, ml_results):
 
         action = plan_next_step(question, memory)
 
-        result = execute_tool(
-            action,
-            df,
-            analytics,
-            ml_results,
-            question
-        )
+        result = execute_tool(action, df, analytics, ml_results, question)
 
         memory.add(action, result)
 

@@ -2,7 +2,6 @@
 Universal Dataset Intelligence — detects dataset type and schema from ANY CSV.
 """
 
-import pandas as pd
 import numpy as np
 
 # Cache for dataset summaries to improve performance
@@ -17,22 +16,45 @@ def detect_dataset_type(df):
     # Check for market/trading signals (Options specific)
     options_signals = ["strike", "iv", "pcr", "oi", "call", "put"]
     # Pure OHLC signals (market specific)
-    market_ohlc_signals = ["close", "high", "low", "open", "ltp", "ticker", "symbol", "expiry"]
-    
+    market_ohlc_signals = [
+        "close",
+        "high",
+        "low",
+        "open",
+        "ltp",
+        "ticker",
+        "symbol",
+        "expiry",
+    ]
+
     # Even more specific signals - if any of these are present, it's weighted heavily
     expert_signals = ["rsi", "macd", "bb_upper", "delta", "gamma", "theta", "vega"]
-    
+
     has_options = any(s in col_str for s in options_signals)
     has_expert = any(s in col_str for s in expert_signals)
     ohlc_count = sum(1 for s in market_ohlc_signals if s in col_str)
-    
+
     # Stronger requirement for market dataset to avoid detecting sales with 'price' and 'quantity'
     if has_options or has_expert or ohlc_count >= 3:
         return "market_dataset"
 
     # Check for sales/revenue signals
-    sales_signals = ["sales", "revenue", "amount", "total", "order", "invoice",
-                     "transaction", "purchase", "turnover", "gmv", "qty", "price", "party", "inv_no"]
+    sales_signals = [
+        "sales",
+        "revenue",
+        "amount",
+        "total",
+        "order",
+        "invoice",
+        "transaction",
+        "purchase",
+        "turnover",
+        "gmv",
+        "qty",
+        "price",
+        "party",
+        "inv_no",
+    ]
     if any(s in col_str for s in sales_signals):
         return "sales_dataset"
 
@@ -64,7 +86,7 @@ def get_dataset_summary(df, max_columns=20):
     """Generate a comprehensive summary of the dataset with performance optimizations."""
     # Create a cache key based on dataframe shape and column names
     cache_key = f"{len(df)}_{len(df.columns)}_{hash(tuple(df.columns))}"
-    
+
     if cache_key in _summary_cache:
         return _summary_cache[cache_key]
     # Limit processing to prevent slowdowns
@@ -86,10 +108,16 @@ def get_dataset_summary(df, max_columns=20):
         "numeric_columns": numeric_cols,
         "categorical_columns": categorical_cols,
         "date_columns": date_cols,
-        "missing_values": {k: int(v) for k, v in df.isnull().sum().head(max_columns).items() if v > 0},
+        "missing_values": {
+            k: int(v) for k, v in df.isnull().sum().head(max_columns).items() if v > 0
+        },
         "numeric_stats": {},
         "categorical_stats": {},
-        "performance_note": f"Summary calculated for {len(df_sample.columns)} of {total_cols} columns" if total_cols > max_columns else None
+        "performance_note": (
+            f"Summary calculated for {len(df_sample.columns)} of {total_cols} columns"
+            if total_cols > max_columns
+            else None
+        ),
     }
 
     # Numeric summaries - limit to first 10 numeric columns for performance

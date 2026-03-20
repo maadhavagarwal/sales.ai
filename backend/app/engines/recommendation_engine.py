@@ -5,8 +5,9 @@ def generate_recommendations(analytics):
     # 1. AI Pricing Optimization Strategy
     try:
         from app.engines.deep_rl_engine import train_dqn
+
         rl_result = train_dqn(analytics=analytics)
-        adj = rl_result['best_price_adjustment']
+        adj = rl_result["best_price_adjustment"]
         if adj > 0:
             recommendations.append(
                 f"📈 Pricing Elasticity: The Deep Q-Network agent predicts a +{adj}% price expansion opportunity. "
@@ -59,6 +60,8 @@ def generate_recommendations(analytics):
             )
 
     if not recommendations:
-        recommendations.append("Further data ingestion required to synthesize deterministic strategic matrices.")
+        recommendations.append(
+            "Further data ingestion required to synthesize deterministic strategic matrices."
+        )
 
     return recommendations

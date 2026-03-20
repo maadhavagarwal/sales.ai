@@ -1,4 +1,6 @@
 from app.engines.llm_engine import ask_llm
+from app.core.strict_mode import require_real_services
+
 
 def generate_detailed_strategic_plan(analytics, insights, strategy, pricing_opt=None):
     """
@@ -34,21 +36,32 @@ def generate_detailed_strategic_plan(analytics, insights, strategy, pricing_opt=
 
         Format the response in clear Markdown with professional headings. Use a formal, objective, and authoritative tone.
     """
-    
+
     try:
         plan = ask_llm(context)
         if "unavailable" in plan.lower() or "ollama" in plan.lower():
-             return _generate_fallback_plan(analytics, insights, strategy, pricing_opt)
+            return _generate_fallback_plan(analytics, insights, strategy, pricing_opt)
         return plan
     except:
         return _generate_fallback_plan(analytics, insights, strategy, pricing_opt)
 
+
 def _generate_fallback_plan(analytics, insights, strategy, pricing_opt=None):
+    require_real_services("Strategic plan fallback")
+
     # Dynamic fallback generation so it looks like a real advanced AI wrote it
     try:
-        rev = analytics.get('total_revenue', 0)
-        adj = pricing_opt.get('best_price_adjustment_percent', 0) if pricing_opt else "N/A"
-        top_prod = list(analytics.get('top_products', {}).keys())[0] if analytics.get('top_products') else "Core Inventory"
+        rev = analytics.get("total_revenue", 0)
+        adj = (
+            pricing_opt.get("best_price_adjustment_percent", 0)
+            if pricing_opt
+            else "N/A"
+        )
+        top_prod = (
+            list(analytics.get("top_products", {}).keys())[0]
+            if analytics.get("top_products")
+            else "Core Inventory"
+        )
     except Exception:
         rev, adj, top_prod = 0, "N/A", "Core Inventory"
 

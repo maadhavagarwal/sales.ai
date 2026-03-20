@@ -17,7 +17,7 @@ export default function Login() {
         e.preventDefault()
         setLoading(true)
         setError("")
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api/backend"
+        const API_URL = "/api/backend"
         try {
             const res = await fetch(`${API_URL}/login`, {
                 method: "POST",
@@ -27,6 +27,11 @@ export default function Login() {
             const data = await res.json()
             if (res.ok) {
                 localStorage.setItem("token", data.token)
+                localStorage.setItem("user", JSON.stringify({
+                    name: email.split("@")[0] || "User",
+                    email,
+                    role: data.role || "ADMIN",
+                }))
                 router.push("/dashboard")
             } else {
                 setError(data.error || "Login failed")
@@ -56,7 +61,7 @@ export default function Login() {
                     {/* Header */}
                     <div className="text-center mb-6 sm:mb-8">
                         <Link href="/" className="inline-block mb-4">
-                            <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center font-black text-white shadow-lg shadow-indigo-500/30 mx-auto">
+                            <div className="w-12 h-12 rounded-lg bg-linear-to-br from-indigo-600 to-purple-600 flex items-center justify-center font-black text-white shadow-lg shadow-indigo-500/30 mx-auto">
                                 N
                             </div>
                         </Link>

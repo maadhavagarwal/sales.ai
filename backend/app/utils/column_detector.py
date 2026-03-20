@@ -1,32 +1,11 @@
 COLUMN_PATTERNS = {
-
     "date": ["date", "order_date", "transaction_date"],
-
-    "revenue": [
-        "sales",
-        "revenue",
-        "amount",
-        "total",
-        "item_mrp"
-    ],
-
-    "product": [
-        "product",
-        "item",
-        "item_identifier"
-    ],
-
-    "region": [
-        "region",
-        "location",
-        "outlet_location_type"
-    ],
-
-    "customer": [
-        "customer",
-        "customer_id"
-    ]
+    "revenue": ["sales", "revenue", "amount", "total", "item_mrp"],
+    "product": ["product", "item", "item_identifier"],
+    "region": ["region", "location", "outlet_location_type"],
+    "customer": ["customer", "customer_id"],
 }
+
 
 def detect_columns(df):
 

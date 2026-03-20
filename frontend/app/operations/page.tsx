@@ -5,35 +5,12 @@ import { motion, AnimatePresence } from "framer-motion"
 import DashboardLayout from "@/components/layout/DashboardLayout"
 import { Card, Badge, Button, useToast, Modal, Input, Select } from "@/components/ui"
 import { Users, LayoutList, Calendar as CalendarIcon, Activity, Plus, MoreHorizontal, CheckCircle2, Circle, Clock, Loader2 } from "lucide-react"
+import { getOperationsData, manageOperationsPersonnel, manageOperationsSchedule, manageOperationsTask } from "@/services/api"
 
 // Types
 type Staff = { id: string, name: string, role: string, score: number, status: 'Active' | 'Offline' | 'On Leave', avatar: string }
 type Task = { id: string, title: string, assignee: string, priority: 'High' | 'Medium' | 'Low', status: 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE', deadline: string }
 type Shift = { id: string, name: string, date: string, hours: string, role: string }
-
-// Mock Data
-const INITIAL_STAFF: Staff[] = [
-    { id: "S1", name: "Elena Rodriguez", role: "Sr. Data Engineer", score: 98, status: "Active", avatar: "ER" },
-    { id: "S2", name: "James Chen", role: "Financial Controller", score: 95, status: "Active", avatar: "JC" },
-    { id: "S3", name: "Sarah Miller", role: "Warehouse Lead", score: 88, status: "Offline", avatar: "SM" },
-    { id: "S4", name: "David Kim", role: "AI Strategist", score: 99, status: "Active", avatar: "DK" },
-    { id: "S5", name: "Maria Garcia", role: "Operations Mgr", score: 92, status: "On Leave", avatar: "MG" }
-]
-
-const INITIAL_TASKS: Task[] = [
-    { id: "T1", title: "Migrate Q3 ERP Data", assignee: "Elena Rodriguez", priority: "High", status: "IN_PROGRESS", deadline: "Today" },
-    { id: "T2", title: "Quarterly Statutory Audit", assignee: "James Chen", priority: "High", status: "TODO", deadline: "Tomorrow" },
-    { id: "T3", title: "Optimize Inventory Network", assignee: "David Kim", priority: "Medium", status: "REVIEW", deadline: "In 2 days" },
-    { id: "T4", title: "Update Fulfillment Logic", assignee: "Sarah Miller", priority: "Low", status: "DONE", deadline: "Last week" },
-    { id: "T5", title: "Configure New Webhooks", assignee: "Elena Rodriguez", priority: "Medium", status: "TODO", deadline: "Next Week" }
-]
-
-const INITIAL_SHIFTS: Shift[] = [
-    { id: "SH1", name: "Morning Ops Sync", date: "Today", hours: "09:00 - 10:00", role: "All Leads" },
-    { id: "SH2", name: "Data Pipeline Maintenance", date: "Today", hours: "13:00 - 17:00", role: "Engineering" },
-    { id: "SH3", name: "Audit Review", date: "Tomorrow", hours: "10:00 - 12:00", role: "Finance" },
-    { id: "SH4", name: "Strategic Planning", date: "Tomorrow", hours: "15:00 - 16:30", role: "Management" }
-]
 
 export default function OperationsHub() {
     const { showToast } = useToast()
@@ -50,10 +27,14 @@ export default function OperationsHub() {
 
     const fetchOpsData = async () => {
         try {
-            const res = await fetch("/api/backend/operations")
-            const data = await res.json()
+            const data = await getOperationsData()
             
             if (data.error) throw new Error(data.error)
+
+            const assigneeMap = new Map<string, string>()
+            ;(data.personnel || []).forEach((p: any) => {
+                if (p.id && p.name) assigneeMap.set(p.id, p.name)
+            })
 
             // Map backend names to frontend naming conventions
             setPersonnel((data.personnel || []).map((p: any) => ({
@@ -68,7 +49,7 @@ export default function OperationsHub() {
             setTasks((data.tasks || []).map((t: any) => ({
                 id: t.id,
                 title: t.title,
-                assignee: t.assignee_id || "Unassigned",
+                assignee: assigneeMap.get(t.assignee_id) || t.assignee_id || "Unassigned",
                 priority: t.priority,
                 status: t.status,
                 deadline: t.deadline
@@ -96,18 +77,9 @@ export default function OperationsHub() {
     // Handlers
     const moveTask = async (taskId: string, newStatus: Task['status']) => {
         try {
-            const res = await fetch("/api/backend/operations/tasks", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    op: "UPDATE_STATUS",
-                    data: { id: taskId, status: newStatus }
-                })
-            })
-            if (res.ok) {
-                setTasks(tasks.map(t => t.id === taskId ? { ...t, status: newStatus } : t))
-                showToast("success", "Protocol Updated", `Task ${taskId} shifted to ${newStatus}`)
-            }
+            await manageOperationsTask("UPDATE_STATUS", { id: taskId, status: newStatus })
+            setTasks(tasks.map(t => t.id === taskId ? { ...t, status: newStatus } : t))
+            showToast("success", "Protocol Updated", `Task ${taskId} shifted to ${newStatus}`)
         } catch (error) {
             showToast("error", "Command Failed", "System synchronization error")
         }
@@ -118,23 +90,18 @@ export default function OperationsHub() {
         setIsSubmitting(true)
         try {
             const endpoint = activeModal === 'roster' ? 'personnel' : activeModal === 'tasks' ? 'tasks' : 'schedules'
-            const res = await fetch(`/api/backend/operations/${endpoint}`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    op: "CREATE",
-                    data: formData
-                })
-            })
-            
-            if (res.ok) {
-                showToast("success", "Deployment Initialized", `Target ${endpoint} has been integrated into the cluster.`)
-                setActiveModal(null)
-                setFormData({})
-                fetchOpsData()
+            if (endpoint === 'personnel') {
+                await manageOperationsPersonnel("CREATE", formData)
+            } else if (endpoint === 'tasks') {
+                await manageOperationsTask("CREATE", formData)
             } else {
-                throw new Error("API rejection")
+                await manageOperationsSchedule("CREATE", formData)
             }
+            
+            showToast("success", "Deployment Initialized", `Target ${endpoint} has been integrated into the cluster.`)
+            setActiveModal(null)
+            setFormData({})
+            fetchOpsData()
         } catch (error) {
             showToast("error", "Deployment Failure", "Neural link rejected the initialization request.")
         } finally {
@@ -147,6 +114,11 @@ export default function OperationsHub() {
         Medium: "text-amber-400 bg-amber-400/10 border-amber-400/20",
         Low: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20"
     }
+
+    const activePersonnelCount = personnel.filter(p => p.status === 'Active').length
+    const completedTasksCount = tasks.filter(t => t.status === 'DONE').length
+    const sprintVelocity = tasks.length > 0 ? Math.round((completedTasksCount / tasks.length) * 100) : 0
+    const nextMilestone = schedules[0]?.name || 'No Scheduled Milestones'
 
     return (
         <DashboardLayout
@@ -161,14 +133,14 @@ export default function OperationsHub() {
                             <Users className="w-4 h-4" />
                             <span className="text-[10px] font-black uppercase tracking-widest">Active Personnel</span>
                         </div>
-                        <div className="text-3xl font-black text-white">42<span className="text-sm font-medium text-[--text-muted] ml-2">/ 45</span></div>
+                        <div className="text-3xl font-black text-white">{activePersonnelCount}<span className="text-sm font-medium text-[--text-muted] ml-2">/ {personnel.length}</span></div>
                     </Card>
                     <Card variant="glass" padding="md" className="border-white/5">
                         <div className="flex items-center gap-3 mb-2 text-[--text-muted]">
                             <Activity className="w-4 h-4" />
                             <span className="text-[10px] font-black uppercase tracking-widest">Sprint Velocity</span>
                         </div>
-                        <div className="text-3xl font-black text-[--accent-emerald]">94%</div>
+                        <div className="text-3xl font-black text-[--accent-emerald]">{sprintVelocity}%</div>
                     </Card>
                     <Card variant="glass" padding="md" className="border-white/5">
                         <div className="flex items-center gap-3 mb-2 text-[--text-muted]">
@@ -182,7 +154,7 @@ export default function OperationsHub() {
                             <CalendarIcon className="w-4 h-4" />
                             <span className="text-[10px] font-black uppercase tracking-widest">Next Milestone</span>
                         </div>
-                        <div className="text-xl font-black text-white mt-2">Q3 Compliance Review</div>
+                        <div className="text-xl font-black text-white mt-2">{nextMilestone}</div>
                     </Card>
                 </div>
 

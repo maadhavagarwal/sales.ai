@@ -12,10 +12,7 @@ def forecast_sales(df):
 
         data = df[["date", "revenue"]].copy()
 
-        data = data.rename(columns={
-            "date": "ds",
-            "revenue": "y"
-        })
+        data = data.rename(columns={"date": "ds", "revenue": "y"})
 
         # Ensure ds is datetime
         data["ds"] = pd.to_datetime(data["ds"], errors="coerce")
@@ -32,7 +29,9 @@ def forecast_sales(df):
         forecast = model.predict(future)
 
         return {
-            "forecast_next_30_days": forecast[["ds", "yhat"]].tail(30).to_dict(orient="records")
+            "forecast_next_30_days": forecast[["ds", "yhat"]]
+            .tail(30)
+            .to_dict(orient="records")
         }
 
     except ImportError:

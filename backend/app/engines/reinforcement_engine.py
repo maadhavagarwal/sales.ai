@@ -43,6 +43,4 @@ def train_rl_agent(episodes=500):
 
     best_action = actions[np.argmax(q_table)]
 
-    return {
-        "best_price_adjustment": best_action
-    }
+    return {"best_price_adjustment": best_action}

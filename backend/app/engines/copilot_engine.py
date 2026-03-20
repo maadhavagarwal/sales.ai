@@ -1,5 +1,6 @@
-import pandas as pd
 import numpy as np
+import pandas as pd
+from app.core.strict_mode import require_real_services
 
 
 def handle_question(question, df, analytics, ml_results, pipeline=None):
@@ -10,20 +11,22 @@ def handle_question(question, df, analytics, ml_results, pipeline=None):
     if any(w in q for w in ["what if", "simulate", "what happens if"]):
         try:
             from app.engines.intelligence_engine import IntelligenceEngine
-            sim_result = IntelligenceEngine.simulate_what_if(question)
-            
+
+            company_id = analytics.get("company_id") if isinstance(analytics, dict) else None
+            sim_result = IntelligenceEngine.simulate_what_if(company_id or "DEFAULT", question)
+
             # Format simulation result for the chat
             impact = sim_result.get("impact_description", "")
             baseline = f"₹{sim_result.get('baseline_revenue', 0):,.0f}"
             hypo = f"₹{sim_result.get('hypothetical_revenue', 0):,.0f}"
             rec = sim_result.get("recommendation", "")
-            
+
             return f"🌿 **Simulation Engine Diagnostics**\n\n{impact}\n\n• **Baseline Revenue (30D):** {baseline}\n• **Projected Impact:** {hypo}\n• **Confidence Score:** {sim_result.get('confidence_interval', 0.85)*100}%\n\n💡 **Executive Recommendation:** {rec}"
         except Exception as e:
             print(f"Simulation routing error: {e}")
 
     try:
-        # Try direct pandas analysis first  
+        # Try direct pandas analysis first
         answer = _analyze_with_pandas(q, df, analytics, ml_results, pipeline)
         if answer:
             return answer
@@ -34,7 +37,6 @@ def handle_question(question, df, analytics, ml_results, pipeline=None):
 
 
 def _analyze_with_pandas(q, df, analytics, ml_results, pipeline):
-
 
     numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
     cat_cols = df.select_dtypes(include=["object"]).columns.tolist()
@@ -64,7 +66,12 @@ def _analyze_with_pandas(q, df, analytics, ml_results, pipeline):
 
         if target_cat and target_num:
             n = _extract_number(q) or 5
-            result = df.groupby(target_cat)[target_num].sum().sort_values(ascending=False).head(n)
+            result = (
+                df.groupby(target_cat)[target_num]
+                .sum()
+                .sort_values(ascending=False)
+                .head(n)
+            )
             lines = [f"Top {n} {target_cat} by {target_num}:"]
             for name, val in result.items():
                 lines.append(f"  • {name}: {_fmt(val)}")
@@ -82,7 +89,12 @@ def _analyze_with_pandas(q, df, analytics, ml_results, pipeline):
 
         if target_cat and target_num:
             n = _extract_number(q) or 5
-            result = df.groupby(target_cat)[target_num].sum().sort_values(ascending=True).head(n)
+            result = (
+                df.groupby(target_cat)[target_num]
+                .sum()
+                .sort_values(ascending=True)
+                .head(n)
+            )
             lines = [f"Bottom {n} {target_cat} by {target_num}:"]
             for name, val in result.items():
                 lines.append(f"  • {name}: {_fmt(val)}")
@@ -94,7 +106,9 @@ def _analyze_with_pandas(q, df, analytics, ml_results, pipeline):
         target_cat = _find_column_in_question(q, cat_cols)
 
         if target_num and target_cat:
-            result = df.groupby(target_cat)[target_num].sum().sort_values(ascending=False)
+            result = (
+                df.groupby(target_cat)[target_num].sum().sort_values(ascending=False)
+            )
             lines = [f"Total {target_num} by {target_cat}:"]
             for name, val in result.items():
                 lines.append(f"  • {name}: {_fmt(val)}")
@@ -114,7 +128,9 @@ def _analyze_with_pandas(q, df, analytics, ml_results, pipeline):
         target_cat = _find_column_in_question(q, cat_cols)
 
         if target_num and target_cat:
-            result = df.groupby(target_cat)[target_num].mean().sort_values(ascending=False)
+            result = (
+                df.groupby(target_cat)[target_num].mean().sort_values(ascending=False)
+            )
             lines = [f"Average {target_num} by {target_cat}:"]
             for name, val in result.items():
                 lines.append(f"  • {name}: {_fmt(val)}")
@@ -138,7 +154,10 @@ def _analyze_with_pandas(q, df, analytics, ml_results, pipeline):
         target_col = _find_column_in_question(q, all_cols)
         if target_col:
             values = df[target_col].dropna().astype(str).unique().tolist()[:15]
-            return f"{target_col} has {df[target_col].nunique()} unique values: " + ", ".join(values)
+            return (
+                f"{target_col} has {df[target_col].nunique()} unique values: "
+                + ", ".join(values)
+            )
 
     # ---- COMPARE ----
     if any(w in q for w in ["compare", "comparison", "versus", "vs"]):
@@ -150,7 +169,9 @@ def _analyze_with_pandas(q, df, analytics, ml_results, pipeline):
             result = df.groupby(target_cat)[target_num].agg(["sum", "mean", "count"])
             lines = [f"Comparison of {target_num} by {target_cat}:"]
             for name, row in result.iterrows():
-                lines.append(f"  • {name}: Total={_fmt(row['sum'])}, Avg={_fmt(row['mean'])}, Count={int(row['count'])}")
+                lines.append(
+                    f"  • {name}: Total={_fmt(row['sum'])}, Avg={_fmt(row['mean'])}, Count={int(row['count'])}"
+                )
             return "\n".join(lines)
 
     # ---- TREND / OVER TIME ----
@@ -172,20 +193,30 @@ def _analyze_with_pandas(q, df, analytics, ml_results, pipeline):
         if len(numeric_cols) >= 2:
             col_a = _find_column_in_question(q, numeric_cols) or numeric_cols[0]
             other_cols = [col for col in numeric_cols if col != col_a]
-            col_b = next((col for col in other_cols if col.lower() in q), other_cols[0] if other_cols else None)
+            col_b = next(
+                (col for col in other_cols if col.lower() in q),
+                other_cols[0] if other_cols else None,
+            )
             if col_b:
                 corr = df[[col_a, col_b]].corr().iloc[0, 1]
                 return f"Correlation between {col_a} and {col_b}: {corr:.3f}"
 
     # ---- SUMMARY / OVERVIEW / DESCRIBE ----
-    if any(w in q for w in ["summary", "summar", "overview", "describe", "tell me about", "info"]):
+    if any(
+        w in q
+        for w in ["summary", "summar", "overview", "describe", "tell me about", "info"]
+    ):
         lines = [f"Dataset Overview:"]
         lines.append(f"  • Rows: {len(df):,}")
-        lines.append(f"  • Columns: {len(df.columns)} ({', '.join(all_cols[:8])}{'...' if len(all_cols) > 8 else ''})")
+        lines.append(
+            f"  • Columns: {len(df.columns)} ({', '.join(all_cols[:8])}{'...' if len(all_cols) > 8 else ''})"
+        )
         lines.append(f"  • Numeric: {', '.join(numeric_cols[:6])}")
         lines.append(f"  • Categorical: {', '.join(cat_cols[:6])}")
         for col in numeric_cols[:4]:
-            lines.append(f"  • {col}: Total={_fmt(df[col].sum())}, Avg={_fmt(df[col].mean())}, Min={_fmt(df[col].min())}, Max={_fmt(df[col].max())}")
+            lines.append(
+                f"  • {col}: Total={_fmt(df[col].sum())}, Avg={_fmt(df[col].mean())}, Min={_fmt(df[col].min())}, Max={_fmt(df[col].max())}"
+            )
         if analytics.get("top_products"):
             top = list(analytics["top_products"].keys())[0]
             lines.append(f"  • Top Product: {top}")
@@ -199,10 +230,16 @@ def _analyze_with_pandas(q, df, analytics, ml_results, pipeline):
     mentioned_cat = _find_column_in_question(q, cat_cols)
 
     if mentioned_num and mentioned_cat:
-        result = df.groupby(mentioned_cat)[mentioned_num].agg(["sum", "mean", "count"]).sort_values("sum", ascending=False)
+        result = (
+            df.groupby(mentioned_cat)[mentioned_num]
+            .agg(["sum", "mean", "count"])
+            .sort_values("sum", ascending=False)
+        )
         lines = [f"{mentioned_num} by {mentioned_cat}:"]
         for name, row in result.head(10).iterrows():
-            lines.append(f"  • {name}: Total={_fmt(row['sum'])}, Avg={_fmt(row['mean'])}")
+            lines.append(
+                f"  • {name}: Total={_fmt(row['sum'])}, Avg={_fmt(row['mean'])}"
+            )
         return "\n".join(lines)
 
     if mentioned_num:
@@ -231,29 +268,41 @@ def _fallback_answer(q, df, analytics, ml_results):
     Enterprise RAG Fallback System:
     Uses Vector DB (ChromaDB) to recall past schemas, and LLM to synthesize complex, unstructured answers.
     """
+    require_real_services("Copilot fallback answer")
+
     import os
+
     try:
-        from app.engines.llm_engine import ask_llm
         import chromadb
-        
+
+        from app.engines.llm_engine import ask_llm
+
         # Init Vector Database
         chroma_path = os.path.join(os.path.dirname(__file__), "..", "..", ".vector_db")
         os.makedirs(chroma_path, exist_ok=True)
         chroma_client = chromadb.PersistentClient(path=chroma_path)
-        collection = chroma_client.get_or_create_collection(name="enterprise_analytics_memory")
-        
+        collection = chroma_client.get_or_create_collection(
+            name="enterprise_analytics_memory"
+        )
+
         # Document the current snippet to Vector DB for future memory
         doc_id = str(pd.util.hash_pandas_object(df).sum())
         collection.upsert(
-            documents=[f"Columns: {list(df.columns)}. Top product: {list(analytics.get('top_products', {}).keys())[:1]}"],
+            documents=[
+                f"Columns: {list(df.columns)}. Top product: {list(analytics.get('top_products', {}).keys())[:1]}"
+            ],
             metadatas=[{"type": "schema"}],
-            ids=[doc_id]
+            ids=[doc_id],
         )
-        
+
         # Retrieve context
         results = collection.query(query_texts=[q], n_results=2)
-        memory_context = results["documents"][0] if results and "documents" in results and results["documents"] else []
-        
+        memory_context = (
+            results["documents"][0]
+            if results and "documents" in results and results["documents"]
+            else []
+        )
+
         prompt = f"""
         You are an elite Enterprise Data Copilot.
         Question: "{q}"
@@ -264,9 +313,9 @@ def _fallback_answer(q, df, analytics, ml_results):
         
         Answer the user's question concisely and professionally. Focus on numerical evidence and exact precision. Do not apologize.
         """
-        
+
         return ask_llm(prompt)
-        
+
     except Exception as e:
         print(f"RAG Error: {e}")
         # Absolute Final Hand-Coded Fallback if LLM/Chroma crashes
@@ -274,16 +323,24 @@ def _fallback_answer(q, df, analytics, ml_results):
         cat_cols = df.select_dtypes(include=["object"]).columns.tolist()
 
         lines = ["🤖 **System Diagnostic Readout**"]
-        lines.append(f"  • Enterprise Volume: {len(df):,} vectors across {len(df.columns)} semantic dimensions")
+        lines.append(
+            f"  • Enterprise Volume: {len(df):,} vectors across {len(df.columns)} semantic dimensions"
+        )
 
         for col in numeric_cols[:3]:
-            lines.append(f"  • {col} metrics: Cumulative={_fmt(df[col].sum())}, Mean Velocity={_fmt(df[col].mean())}")
+            lines.append(
+                f"  • {col} metrics: Cumulative={_fmt(df[col].sum())}, Mean Velocity={_fmt(df[col].mean())}"
+            )
 
         if analytics.get("top_products"):
             top_items = list(analytics["top_products"].items())[:3]
-            lines.append(f"  • Flagship assets: {', '.join(f'{k} ({_fmt(v)})' for k, v in top_items)}")
+            lines.append(
+                f"  • Flagship assets: {', '.join(f'{k} ({_fmt(v)})' for k, v in top_items)}"
+            )
 
-        lines.append(f"\n*Recommendation: Ensure Deep-Learning and Vectordb sub-systems are operative for advanced RAG querying.*")
+        lines.append(
+            f"\n*Recommendation: Ensure Deep-Learning and Vectordb sub-systems are operative for advanced RAG querying.*"
+        )
         return "\n".join(lines)
 
 
@@ -300,6 +357,7 @@ def _find_column_in_question(q, columns):
             return col
     return None
 
+
 def _find_date_column(df):
     for col in df.columns:
         col_lower = col.lower()
@@ -314,11 +372,14 @@ def _find_date_column(df):
             continue
     return None
 
+
 def _extract_number(q):
     """Extract a number from the question (e.g., 'top 10')."""
     import re
-    match = re.search(r'\b(\d+)\b', q)
+
+    match = re.search(r"\b(\d+)\b", q)
     return int(match.group(1)) if match else None
+
 
 def _fmt(val, currency="₹"):
     """Format a numeric value nicely with currency symbol."""

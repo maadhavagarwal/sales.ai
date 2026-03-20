@@ -1,6 +1,6 @@
 # Neural BI - Production Feature Audit Report
 
-**Date:** 2026-03-15 23:00:16
+**Date:** 2026-03-21 00:58:13
 **Auditor:** Antigravity AI
 **Status:** SUCCESS
 
@@ -67,11 +67,11 @@ Successfully retrieved production-grade data. Sample structure validation:
 {
   "summary": {
     "total_revenue": 5037500.0,
-    "total_expenses": 505000.0,
-    "ebitda": 4532500.0,
-    "margin": 67.48,
-    "gross_margin": 89.98,
-    "net_profit": 3399375.0,
+    "total_expenses": 0.0,
+    "ebitda": 5037500.0,
+    "margin": 75.0,
+    "gross_margin": 100.0,
+    "net_profit": 3778125.0,
     "tax_estimate": 906750.0,
     "receivables": 5000000.0,
     "payables": 0.0,
@@ -81,7 +81,7 @@ Successfully retrieved production-grade data. Sample structure validation:
   },
   "ai_strategic_advice": "### \ud83e\udde0 AI Strategic Recommendation\nBased on your historical velocity and current margin profile, we recommend a **15% reallocation of capital** toward high-turnover SKUs. Focus on reducing inventory holding costs for stagnant assets.",
   "confidence_score": 0.94,
-  "timestamp": "2026-03-15T23:00:14.578978"
+  "timestamp": "2026-03-21T00:58:12.495889"
 }
 ```
 
@@ -103,97 +103,97 @@ Successfully retrieved production-grade data. Sample structure validation:
   "current_balance": 0.0,
   "forecast_90d": [
     {
-      "date": "2026-03-15",
+      "date": "2026-03-21",
       "projected_cash": 0.0,
       "is_gap": false
     },
     {
-      "date": "2026-03-20",
+      "date": "2026-03-26",
       "projected_cash": 0.0,
       "is_gap": false
     },
     {
-      "date": "2026-03-25",
+      "date": "2026-03-31",
       "projected_cash": 0.0,
       "is_gap": false
     },
     {
-      "date": "2026-03-30",
+      "date": "2026-04-05",
       "projected_cash": 0.0,
       "is_gap": false
     },
     {
-      "date": "2026-04-04",
+      "date": "2026-04-10",
       "projected_cash": 0.0,
       "is_gap": false
     },
     {
-      "date": "2026-04-09",
+      "date": "2026-04-15",
       "projected_cash": 0.0,
       "is_gap": false
     },
     {
-      "date": "2026-04-14",
+      "date": "2026-04-20",
       "projected_cash": 0.0,
       "is_gap": false
     },
     {
-      "date": "2026-04-19",
+      "date": "2026-04-25",
       "projected_cash": 0.0,
       "is_gap": false
     },
     {
-      "date": "2026-04-24",
+      "date": "2026-04-30",
       "projected_cash": 0.0,
       "is_gap": false
     },
     {
-      "date": "2026-04-29",
+      "date": "2026-05-05",
       "projected_cash": 0.0,
       "is_gap": false
     },
     {
-      "date": "2026-05-04",
+      "date": "2026-05-10",
       "projected_cash": 0.0,
       "is_gap": false
     },
     {
-      "date": "2026-05-09",
+      "date": "2026-05-15",
       "projected_cash": 0.0,
       "is_gap": false
     },
     {
-      "date": "2026-05-14",
+      "date": "2026-05-20",
       "projected_cash": 0.0,
       "is_gap": false
     },
     {
-      "date": "2026-05-19",
+      "date": "2026-05-25",
       "projected_cash": 0.0,
       "is_gap": false
     },
     {
-      "date": "2026-05-24",
+      "date": "2026-05-30",
       "projected_cash": 0.0,
       "is_gap": false
     },
     {
-      "date": "2026-05-29",
+      "date": "2026-06-04",
       "projected_cash": 0.0,
       "is_gap": false
     },
     {
-      "date": "2026-06-03",
+      "date": "2026-06-09",
       "projected_cash": 0.0,
       "is_gap": false
     },
     {
-      "date": "2026-06-08",
+      "date": "2026-06-14",
       "projected_cash": 0.0,
       "is_gap": false
     },
     {
-      "date": "2026-06-13",
+      "date": "2026-06-19",
       "projected_cash": 0.0,
       "is_gap": false
     }
@@ -208,9 +208,13 @@ Successfully retrieved production-grade data. Sample structure validation:
 
 ```json
 {
-  "answer": "The AI engine is currently optimizing its neural weights. Please retry.",
-  "type": "text"
+  "answer": "### \ud83e\udde0 AI Strategic Recommendation\nBased on your historical velocity and current margin profile, we recommend a **15% reallocation of capital** toward high-turnover SKUs. Focus on reducing inventory holding costs for stagnant assets.",
+  "chart": null,
+  "type": "text",
+  "confidence": 0.99,
+  "explainability": []
 }
+...
 ```
 
 ### Accounting Daybook
@@ -317,18 +321,18 @@ Successfully retrieved production-grade data. Sample structure validation:
   ],
   "selected_underlying": "NIFTY",
   "available_expiries": [
-    "2026-03-19",
     "2026-03-26",
     "2026-04-02",
-    "2026-04-09"
+    "2026-04-09",
+    "2026-04-16"
   ],
-  "selected_expiry": "2026-03-19",
+  "selected_expiry": "2026-03-26",
   "market_snapshot": {
-    "spot": 20428.67,
-    "days_to_expiry": 4,
+    "spot": 20663.14,
+    "days_to_expiry": 6,
     "lot_size": 50,
     "step": 50,
-    "realized_vol": 16.5,
+    "realized_vol": 16.51,
     "trend_bias": "Bullish"
   }
 }
@@ -354,12 +358,12 @@ Successfully retrieved production-grade data. Sample structure validation:
 
 ```json
 {
-  "customer_id": "Prime Inc",
-  "health_score": 43.9,
+  "customer_id": "ABC Corp",
+  "health_score": 42.4,
   "status": "Healthy",
-  "recency_days": 71.0,
+  "recency_days": 79.0,
   "purchase_count": 1.0,
-  "total_revenue": 3000.0,
+  "total_revenue": 1000.0,
   "automated_workflow": null
 }
 [... more items ...]
@@ -377,17 +381,17 @@ Successfully retrieved production-grade data. Sample structure validation:
 
 ```json
 {
-  "id": 1,
-  "company_id": null,
-  "sku": "SKU-0001",
-  "name": "Widget Pro",
-  "quantity": 150,
-  "cost_price": 3200.0,
-  "sale_price": 4520.0,
-  "category": "Hardware",
-  "hsn_code": "998311",
-  "location": "Main Warehouse",
-  "last_updated": "2026-03-15 12:28:59"
+  "id": 10,
+  "company_id": "STRESS_TEST_001",
+  "sku": "SKU-LOW",
+  "name": "Scarcity Item",
+  "quantity": 5,
+  "cost_price": 1000.0,
+  "sale_price": 1500.0,
+  "category": "Tech",
+  "hsn_code": null,
+  "location": "Main",
+  "last_updated": "2026-03-15 17:27:01"
 }
 [... more items ...]
 ```
@@ -411,14 +415,10 @@ Successfully retrieved production-grade data. Sample structure validation:
 
 ```json
 {
-  "total_employees": 3,
-  "dept_distribution": {
-    "Engineering": 1,
-    "Products": 1,
-    "Sales": 1
-  },
-  "avg_salary": 110000.0,
-  "active_count": 2
+  "total_employees": 0,
+  "dept_distribution": {},
+  "avg_salary": 0.0,
+  "active_count": 0
 }
 ```
 
@@ -435,14 +435,14 @@ Successfully retrieved production-grade data. Sample structure validation:
 ```json
 {
   "kpis": {
-    "total_revenue": 2499280.8413430615,
-    "monthly_growth": 8.83698640275246,
-    "active_customers": 143,
-    "inventory_turnover": 12.67758873831642,
-    "cash_flow": 458934.64035727165,
-    "profit_margin": 18.78279162997209
+    "total_revenue": 5037500.0,
+    "monthly_growth": 100.0,
+    "active_customers": 0,
+    "inventory_turnover": 0.0,
+    "cash_flow": 37500.0,
+    "profit_margin": 100.0
   },
-  "last_updated": "2026-03-15T17:30:14.394783"
+  "last_updated": "2026-03-20T19:28:13.355878"
 }
 ```
 
@@ -504,9 +504,9 @@ Successfully retrieved production-grade data. Sample structure validation:
 {
   "sku": "SKU-LOW",
   "base_price": 1500.0,
-  "dynamic_price": 1897.5,
-  "delta": 397.5,
-  "reasoning": "Stock level (5.0) and demand velocity (26) suggest price optimization."
+  "dynamic_price": 1725.0,
+  "delta": 225.0,
+  "reasoning": "Stock level (5.0) and demand velocity (11) suggest price optimization."
 }
 ...
 ```
@@ -516,12 +516,11 @@ Successfully retrieved production-grade data. Sample structure validation:
 
 ```json
 {
-  "name": "Team Lead",
-  "deals": 42,
-  "value": 12000000,
+  "name": "Unassigned",
+  "deals": 26,
+  "value": 5037500.0,
   "status": "Top Performer"
 }
-[... more items ...]
 ```
 
 ### Predictive Revenue Scenarios
@@ -566,13 +565,26 @@ Successfully retrieved production-grade data. Sample structure validation:
   "personnel": 0,
   "ledger": 0
 }
+...
 ```
 
 ### Marketing Campaigns
 Successfully retrieved production-grade data. Sample structure validation:
 
 ```json
-[]
+{
+  "id": 1,
+  "company_id": "seed-company",
+  "name": "Launch Readiness Campaign",
+  "channel": "digital",
+  "spend": 12000.0,
+  "conversions": 12,
+  "revenue_generated": 80000.0,
+  "status": "ACTIVE",
+  "start_date": "2026-03-20",
+  "end_date": "2026-03-20",
+  "created_at": "2026-03-20 17:38:33"
+}
 ```
 
 ### Corporate Meetings
@@ -616,7 +628,8 @@ Successfully retrieved production-grade data. Sample structure validation:
 ```json
 {
   "status": "scheduled",
-  "message": "Report pipeline active for test@neural.ai."
+  "message": "CFO_HEALTH report scheduled for test@neural.ai",
+  "frequency": "WEEKLY"
 }
 ```
 

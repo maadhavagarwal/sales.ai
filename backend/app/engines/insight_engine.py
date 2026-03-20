@@ -1,12 +1,16 @@
 def generate_insights(analytics, currency="₹"):
     insights = []
-    
+
     # 1. Revenue Velocity & Scale
     if "total_revenue" in analytics:
-        rev = analytics['total_revenue']
-        avg = analytics.get('average_order_value', 0)
-        
-        strength = "an exceptional" if avg > 1000 else "a stable" if avg > 500 else "a baseline"
+        rev = analytics["total_revenue"]
+        avg = analytics.get("average_order_value", 0)
+
+        strength = (
+            "an exceptional"
+            if avg > 1000
+            else "a stable" if avg > 500 else "a baseline"
+        )
         insights.append(
             f"📊 **Revenue Elasticity & Velocity:** The ecosystem exhibits a cumulative top-line capitalization of {currency}{rev:,.2f}. "
             f"With a current Transaction Floor (MTV) of {currency}{avg:,.2f}, the enterprise is demonstrating {strength} market penetration and consumer retention."
@@ -14,14 +18,22 @@ def generate_insights(analytics, currency="₹"):
 
     # 2. Profitability & Operational Efficiency
     if "total_profit" in analytics:
-        profit = analytics['total_profit']
-        margin = analytics.get('average_margin', 0)
-        rev = analytics.get('total_revenue', 0)
-        
+        profit = analytics["total_profit"]
+        margin = analytics.get("average_margin", 0)
+        rev = analytics.get("total_revenue", 0)
+
         predicted_margin = (profit / rev * 100) if rev else margin
-        
+
         if margin > 0 or predicted_margin > 0:
-            efficiency = "highly-optimized (Tier-1)" if predicted_margin > 25 else "fundamentally solvent" if predicted_margin > 10 else "post-investment phase"
+            efficiency = (
+                "highly-optimized (Tier-1)"
+                if predicted_margin > 25
+                else (
+                    "fundamentally solvent"
+                    if predicted_margin > 10
+                    else "post-investment phase"
+                )
+            )
             insights.append(
                 f"🛡️ **Margin Structural Integrity:** Net capital yields stand at {currency}{profit:,.2f}, representing an effective EBITDA yield factor of {predicted_margin:.1f}%. "
                 f"This structural framework suggests a {efficiency} operational cost foundation with significant scaling bandwidth."
@@ -32,16 +44,20 @@ def generate_insights(analytics, currency="₹"):
         products = list(analytics["top_products"].items())
         if products:
             top_p, top_v = products[0]
-            
+
             # Calculate concentration if possible
-            rev = analytics.get('total_revenue', 0)
-            concentration = f" representing **{(top_v/rev*100):.1f}%** of the total revenue matrix" if rev > 0 else ""
-            
+            rev = analytics.get("total_revenue", 0)
+            concentration = (
+                f" representing **{(top_v/rev*100):.1f}%** of the total revenue matrix"
+                if rev > 0
+                else ""
+            )
+
             insights.append(
                 f"👑 **Core Asset Performance Dominance:** '{top_p}' remains the primary growth catalyst, generating {currency}{top_v:,.2f} in Gross Value {concentration}. "
                 f"Strategic Moat: While indicating strong product-market fit, this concentration suggests a potential single-point-of-failure; portfolio diversification is advised to hedge against volatility."
             )
-            
+
     # 4. Long-tail & Variant Trajectory
     if "variant_performance" in analytics:
         top_v = list(analytics["variant_performance"].items())[:2]
@@ -76,7 +92,7 @@ def generate_insights(analytics, currency="₹"):
     # 7. Inventory Velocity Risk
     if "inventory_risk" in analytics:
         risks = analytics["inventory_risk"]
-        critical = [r for r in risks if r['risk'] == 'CRITICAL']
+        critical = [r for r in risks if r["risk"] == "CRITICAL"]
         if critical:
             insights.append(
                 f"🚨 **Supply Chain Resilience Warning:** {len(critical)} SKUs are trending toward an immediate stock-out baseline. Prioritize procurement for these SKUs."

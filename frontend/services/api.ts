@@ -8,7 +8,18 @@ import {
   demoIntelligence 
 } from './demoData'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api/backend"
+const ENV_API_URL = (process.env.NEXT_PUBLIC_API_URL || "").trim()
+const API_BASE_CANDIDATES = Array.from(
+  new Set([
+    "/api/backend",
+    ...(ENV_API_URL ? [ENV_API_URL] : []),
+  ]),
+)
+const API_URL = API_BASE_CANDIDATES[0]
+const DEMO_MODE_ENABLED = process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === "true"
+const IS_PRODUCTION_BUILD = process.env.NODE_ENV === "production"
+
+const useDemoData = () => !IS_PRODUCTION_BUILD && DEMO_MODE_ENABLED && isDemoMode()
 
 const buildApiUrl = (path: string) => {
   if (path.startsWith("/")) {
@@ -20,6 +31,16 @@ const buildApiUrl = (path: string) => {
 const api = axios.create({
   baseURL: API_URL,
 })
+
+const normalizeBase = (base?: string) => (base || "").replace(/\/$/, "")
+
+const shouldRetryWithAlternateBase = (error: any) => {
+  const networkError = error?.code === "ERR_NETWORK"
+  const proxyConnectionError =
+    error?.response?.status === 502 &&
+    String(error?.response?.data?.error || "").toLowerCase().includes("backend proxy connection failed")
+  return networkError || proxyConnectionError
+}
 
 // Request Interceptor for Auth
 api.interceptors.request.use((config) => {
@@ -33,6 +54,26 @@ api.interceptors.request.use((config) => {
 }, (error) => {
   return Promise.reject(error)
 })
+
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const config = error?.config as any
+    if (!config || config.__retriedWithAlternateBase || !shouldRetryWithAlternateBase(error)) {
+      return Promise.reject(error)
+    }
+
+    const currentBase = normalizeBase(config.baseURL || api.defaults.baseURL)
+    const alternateBase = API_BASE_CANDIDATES.find((base) => normalizeBase(base) !== currentBase)
+    if (!alternateBase) {
+      return Promise.reject(error)
+    }
+
+    config.__retriedWithAlternateBase = true
+    config.baseURL = alternateBase
+    return axios.request(config)
+  },
+)
 
 // Types
 export interface Customer {
@@ -56,7 +97,7 @@ export interface Invoice {
 
 // API Functions
 export const getCustomers = async () => {
-  if (isDemoMode()) return getDemoCustomers()
+  if (useDemoData()) return getDemoCustomers()
   const res = await api.get('/workspace/customers')
   return res.data
 }
@@ -77,7 +118,7 @@ export const deleteCustomer = async (customerId: number) => {
 }
 
 export const getInvoices = async (datasetId?: string) => {
-    if (isDemoMode()) return getDemoInvoices()
+    if (useDemoData()) return getDemoInvoices()
   const res = await api.get('/workspace/invoices', { params: { dataset_id: datasetId } })
   return res.data
 }
@@ -100,7 +141,7 @@ export const deleteInvoice = async (invoiceId: string) => {
 
 
 export const getInventory = async () => {
-    if (isDemoMode()) return getDemoInventory()
+    if (useDemoData()) return getDemoInventory()
   const res = await api.get('/workspace/inventory')
   return res.data
 }
@@ -178,7 +219,7 @@ export const getUploadStatus = async (datasetId: string) => {
 }
 
 export const getCopilotResponse = async (query: string, datasetId?: string) => {
-    if (isDemoMode()) {
+  if (useDemoData()) {
         return {
             response: "Neural simulation of demo data suggests healthy growth. Our LLM-driven analysis indicates a 12% revenue upside if you optimize your networking inventory for the enterprise segment.",
             type: "text"
@@ -221,7 +262,7 @@ export const reprocessDataset = async (datasetId: string, sheetName: string) => 
 }
 
 export const getLiveKPIs = async () => {
-  if (isDemoMode()) return getDemoKPIs()
+  if (useDemoData()) return getDemoKPIs()
   const res = await api.get('/api/live-kpis')
   return res.data
 }
@@ -236,9 +277,40 @@ export const getCRMAnalytics = async () => {
   return res.data
 }
 
-export const syncWorkspaceToDashboard = async () => {
-  const res = await api.post('/workspace/sync-to-dashboard')
+export const getOperationsData = async () => {
+  const res = await api.get('/operations')
   return res.data
+}
+
+export const manageOperationsPersonnel = async (op: string, data: any) => {
+  const res = await api.post('/operations/personnel', { op, data })
+  return res.data
+}
+
+export const manageOperationsTask = async (op: string, data: any) => {
+  const res = await api.post('/operations/tasks', { op, data })
+  return res.data
+}
+
+export const manageOperationsSchedule = async (op: string, data: any) => {
+  const res = await api.post('/operations/schedules', { op, data })
+  return res.data
+}
+
+export const syncWorkspaceToDashboard = async () => {
+  try {
+    const res = await api.post('/workspace/sync-to-dashboard')
+    return res.data
+  } catch (error: any) {
+    // Handle 400 error when no data is available
+    if (error.response?.status === 400) {
+      const errorMsg = error.response?.data?.error || "No data available"
+      const err = new Error(errorMsg)
+      err.statusCode = 400
+      throw err
+    }
+    throw error
+  }
 }
 
 export const getInvoicesByStatus = async (status: string) => {
@@ -249,6 +321,16 @@ export const getInvoicesByStatus = async (status: string) => {
 export const updateInvoiceStatus = async (invoiceId: string, status: string) => {
   const res = await api.put(`/workspace/invoices/${invoiceId}/status`, { status })
   return res.data
+}
+
+export const getCommSentiment = async () => {
+    const res = await api.get('/workspace/comm/sentiment')
+    return res.data
+}
+
+export const summarizeMeeting = async (meetingId: string, notes: string) => {
+    const res = await api.post(`/workspace/comm/meetings/${meetingId}/summarize`, { notes })
+    return res.data
 }
 
 export const getCustomerProfile = async (customerId: string) => {
@@ -484,13 +566,13 @@ export const managePurchaseOrders = async (action: "CREATE" | "RECEIVE" | "LIST"
 
 // --- ADVANCED ANALYTICS ---
 export const getRevenueScenarios = async () => {
-    if (isDemoMode()) return demoIntelligence.scenarios
+  if (useDemoData()) return demoIntelligence.scenarios
     const res = await api.get("/workspace/analytics/scenarios")
     return res.data
 }
 
 export const getSalesLeaderboard = async () => {
-    if (isDemoMode()) return demoIntelligence.leaderboard
+  if (useDemoData()) return demoIntelligence.leaderboard
     const res = await api.get("/workspace/analytics/leaderboard")
     return res.data
 }
@@ -507,19 +589,19 @@ export const handleReturn = async (invoiceId: string, items: any[]) => {
 
 // --- INTELLIGENCE & STRATEGY ---
 export const getIntelligenceAnomalies = async () => {
-    if (isDemoMode()) return { alerts: demoIntelligence.anomalies }
-    const res = await api.get("/workspace/accounting/anomalies")
-    return res.data
+  if (useDemoData()) return { alerts: demoIntelligence.anomalies }
+  const res = await api.get("/api/anomalies/alerts")
+  return res.data
 }
 
 export const getCashFlowForecast = async () => {
-    if (isDemoMode()) return demoIntelligence.cashFlow
+  if (useDemoData()) return demoIntelligence.cashFlow
     const res = await api.get("/workspace/accounting/cash-flow-gap")
     return res.data
 }
 
 export const simulateWhatIf = async (query: string) => {
-    if (isDemoMode()) {
+  if (useDemoData()) {
         await new Promise(r => setTimeout(r, 1000))
         return {
             baseline_revenue: 2450000,
@@ -637,4 +719,143 @@ export const getTallySyncStatus = async () => {
 export const triggerTallySync = async () => {
     const res = await api.post("/workspace/sync")
     return res.data
+}
+
+// --- MESSAGING API ---
+export const getConversations = async () => {
+  const res = await api.get("/api/messaging/conversations")
+  return res.data
+}
+
+export const getConversationMessages = async (conversationId: string) => {
+  const res = await api.get(`/api/messaging/conversations/${conversationId}/messages`)
+  return res.data
+}
+
+export const sendMessage = async (conversationId: string, content: string, attachments?: string[]) => {
+  const res = await api.post(`/api/messaging/conversations/${conversationId}/messages`, {
+    conversation_id: conversationId,
+    content,
+    attachments,
+  })
+  return res.data
+}
+
+export const pinConversation = async (conversationId: string) => {
+  const res = await api.post(`/api/messaging/conversations/${conversationId}/pin`)
+  return res.data
+}
+
+export const deleteConversation = async (conversationId: string) => {
+  const res = await api.delete(`/api/messaging/conversations/${conversationId}`)
+  return res.data
+}
+
+export const createConversation = async (participants: string[]) => {
+  const res = await api.post("/api/messaging/conversations", { participants })
+  return res.data
+}
+
+export const getUnreadMessageCount = async () => {
+  const res = await api.get("/api/messaging/unread-count")
+  return res.data
+}
+
+// --- MEETINGS API ---
+export const getMeetingsList = async (status?: string) => {
+  const res = await api.get("/api/meetings/", { params: { status } })
+  return res.data
+}
+
+export const scheduleMeeting = async (data: {
+  title: string
+  description: string
+  date: string
+  time: string
+  attendees: string[]
+  location: string
+  type: "video" | "phone" | "in-person"
+}) => {
+  const res = await api.post("/api/meetings/", data)
+  return res.data
+}
+
+export const getMeetingDetails = async (meetingId: string) => {
+  const res = await api.get(`/api/meetings/${meetingId}`)
+  return res.data
+}
+
+export const updateMeeting = async (meetingId: string, data: any) => {
+  const res = await api.put(`/api/meetings/${meetingId}`, data)
+  return res.data
+}
+
+export const deleteMeeting = async (meetingId: string) => {
+  const res = await api.delete(`/api/meetings/${meetingId}`)
+  return res.data
+}
+
+export const joinMeeting = async (meetingId: string) => {
+  const res = await api.post(`/api/meetings/${meetingId}/join`)
+  return res.data
+}
+
+export const getCalendarDay = async (date: string) => {
+  const res = await api.get(`/api/meetings/calendar/${date}`)
+  return res.data
+}
+
+export const setMeetingReminder = async (meetingId: string, reminderTime: number) => {
+  const res = await api.post(`/api/meetings/${meetingId}/reminder`, { reminder_time: reminderTime })
+  return res.data
+}
+
+export const getNextMeeting = async () => {
+  const res = await api.get("/api/meetings/upcoming/next")
+  return res.data
+}
+
+export interface AdoptionConfidenceReport {
+  generated_at: string
+  company_id?: string
+  confidence_score: number
+  confidence_level: "HIGH" | "MEDIUM" | "LOW"
+  overall: "GO" | "HOLD"
+  blockers: string[]
+  system_readiness?: {
+    overall: string
+    score: number
+    blockers: string[]
+  }
+}
+
+export const getAdoptionConfidence = async (): Promise<AdoptionConfidenceReport> => {
+  const res = await api.get("/system/adoption/confidence")
+  return res.data
+}
+
+export const getAdoptionIncidentReadiness = async () => {
+  const res = await api.get("/system/adoption/incident-readiness")
+  return res.data
+}
+
+export const runAdoptionBackupDrill = async () => {
+  const res = await api.post("/system/adoption/backup-drill")
+  return res.data
+}
+
+export const runAdoptionParityCheck = async (source_counts: Record<string, number>, tolerance = 0) => {
+  const res = await api.post("/system/adoption/parity", { source_counts, tolerance })
+  return res.data
+}
+
+export const runMigrationVerification = async (
+  source_counts?: Record<string, number>,
+  tolerance = 0,
+) => {
+  const res = await api.post("/system/adoption/migration/verify", {
+    source_counts,
+    tolerance,
+  })
+  return res.data
 }

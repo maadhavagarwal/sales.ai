@@ -1,0 +1,141 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database (recommended for production)
+  db:
+    image: postgres:15-alpine
+    container_name: sales-ai-db
+    environment:
+      POSTGRES_DB: ${DB_NAME:-neuralbί_db}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-secure_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sales-ai-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: sales-ai-redis
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis_password}
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sales-ai-network
+
+  # Celery Worker
+  celery-worker:
+    build: ./backend
+    container_name: sales-ai-celery-worker
+    command: celery -A app.services.task_queue worker --loglevel=info --concurrency=4
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-secure_password}@db:5432/${DB_NAME:-neuralbί_db}
+      REDIS_URL: redis://default:${REDIS_PASSWORD:-redis_password}@redis:6379/0
+      CELERY_BROKER_URL: redis://default:${REDIS_PASSWORD:-redis_password}@redis:6379/0
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - sales-ai-network
+
+  # Celery Beat (Scheduler)
+  celery-beat:
+    build: ./backend
+    container_name: sales-ai-celery-beat
+    command: celery -A app.services.task_queue beat --loglevel=info
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-secure_password}@db:5432/${DB_NAME:-neuralbί_db}
+      REDIS_URL: redis://default:${REDIS_PASSWORD:-redis_password}@redis:6379/0
+      CELERY_BROKER_URL: redis://default:${REDIS_PASSWORD:-redis_password}@redis:6379/0
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - sales-ai-network
+
+  # Backend API
+  backend:
+    build: ./backend
+    container_name: sales-ai-backend
+    command: python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-secure_password}@db:5432/${DB_NAME:-neuralbί_db}
+      REDIS_URL: redis://default:${REDIS_PASSWORD:-redis_password}@redis:6379/0
+      CELERY_BROKER_URL: redis://default:${REDIS_PASSWORD:-redis_password}@redis:6379/0
+      JWT_SECRET: ${JWT_SECRET:-change_me_in_production}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - sales-ai-network
+
+  # Frontend
+  frontend:
+    build: ./frontend
+    container_name: sales-ai-frontend
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    volumes:
+      - ./frontend:/app
+      - /app/.next
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - sales-ai-network
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: sales-ai-nginx
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - sales-ai-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  sales-ai-network:
+    driver: bridge

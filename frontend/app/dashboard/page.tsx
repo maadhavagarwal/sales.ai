@@ -24,7 +24,21 @@ import MarkdownRenderer from "@/components/ai/MarkdownRenderer"
 import { Button, Card, Badge } from "@/components/ui"
 
 export default function Dashboard() {
-  const { results, datasetId, fileName, widgets, addWidget, updateWidget, removeWidget, setWidgets, setResults, setFileName } = useStore()
+  const { 
+    results, 
+    datasetId, 
+    fileName, 
+    widgets, 
+    addWidget, 
+    updateWidget, 
+    removeWidget, 
+    setWidgets, 
+    setResults, 
+    setFileName,
+    setDatasetId,
+    onboardingComplete,
+    userRole
+  } = useStore()
   const [showEditor, setShowEditor] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<"dashboard" | "data" | "ai">("dashboard")
@@ -33,6 +47,7 @@ export default function Dashboard() {
   const [selectedSheet, setSelectedSheet] = useState<string>("0")
   const [liveKPIs, setLiveKPIs] = useState<any>(null)
   const [kpiUpdateTime, setKpiUpdateTime] = useState<string | null>(null)
+  const [autoSyncAttempted, setAutoSyncAttempted] = useState(false)
 
   const { showToast } = useToast()
 
@@ -41,7 +56,10 @@ export default function Dashboard() {
     let ws: WebSocket;
     
     const connectWebSocket = () => {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const API_URL = (process.env.NEXT_PUBLIC_API_URL || "").trim();
+      if (!/^https?:\/\//i.test(API_URL)) {
+        return;
+      }
       // Convert http(s):// to ws(s)://
       const wsUrl = API_URL.replace(/^http/, "ws") + "/api/ws/live-kpis";
       
@@ -111,16 +129,35 @@ export default function Dashboard() {
       }
       
       setResults(data)
+      setDatasetId(data.dataset_id)
       setFileName("Live Enterprise Stream")
       setWidgets([]) // Reset widgets for new dataset logic
       showToast("success", "Live Sync Successful", "Workspace data synchronized.")
     } catch (err: any) {
       console.error("Live Sync Failed:", err)
-      showToast("error", "Live Sync Failed", err.message || "An error occurred during sync.")
+      // Handle specific error cases
+      if (err.statusCode === 400 || err.response?.status === 400) {
+        // No data available - ask user to upload
+        showToast(
+          "warning",
+          "No Data Available",
+          "Please upload invoices first to sync your workspace data."
+        )
+      } else {
+        showToast("error", "Live Sync Failed", err.message || "An error occurred during sync.")
+      }
     } finally {
       setIsSyncing(false)
     }
   }
+
+  // Auto-Sync for Enterprise Users if no data is present
+  useEffect(() => {
+    if (!results && onboardingComplete && !isSyncing && !autoSyncAttempted) {
+      setAutoSyncAttempted(true)
+      handleLiveSync()
+    }
+  }, [onboardingComplete, autoSyncAttempted])
 
   const generateAIDashboard = async () => {
     if (!datasetId) return
@@ -234,8 +271,8 @@ export default function Dashboard() {
             animate={{ opacity: 1, scale: 1 }}
             className="max-w-3xl mx-auto text-center py-20"
           >
-            <Card variant="glass" padding="lg" className="border-dashed border-white/10 bg-white/[0.01]">
-              <div className="w-24 h-24 bg-gradient-to-br from-[--primary]/20 to-[--accent-violet]/20 rounded-[40px] flex items-center justify-center mx-auto mb-10 shadow-[--shadow-glow] border border-white/10 relative overflow-hidden group">
+            <Card variant="glass" padding="lg" className="border-dashed border-white/10 bg-white/1">
+              <div className="w-24 h-24 bg-linear-to-br from-[--primary]/20 to-[--accent-violet]/20 rounded-[40px] flex items-center justify-center mx-auto mb-10 shadow-[--shadow-glow] border border-white/10 relative overflow-hidden group">
                 <div className="absolute inset-0 bg-[--primary]/10 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
                 <span className="text-4xl relative z-10 transition-transform group-hover:scale-110">🚀</span>
               </div>
@@ -289,7 +326,7 @@ export default function Dashboard() {
                     {activeTab === tab && (
                       <motion.div
                         layoutId="navTab"
-                        className="absolute inset-0 bg-gradient-to-br from-[--primary] to-[--primary-dark] shadow-[--shadow-glow] z-[-1] rounded-xl"
+                        className="absolute inset-0 bg-linear-to-br from-[--primary] to-[--primary-dark] shadow-[--shadow-glow] z-[-1] rounded-xl"
                       />
                     )}
                   </button>
@@ -381,7 +418,7 @@ export default function Dashboard() {
                         <span className="text-3xl group-hover:scale-125 group-hover:rotate-12 transition-transform opacity-40 group-hover:opacity-100">📡</span>
                         <span className="text-[10px] font-black uppercase tracking-[0.4em] transition-all group-hover:tracking-[0.6em]">Integrate Synthetic Perspective</span>
                       </div>
-                      <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[--primary]/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <div className="absolute inset-0 bg-linear-to-b from-transparent to-[--primary]/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </button>
                   )}
                 </motion.div>
@@ -438,7 +475,7 @@ export default function Dashboard() {
                   )}
 
                   {results.strategic_plan && (
-                    <Card variant="bento" padding="lg" className="border-[--primary]/30 bg-gradient-to-br from-[--primary]/5 to-transparent">
+                    <Card variant="bento" padding="lg" className="border-[--primary]/30 bg-linear-to-br from-[--primary]/5 to-transparent">
                       <div className="flex flex-col md:flex-row justify-between gap-8 mb-12">
                         <div>
                           <Badge variant="pro" className="mb-4">Top Secret Intelligence</Badge>
@@ -465,7 +502,7 @@ export default function Dashboard() {
                 <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">📥</div>
                 <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-[--text-muted]">Ingestion Stream Aggregator</h4>
               </div>
-              <Card variant="glass" padding="lg" className="bg-white/[0.01]">
+              <Card variant="glass" padding="lg" className="bg-white/1">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <h5 className="text-sm font-semibold text-white mb-4">Initial Data Upload</h5>
@@ -523,14 +560,14 @@ function CopilotFloating({ datasetId }: { datasetId?: string }) {
   }
 
   return (
-    <div className="fixed bottom-8 right-8 z-[100]">
+    <div className="fixed bottom-8 right-8 z-100">
       <AnimatePresence>
         {isOpen && (
           <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="mb-4 w-[400px] h-[500px] bg-black/80 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+            className="mb-4 bg-black/80 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden max-w-lg max-h-96"
           >
             <div className="p-4 bg-[--primary]/10 border-b border-white/5 flex justify-between items-center">
               <div>
@@ -560,7 +597,7 @@ function CopilotFloating({ datasetId }: { datasetId?: string }) {
               {loading && <div className="text-[10px] font-black text-[--primary] animate-pulse italic">Neural reasoning in progress...</div>}
             </div>
 
-            <div className="p-4 bg-white/[0.02] border-t border-white/5">
+            <div className="p-4 bg-white/2 border-t border-white/5">
               <div className="relative">
                 <input
                   value={query}

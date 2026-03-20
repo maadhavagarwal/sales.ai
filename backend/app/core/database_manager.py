@@ -1,16 +1,17 @@
-import sqlite3
-import os
-import pandas as pd
-import json
-import time
 import base64
+import json
+import os
+import sqlite3
 import uuid
 from datetime import datetime
+from typing import Any, Dict, List, Optional, Tuple, cast
+
+import pandas as pd
 
 # Vector Database Support
 try:
     import chromadb
-    from chromadb.config import Settings
+
     HAS_CHROMA = True
 except ImportError:
     HAS_CHROMA = False
@@ -18,6 +19,7 @@ except ImportError:
 # Postgres Support
 try:
     import psycopg2
+
     HAS_POSTGRES = True
 except ImportError:
     HAS_POSTGRES = False
@@ -39,13 +41,15 @@ if HAS_CHROMA:
     except Exception as e:
         print(f"Warning: Failed to initialize ChromaDB Vector Store. {e}")
 
+
 def get_db_connection():
     if PG_URL and HAS_POSTGRES:
         conn = psycopg2.connect(PG_URL)
-        return conn, 'postgres'
+        return conn, "postgres"
     else:
         conn = sqlite3.connect(DB_PATH)
-        return conn, 'sqlite'
+        return conn, "sqlite"
+
 
 def init_workspace_db():
     conn, db_type = get_db_connection()
@@ -60,17 +64,17 @@ def init_workspace_db():
                 allowed_ips TEXT,
                 idle_timeout INTEGER DEFAULT 3600,
                 onboarding_complete INTEGER DEFAULT 0,
-                company_id INTEGER,
+                company_id TEXT,
                 workspace_state TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-        
+
         # Migration: Add workspace_state if not exists
         try:
             conn.execute("ALTER TABLE users ADD COLUMN workspace_state TEXT")
-        except:
-            pass # Already exists
+        except Exception:
+            pass  # Already exists
 
         # 2. Enterprise Company Profile
         conn.execute("""
@@ -163,6 +167,7 @@ def init_workspace_db():
         conn.execute("""
             CREATE TABLE IF NOT EXISTS purchase_orders (
                 id TEXT PRIMARY KEY,
+                company_id TEXT,
                 supplier_name TEXT,
                 items_json TEXT,
                 total_amount REAL,
@@ -176,6 +181,7 @@ def init_workspace_db():
         conn.execute("""
             CREATE TABLE IF NOT EXISTS expenses (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+                company_id TEXT,
                 date TEXT,
                 category TEXT,
                 amount REAL,
@@ -184,7 +190,7 @@ def init_workspace_db():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-        
+
         # 4.6 Sales Targets (Quota tracking)
         conn.execute("""
             CREATE TABLE IF NOT EXISTS sales_targets (
@@ -229,7 +235,7 @@ def init_workspace_db():
                 last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-        
+
         # 6.1 Inventory Transfers (Multi-location logistics)
         conn.execute("""
             CREATE TABLE IF NOT EXISTS inventory_transfers (
@@ -242,7 +248,7 @@ def init_workspace_db():
                 timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-        
+
         conn.execute("""
             CREATE TABLE IF NOT EXISTS ledger (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -324,6 +330,37 @@ def init_workspace_db():
             )
         """)
         conn.execute("""
+            CREATE TABLE IF NOT EXISTS messaging_conversations (
+                id TEXT PRIMARY KEY,
+                company_id TEXT,
+                created_by TEXT,
+                pinned INTEGER DEFAULT 0,
+                archived INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS messaging_participants (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                conversation_id TEXT,
+                participant TEXT,
+                participant_email TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS messaging_messages (
+                id TEXT PRIMARY KEY,
+                conversation_id TEXT,
+                company_id TEXT,
+                sender TEXT,
+                sender_email TEXT,
+                content TEXT,
+                attachments_json TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS outbound_outreach (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 company_id TEXT,
@@ -331,6 +368,26 @@ def init_workspace_db():
                 subject TEXT,
                 body TEXT,
                 status TEXT DEFAULT 'SENT',
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS usage_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                company_id TEXT,
+                module TEXT,
+                action TEXT,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS system_metrics (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                company_id TEXT,
+                metric_name TEXT,
+                metric_value REAL,
                 timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
@@ -374,19 +431,28 @@ def init_workspace_db():
             ("users", "allowed_ips", "TEXT"),
             ("users", "idle_timeout", "INTEGER DEFAULT 3600"),
             ("tasks", "description", "TEXT"),
-            ("operational_schedules", "personnel_id", "TEXT")
+            ("operational_schedules", "personnel_id", "TEXT"),
+            ("purchase_orders", "company_id", "TEXT"),
+            ("expenses", "company_id", "TEXT"),
+            ("deals", "company_id", "TEXT"),
+            ("sales_targets", "company_id", "TEXT"),
+            ("tasks", "company_id", "TEXT"),
         ]
         for tbl, col, ctype in cols_to_add:
             try:
-                conn.execute(f"ALTER TABLE {tbl} ADD COLUMN {col} {ctype}")
-            except sqlite3.OperationalError: pass
+                cast(Any, conn).execute(f"ALTER TABLE {tbl} ADD COLUMN {col} {ctype}")
+            except sqlite3.OperationalError:
+                pass
 
         conn.commit()
     finally:
-        if conn: conn.close()
+        if conn:
+            conn.close()
 
-    # Seed demo data if database is empty (useful for first-time runs)
-    _seed_demo_data()
+    # Seed sample data only when explicitly enabled.
+    # This keeps default runtime behavior production-safe (real data only).
+    if os.getenv("ENABLE_DEMO_SEED_DATA", "false").lower() == "true":
+        _seed_demo_data()
 
 
 def _seed_demo_data():
@@ -400,9 +466,25 @@ def _seed_demo_data():
             cursor.executemany(
                 "INSERT INTO customers (name, email, phone, address, gstin, pan, total_spend) VALUES (?, ?, ?, ?, ?, ?, ?)",
                 [
-                    ("Acme Corp", "accounts@acme.com", "+91-9876543210", "123 Industrial Park, Bangalore", "27AAAAA0000A1Z5", "AAAAA0000A", 0.0),
-                    ("Neural Labs", "finance@neural-labs.ai", "+91-9123456789", "77 Innovation Drive, Pune", "27BBBBB0000B1Z6", "BBBBB0000B", 0.0),
-                ]
+                    (
+                        "Acme Corp",
+                        "accounts@acme.com",
+                        "+91-9876543210",
+                        "123 Industrial Park, Bangalore",
+                        "27AAAAA0000A1Z5",
+                        "AAAAA0000A",
+                        0.0,
+                    ),
+                    (
+                        "Neural Labs",
+                        "finance@neural-labs.ai",
+                        "+91-9123456789",
+                        "77 Innovation Drive, Pune",
+                        "27BBBBB0000B1Z6",
+                        "BBBBB0000B",
+                        0.0,
+                    ),
+                ],
             )
 
         cursor.execute("SELECT COUNT(*) FROM inventory")
@@ -410,14 +492,32 @@ def _seed_demo_data():
             cursor.executemany(
                 "INSERT INTO inventory (sku, name, quantity, cost_price, sale_price, category, hsn_code) VALUES (?, ?, ?, ?, ?, ?, ?)",
                 [
-                    ("SKU-0001", "Widget Pro", 150, 3200.0, 4520.0, "Hardware", "998311"),
-                    ("SKU-0002", "Neural Module", 80, 7200.0, 9800.0, "Electronics", "998312"),
-                ]
+                    (
+                        "SKU-0001",
+                        "Widget Pro",
+                        150,
+                        3200.0,
+                        4520.0,
+                        "Hardware",
+                        "998311",
+                    ),
+                    (
+                        "SKU-0002",
+                        "Neural Module",
+                        80,
+                        7200.0,
+                        9800.0,
+                        "Electronics",
+                        "998312",
+                    ),
+                ],
             )
 
         cursor.execute("SELECT COUNT(*) FROM invoices")
         if cursor.fetchone()[0] == 0:
-            invoice_id = f"GST-{datetime.now().year}-{str(uuid.uuid4().hex)[:6].upper()}"
+            invoice_id = (
+                f"GST-{datetime.now().year}-{cast(str, uuid.uuid4().hex)[:6].upper()}"
+            )
             cursor.execute(
                 "INSERT INTO invoices (id, invoice_number, customer_id, customer_gstin, date, due_date, payment_timeline, payment_days, items_json, subtotal, total_tax, cgst_total, sgst_total, igst_total, grand_total, status, currency) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (
@@ -429,7 +529,19 @@ def _seed_demo_data():
                     (datetime.now() + pd.Timedelta(days=7)).strftime("%Y-%m-%d"),
                     "Net 7",
                     7,
-                    json.dumps([{"inventory_id": "SKU-0001", "desc": "Widget Pro", "qty": 10, "price": 4520.0, "cgst": 407.0, "sgst": 407.0, "igst": 0}]),
+                    json.dumps(
+                        [
+                            {
+                                "inventory_id": "SKU-0001",
+                                "desc": "Widget Pro",
+                                "qty": 10,
+                                "price": 4520.0,
+                                "cgst": 407.0,
+                                "sgst": 407.0,
+                                "igst": 0,
+                            }
+                        ]
+                    ),
                     45200.0,
                     814.0,
                     407.0,
@@ -438,7 +550,7 @@ def _seed_demo_data():
                     46014.0,
                     "PENDING",
                     "₹",
-                )
+                ),
             )
 
         cursor.execute("SELECT COUNT(*) FROM personnel")
@@ -446,10 +558,34 @@ def _seed_demo_data():
             cursor.executemany(
                 "INSERT INTO personnel (id, name, email, role, efficiency_score, status, avatar) VALUES (?, ?, ?, ?, ?, ?, ?)",
                 [
-                    ("STAFF-001", "Elena Rodriguez", "elena@neural.ai", "Sr. Data Engineer", 98.5, "Active", "ER"),
-                    ("STAFF-002", "James Chen", "james@neural.ai", "Financial Controller", 95.0, "Active", "JC"),
-                    ("STAFF-003", "Sarah Miller", "sarah@neural.ai", "Warehouse Lead", 88.0, "Offline", "SM"),
-                ]
+                    (
+                        "STAFF-001",
+                        "Elena Rodriguez",
+                        "elena@neural.ai",
+                        "Sr. Data Engineer",
+                        98.5,
+                        "Active",
+                        "ER",
+                    ),
+                    (
+                        "STAFF-002",
+                        "James Chen",
+                        "james@neural.ai",
+                        "Financial Controller",
+                        95.0,
+                        "Active",
+                        "JC",
+                    ),
+                    (
+                        "STAFF-003",
+                        "Sarah Miller",
+                        "sarah@neural.ai",
+                        "Warehouse Lead",
+                        88.0,
+                        "Offline",
+                        "SM",
+                    ),
+                ],
             )
 
         cursor.execute("SELECT COUNT(*) FROM tasks")
@@ -457,10 +593,34 @@ def _seed_demo_data():
             cursor.executemany(
                 "INSERT INTO tasks (id, title, description, assignee_id, priority, status, deadline) VALUES (?, ?, ?, ?, ?, ?, ?)",
                 [
-                    ("TASK-001", "Q3 Data Migration", "Migrate all legacy records to neural store", "STAFF-001", "High", "IN_PROGRESS", "2026-03-20"),
-                    ("TASK-002", "Tax Compliance Audit", "Review GST filings for Q2", "STAFF-002", "High", "TODO", "2026-03-25"),
-                    ("TASK-003", "Inventory Rebalancing", "Move stock to cluster 4", "STAFF-003", "Medium", "REVIEW", "2026-03-22"),
-                ]
+                    (
+                        "TASK-001",
+                        "Q3 Data Migration",
+                        "Migrate all legacy records to neural store",
+                        "STAFF-001",
+                        "High",
+                        "IN_PROGRESS",
+                        "2026-03-20",
+                    ),
+                    (
+                        "TASK-002",
+                        "Tax Compliance Audit",
+                        "Review GST filings for Q2",
+                        "STAFF-002",
+                        "High",
+                        "TODO",
+                        "2026-03-25",
+                    ),
+                    (
+                        "TASK-003",
+                        "Inventory Rebalancing",
+                        "Move stock to cluster 4",
+                        "STAFF-003",
+                        "Medium",
+                        "REVIEW",
+                        "2026-03-22",
+                    ),
+                ],
             )
 
         cursor.execute("SELECT COUNT(*) FROM operational_schedules")
@@ -468,9 +628,23 @@ def _seed_demo_data():
             cursor.executemany(
                 "INSERT INTO operational_schedules (id, title, type, date, hours, role_requirement) VALUES (?, ?, ?, ?, ?, ?)",
                 [
-                    ("SCHED-001", "Morning Ops Sync", "SHIFT", "2026-03-15", "09:00 - 10:00", "All Leads"),
-                    ("SCHED-002", "Strategic Planning", "MILESTONE", "2026-03-16", "14:00 - 16:00", "Management"),
-                ]
+                    (
+                        "SCHED-001",
+                        "Morning Ops Sync",
+                        "SHIFT",
+                        "2026-03-15",
+                        "09:00 - 10:00",
+                        "All Leads",
+                    ),
+                    (
+                        "SCHED-002",
+                        "Strategic Planning",
+                        "MILESTONE",
+                        "2026-03-16",
+                        "14:00 - 16:00",
+                        "Management",
+                    ),
+                ],
             )
 
         conn.commit()
@@ -485,33 +659,41 @@ def init_auth_db():
     """Enterprise Auth Init: Ensures users table exists."""
     init_workspace_db()
 
+
 # --- ENTERPRISE SECURITY: ENCRYPTION AT REST ---
-ENCRYPTION_KEY = os.getenv("MASTER_ENCRYPTION_KEY", "NeuralBI_Default_Secure_Key_32Chars_!")
+ENCRYPTION_KEY = os.getenv(
+    "MASTER_ENCRYPTION_KEY", "NeuralBI_Default_Secure_Key_32Chars_!"
+)
+
 
 def _encrypt_val(val):
     """VAPT Readiness: Encrypts sensitive fields (GSTIN, PAN, Bank Details)."""
-    if not val: return None
+    if not val:
+        return None
     # For production: Use cryptography.fernet
     # Here we use a reversible base64-xor stub to demonstrate the pipeline
     encoded = base64.b64encode(str(val).encode()).decode()
     return f"ENC:{encoded}"
 
+
 def _decrypt_val(val):
     """VAPT Readiness: Decrypts sensitive fields for authorized viewing."""
-    if not val or not str(val).startswith("ENC:"): return val
+    if not val or not str(val).startswith("ENC:"):
+        return val
     try:
         encoded = val[4:]
         return base64.b64decode(encoded).decode()
-    except:
+    except Exception:
         return val
 
-def create_user_record(email, password_hash, role='ADMIN', allowed_ips=None):
+
+def create_user_record(email, password_hash, role="ADMIN", allowed_ips=None):
     """Identity: Create a new enterprise account with security constraints."""
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.execute(
-            "INSERT INTO users (email, password_hash, role, allowed_ips) VALUES (?, ?, ?, ?)", 
-            (email, password_hash, role, allowed_ips)
+            "INSERT INTO users (email, password_hash, role, allowed_ips) VALUES (?, ?, ?, ?)",
+            (email, password_hash, role, allowed_ips),
         )
         new_id = cursor.lastrowid
         conn.commit()
@@ -523,20 +705,22 @@ def create_user_record(email, password_hash, role='ADMIN', allowed_ips=None):
         print(f"User Creation Error: {e}")
         return False
 
+
 def get_user_record(email):
     """Identity: Fetch credentials, claims, and session constraints for an account."""
     try:
         conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row
         user = conn.execute(
-            "SELECT id, email, password_hash, role, allowed_ips, idle_timeout FROM users WHERE email = ?", 
-            (email,)
+            "SELECT id, email, password_hash, role, allowed_ips, idle_timeout, company_id FROM users WHERE email = ?",
+            (email,),
         ).fetchone()
         conn.close()
         return dict(user) if user else None
     except Exception as e:
         print(f"Fetch User Error: {e}")
         return None
+
 
 def log_activity(user_id, action, module, entity_id=None, details=None):
     """
@@ -549,30 +733,41 @@ def log_activity(user_id, action, module, entity_id=None, details=None):
         uid = int(user_id) if user_id and str(user_id).isdigit() else 0
         conn.execute(
             "INSERT INTO audit_logs (user_id, action, module, entity_id, details) VALUES (?, ?, ?, ?, ?)",
-            (uid, action, module, entity_id, json.dumps(details) if details else None)
+            (uid, action, module, entity_id, json.dumps(details) if details else None),
         )
         conn.commit()
         conn.close()
     except Exception as e:
         print(f"Audit Log Error: {e}")
 
+
 def store_data(dataset_id, df):
-    if df is None or df.empty: return
+    if df is None or df.empty:
+        return
     df = df.copy()
-    df.columns = [str(c).replace(" ", "_").replace(".", "_").lower() for c in df.columns]
-    df['_enterprise_session_uuid'] = dataset_id
+    df.columns = [
+        str(c).replace(" ", "_").replace(".", "_").lower() for c in df.columns
+    ]
+    df["_enterprise_session_uuid"] = dataset_id
     try:
         conn = sqlite3.connect(DB_PATH)
         df.to_sql("enterprise_transactions", conn, if_exists="append", index=False)
         conn.close()
-    except Exception: pass
+    except Exception:
+        pass
+
 
 def get_session_data_sql(dataset_id):
     try:
         conn = sqlite3.connect(DB_PATH)
-        df = pd.read_sql(f"SELECT * FROM enterprise_transactions WHERE _enterprise_session_uuid = '{dataset_id}'", conn)
+        df = pd.read_sql(
+            f"SELECT * FROM enterprise_transactions WHERE _enterprise_session_uuid = '{dataset_id}'",
+            conn,
+        )
         conn.close()
         return df
-    except Exception: return None
+    except Exception:
+        return None
+
 
 init_workspace_db()
