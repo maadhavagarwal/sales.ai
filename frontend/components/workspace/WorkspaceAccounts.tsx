@@ -837,7 +837,7 @@ function LedgerView(props: any) {
 
 function PLView({ data, onExport, setLedgerSearch, setActiveTab }: any) {
     const { currencySymbol } = useStore()
-    if (!data) return <div className="text-white">Loading P&L Stream...</div>
+    if (!data || data.status === "ERROR" || !data.revenue) return <div className="text-white text-xs opacity-50 p-4 font-mono">Loading / Processing P&L Stream...</div>
 
     return (
         <Card variant="bento" padding="lg" className="max-w-4xl mx-auto bg-black/40 border-[--accent-emerald]/20">

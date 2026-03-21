@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { simulateWhatIf, getCashFlowForecast, getRevenueScenarios } from "@/services/api"
+import { simulateWhatIf, getCashFlowForecast, getRevenueScenarios, api } from "@/services/api"
 import { useStore } from "@/store/useStore"
 import { Card, Button, Badge } from "@/components/ui"
 import { TrendingUp, TrendingDown, AlertCircle, Zap, Brain, BarChart3, LineChart } from "lucide-react"
@@ -28,10 +28,12 @@ export default function WorkspaceIntelligence() {
                 getRevenueScenarios(),
                 getCashFlowForecast(),
                 (async () => {
-                    const res = await fetch("/api/ai/intelligence/anomalies", {
-                        headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
-                    });
-                    return await res.json();
+                    try {
+                        const { data } = await api.get("/workspace/accounting/anomalies")
+                        return data;
+                    } catch (err) {
+                        return { alerts: [] };
+                    }
                 })()
             ])
             setScenarios(sRes || [])
@@ -146,12 +148,12 @@ export default function WorkspaceIntelligence() {
                         className="grid grid-cols-1 md:grid-cols-3 gap-8"
                     >
                         {scenarios.map((s, i) => (
-                            <Card key={i} variant="bento" padding="lg" className={`relative overflow-hidden group border-white/5 ${s.case === 'Bull' ? 'bg-emerald-500/5 hover:border-emerald-500/30' : s.case === 'Base' ? 'bg-blue-500/5 hover:border-blue-500/30' : 'bg-rose-500/5 hover:border-rose-500/30'}`}>
-                                <div className={`absolute top-0 right-0 p-6 text-4xl opacity-5 transition-transform group-hover:scale-110 ${s.case === 'Bull' ? 'text-emerald-500' : s.case === 'Base' ? 'text-blue-500' : 'text-rose-500'}`}>
-                                    {s.case === 'Bull' ? <TrendingUp /> : s.case === 'Base' ? <Zap /> : <TrendingDown />}
+                            <Card key={i} variant="bento" padding="lg" className={`relative overflow-hidden group border-white/5 ${s.case === 'Bull' || s.case === 'Expansive' ? 'bg-emerald-500/5 hover:border-emerald-500/30' : s.case === 'Base' || s.case === 'Target' ? 'bg-blue-500/5 hover:border-blue-500/30' : 'bg-rose-500/5 hover:border-rose-500/30'}`}>
+                                <div className={`absolute top-0 right-0 p-6 text-4xl opacity-5 transition-transform group-hover:scale-110 ${s.case === 'Bull' || s.case === 'Expansive' ? 'text-emerald-500' : s.case === 'Base' || s.case === 'Target' ? 'text-blue-500' : 'text-rose-500'}`}>
+                                    {s.case === 'Bull' || s.case === 'Expansive' ? <TrendingUp /> : s.case === 'Base' || s.case === 'Target' ? <Zap /> : <TrendingDown />}
                                 </div>
-                                <Badge variant={s.case === 'Bull' ? 'success' : s.case === 'Base' ? 'primary' : 'danger'} className="mb-6 uppercase tracking-widest text-[9px]">
-                                    {s.case} Outlook
+                                <Badge variant={s.case === 'Bull' || s.case === 'Expansive' ? 'success' : s.case === 'Base' || s.case === 'Target' ? 'primary' : 'danger'} className="mb-6 uppercase tracking-widest text-[9px]">
+                                    {s.case === 'Bull' ? 'Expansive' : s.case === 'Base' ? 'Target' : s.case === 'Bear' ? 'Defensive' : s.case} Outlook
                                 </Badge>
                                 <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Projected Revenue</p>
                                 <h4 className="text-4xl font-black text-white italic tracking-tighter mb-6">{currencySymbol}{s.revenue?.toLocaleString()}</h4>
@@ -261,8 +263,8 @@ export default function WorkspaceIntelligence() {
                                     </Button>
                                 </div>
                                 <div className="flex gap-4 mt-6">
-                                    <button onClick={() => setWhatIfInput("What if operational expenses increase by 20%?")} className="text-[9px] font-black uppercase text-slate-500 hover:text-[--primary] transition-colors tracking-widest">• Simulation: Expense Shock</button>
-                                    <button onClick={() => setWhatIfInput("Simulate losing Raj Traders impact")} className="text-[9px] font-black uppercase text-slate-500 hover:text-[--primary] transition-colors tracking-widest">• Simulation: Client Churn</button>
+                                    <button onClick={() => setWhatIfInput("Impact of 20% increase in manufacturing COGS?")} className="text-[9px] font-black uppercase text-slate-500 hover:text-[--primary] transition-colors tracking-widest">• Simulation: Input Cost Shock</button>
+                                    <button onClick={() => setWhatIfInput("Simulate 15% drop in enterprise receivables collection rate")} className="text-[9px] font-black uppercase text-slate-500 hover:text-[--primary] transition-colors tracking-widest">• Simulation: Liquidity Gap</button>
                                 </div>
                             </div>
                         </Card>

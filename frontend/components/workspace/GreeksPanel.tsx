@@ -10,7 +10,7 @@ export default function GreeksPanel() {
     const [loading, setLoading] = useState(false)
     const [data, setData] = useState<any>(null)
     const [params, setParams] = useState({
-        underlying: "NIFTY",
+        underlying: "USD/INR",
         expiry: "",
         portfolio_value: 10000000,
         portfolio_beta: 0.95,
@@ -49,7 +49,7 @@ export default function GreeksPanel() {
             radar: {
                 indicator: data.factor_cards.map((card: any) => ({
                     name: card.name,
-                    max: card.name === "Theta" ? 30 : card.name === "Vega" ? 40 : card.name === "Alpha" ? 5 : 1.5,
+                    max: card.name.includes("Carry") ? 30 : card.name.includes("Vol") ? 40 : 1.5,
                 })),
                 shape: "circle",
                 splitNumber: 4,
@@ -117,8 +117,8 @@ export default function GreeksPanel() {
         <div className="space-y-8 p-1">
             <div className="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-6 border-b border-white/5 pb-8">
                 <div>
-                    <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter">Enterprise Risk & Derivatives</h3>
-                    <p className="text-[10px] font-black text-[--primary] uppercase tracking-[0.4em] mt-1">Option Chain, Technical Indicators, Greeks & Hedge Optimizer</p>
+                    <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter">Treasury Risk & Hedge Matrix</h3>
+                    <p className="text-[10px] font-black text-[--primary] uppercase tracking-[0.4em] mt-1">Contract Ladder, Technical Risk Indicators, & Treasury Sensitivity</p>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-3 w-full xl:w-auto">
                     <select
@@ -144,7 +144,7 @@ export default function GreeksPanel() {
                         value={params.portfolio_value}
                         onChange={(e) => setParams((prev) => ({ ...prev, portfolio_value: parseFloat(e.target.value) || 0 }))}
                         className="input-pro text-xs font-black"
-                        placeholder="Portfolio Value"
+                        placeholder="Asset Exposure"
                     />
                     <input
                         type="number"
@@ -152,7 +152,7 @@ export default function GreeksPanel() {
                         value={params.portfolio_beta}
                         onChange={(e) => setParams((prev) => ({ ...prev, portfolio_beta: parseFloat(e.target.value) || 0 }))}
                         className="input-pro text-xs font-black"
-                        placeholder="Portfolio Beta"
+                        placeholder="Sensitivity (Beta)"
                     />
                     <Button variant="pro" size="sm" onClick={() => loadData()} loading={loading} className="shadow-[--shadow-glow]">
                         Recalculate
@@ -163,9 +163,9 @@ export default function GreeksPanel() {
             <Card variant="bento" padding="md" className="bg-[--primary]/5 border-[--primary]/20">
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                     <div>
-                        <p className="text-[10px] font-black text-[--primary] uppercase tracking-[0.3em] mb-3">Institutional Use Case</p>
+                        <p className="text-[10px] font-black text-[--primary] uppercase tracking-[0.3em] mb-3">Corporate Treasury Use Case</p>
                         <p className="text-sm font-bold text-white/80 leading-relaxed">
-                            These analytics are positioned for hedge calibration, treasury overlays, and institutional risk control. Live-style market feed, option chain, technical indicators, and Greeks are now computed through the backend analytics engine rather than shown as static placeholders.
+                            These analytics provide institutional-grade hedge calibration for currency (FX), commodity (Input Costs), and revenue volatility. Price feeds and sensitivity factors are computed through the neural risk engine to optimize treasury coverage.
                         </p>
                     </div>
                     <div className="flex gap-3 flex-wrap">
@@ -274,8 +274,8 @@ export default function GreeksPanel() {
             <Card variant="glass" padding="lg" className="overflow-hidden">
                 <div className="flex justify-between items-center mb-6">
                     <div>
-                        <h4 className="text-xs font-black text-white uppercase tracking-widest">Dynamic Option Chain</h4>
-                        <p className="text-[9px] font-bold text-white/40 uppercase mt-1">Strike ladder with OI, IV, LTP, and real Greek calculation</p>
+                        <h4 className="text-xs font-black text-white uppercase tracking-widest">Hedge Structure Ladder</h4>
+                        <p className="text-[9px] font-bold text-white/40 uppercase mt-1">Dynamic strike ladder with Open Interest, Implied Volatility, and Carry Analysis</p>
                     </div>
                     <Badge variant="outline">Lot Size: {market.lot_size}</Badge>
                 </div>

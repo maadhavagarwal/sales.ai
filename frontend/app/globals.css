@@ -292,40 +292,6 @@ pre,
     transform: translateY(-1px);
 }
 
-/* ===== Animated Background Blocks ===== */
-.blob-container {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: -1;
-    overflow: hidden;
-    background: var(--background);
-}
-
-.blob {
-    position: absolute;
-    width: 500px;
-    height: 500px;
-    background: var(--primary);
-    filter: blur(80px);
-    will-change: transform;
-    opacity: 0.1;
-    border-radius: 50%;
-    animation: blob-float 20s infinite alternate cubic-bezier(0.45, 0, 0.55, 1);
-}
-
-@keyframes blob-float {
-    from {
-        transform: translate(-10%, -10%) scale(1);
-    }
-
-    to {
-        transform: translate(20%, 20%) scale(1.2);
-    }
-}
-
 /* ===== Professional Inputs ===== */
 .input-pro {
     width: 100%;

@@ -28,7 +28,7 @@ const buildApiUrl = (path: string) => {
   return `${API_URL}/${path}`
 }
 
-const api = axios.create({
+export const api = axios.create({
   baseURL: API_URL,
 })
 
@@ -306,7 +306,7 @@ export const syncWorkspaceToDashboard = async () => {
     if (error.response?.status === 400) {
       const errorMsg = error.response?.data?.error || "No data available"
       const err = new Error(errorMsg)
-      err.statusCode = 400
+      ;(err as any).statusCode = 400
       throw err
     }
     throw error
@@ -471,7 +471,7 @@ export const getTrialBalance = async () => {
 }
 
 export const getPLStatement = async () => {
-  const res = await api.get('/workspace/accounting/pl')
+  const res = await api.get('/workspace/accounting/pl-statement')
   return res.data
 }
 
@@ -712,107 +712,13 @@ export const getTeamSentiment = async () => {
 }
 
 export const getTallySyncStatus = async () => {
-    const res = await api.get("/workspace/sync")
+    const res = await api.get("/api/tally/status")
     return res.data
 }
 
 export const triggerTallySync = async () => {
-    const res = await api.post("/workspace/sync")
+    const res = await api.post("/api/tally/sync")
     return res.data
-}
-
-// --- MESSAGING API ---
-export const getConversations = async () => {
-  const res = await api.get("/api/messaging/conversations")
-  return res.data
-}
-
-export const getConversationMessages = async (conversationId: string) => {
-  const res = await api.get(`/api/messaging/conversations/${conversationId}/messages`)
-  return res.data
-}
-
-export const sendMessage = async (conversationId: string, content: string, attachments?: string[]) => {
-  const res = await api.post(`/api/messaging/conversations/${conversationId}/messages`, {
-    conversation_id: conversationId,
-    content,
-    attachments,
-  })
-  return res.data
-}
-
-export const pinConversation = async (conversationId: string) => {
-  const res = await api.post(`/api/messaging/conversations/${conversationId}/pin`)
-  return res.data
-}
-
-export const deleteConversation = async (conversationId: string) => {
-  const res = await api.delete(`/api/messaging/conversations/${conversationId}`)
-  return res.data
-}
-
-export const createConversation = async (participants: string[]) => {
-  const res = await api.post("/api/messaging/conversations", { participants })
-  return res.data
-}
-
-export const getUnreadMessageCount = async () => {
-  const res = await api.get("/api/messaging/unread-count")
-  return res.data
-}
-
-// --- MEETINGS API ---
-export const getMeetingsList = async (status?: string) => {
-  const res = await api.get("/api/meetings/", { params: { status } })
-  return res.data
-}
-
-export const scheduleMeeting = async (data: {
-  title: string
-  description: string
-  date: string
-  time: string
-  attendees: string[]
-  location: string
-  type: "video" | "phone" | "in-person"
-}) => {
-  const res = await api.post("/api/meetings/", data)
-  return res.data
-}
-
-export const getMeetingDetails = async (meetingId: string) => {
-  const res = await api.get(`/api/meetings/${meetingId}`)
-  return res.data
-}
-
-export const updateMeeting = async (meetingId: string, data: any) => {
-  const res = await api.put(`/api/meetings/${meetingId}`, data)
-  return res.data
-}
-
-export const deleteMeeting = async (meetingId: string) => {
-  const res = await api.delete(`/api/meetings/${meetingId}`)
-  return res.data
-}
-
-export const joinMeeting = async (meetingId: string) => {
-  const res = await api.post(`/api/meetings/${meetingId}/join`)
-  return res.data
-}
-
-export const getCalendarDay = async (date: string) => {
-  const res = await api.get(`/api/meetings/calendar/${date}`)
-  return res.data
-}
-
-export const setMeetingReminder = async (meetingId: string, reminderTime: number) => {
-  const res = await api.post(`/api/meetings/${meetingId}/reminder`, { reminder_time: reminderTime })
-  return res.data
-}
-
-export const getNextMeeting = async () => {
-  const res = await api.get("/api/meetings/upcoming/next")
-  return res.data
 }
 
 export interface AdoptionConfidenceReport {

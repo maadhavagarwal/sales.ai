@@ -28,15 +28,16 @@ export default function CustomerPortal() {
     const fetchPortalData = async () => {
       try {
         setLoading(true);
-        const response = await fetch("/api/portal/dashboard", {
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+        const token = typeof window !== "undefined" ? localStorage.getItem("token") || "" : "";
+        const response = await fetch(`${baseUrl}/api/portal/dashboard`, {
           headers: {
-            "Authorization": `Bearer ${typeof window !== "undefined" ? localStorage.getItem("token") || "" : ""}`
+            "Authorization": `Bearer ${token}`
           }
         });
         
         if (response.ok) {
           const data = await response.json();
-          // Extract invoices from dashboard data if available
           if (data && typeof data === "object") {
             const invoiceList = data.recent_invoices || data.invoices || [];
             setInvoices(Array.isArray(invoiceList) ? invoiceList : []);
@@ -163,8 +164,8 @@ export default function CustomerPortal() {
                     >
                       <td className="py-4 font-mono text-blue-400">{inv.id}</td>
                       <td className="py-4 text-slate-300">{inv.date}</td>
-                      <td className="py-4 font-bold">₹{inv.amount.toLocaleString()}</td>
-                      <td className="py-4 text-slate-400">{inv.due_in}</td>
+                      <td className="py-4 font-bold">₹{(inv.grand_total || inv.amount || 0).toLocaleString()}</td>
+                      <td className="py-4 text-slate-400">{inv.due_in || inv.status || "—"}</td>
                       <td className="py-4">
                         <Badge className={inv.status === "PAID" ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-orange-500/10 text-orange-500 border-orange-500/20"}>
                           {inv.status}

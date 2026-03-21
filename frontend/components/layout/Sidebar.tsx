@@ -33,15 +33,7 @@ const navItems = [
             { href: "/workspace/sync", label: "Tally Sync Hub", icon: "🔄" },
         ],
     },
-    {
-        section: "Collaboration Hub",
-        roles: ["ADMIN", "SALES", "FINANCE", "WAREHOUSE"],
-        items: [
-            { href: "/management", label: "Management Dashboard", icon: "👤" },
-            { href: "/messaging", label: "Messaging Center", icon: "💬" },
-            { href: "/meetings", label: "Meetings & Calendar", icon: "📅" },
-        ],
-    },
+
     {
         section: "Enterprise Stack",
         roles: ["ADMIN", "SALES", "FINANCE", "WAREHOUSE"],
@@ -65,10 +57,8 @@ const navItems = [
         section: "Human Capital & Ops",
         roles: ["ADMIN"],
         items: [
-            { href: "/operations", label: "Operations Hub", icon: "⚙️" },
             { href: "/workspace?section=hr", label: "Workforce & HR", icon: "👥" },
             { href: "/workspace?section=finance", label: "Finance Control", icon: "⚖️" },
-            { href: "/workspace?section=comm", label: "Comm Hub", icon: "📡" },
         ],
     },
 ]

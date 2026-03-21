@@ -628,13 +628,11 @@ async def monitoring_middleware(request: Request, call_next):
 
 
 # --- INCLUDE ROUTERS ---
-from app.routes import messaging_router, meetings_router
 from app.routes.missing_routes import router as missing_router
 
-app.include_router(messaging_router)
-app.include_router(meetings_router)
 app.include_router(missing_router, tags=["missing_routes"])
 app.include_router(monitoring_router, prefix="/api/metrics", tags=["monitoring"])
+
 
 
 # --- ENTERPRISE ONBOARDING ---
@@ -1411,7 +1409,7 @@ async def get_invoices(current_user: dict = Depends(get_current_user)):
     # User isolation: Only return invoices for user's company
     user_id = current_user.get("id") or 1
     company_id = current_user.get("company_id", "DEFAULT")
-    return WorkspaceEngine.get_invoices(user={"id": user_id, "company_id": company_id})
+    return WorkspaceEngine.get_invoices(company_id=company_id)
 
 
 @app.post("/workspace/invoices")
@@ -1932,8 +1930,8 @@ async def reconcile_bank_statement(data: dict = Body(...)):
 
 
 @app.get("/workspace/accounting/anomalies")
-async def get_anomalies():
-    return WorkspaceEngine.detect_anomalies()
+async def get_anomalies(current_user: dict = Depends(get_current_user)):
+    return IntelligenceEngine.detect_anomalies(current_user.get("company_id", "DEFAULT"))
 
 
 @app.get("/workspace/accounting/working-capital")

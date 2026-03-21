@@ -925,7 +925,8 @@ class WorkspaceEngine:
         try:
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM ledger WHERE company_id = ? ORDER BY date DESC, created_at DESC", (company_id,))
-            return [dict(row) for row in cursor.fetchall()]
+            entries = [dict(row) for row in cursor.fetchall()]
+            return {"entries": entries}
         finally:
             conn.close()
 
@@ -2367,7 +2368,7 @@ class WorkspaceEngine:
             conn.close()
 
     @staticmethod
-    def get_customer_health_scores():
+    def get_customer_health_scores(company_id: str = "DEFAULT"):
         """
         Calculates health scores (0-100) for all customers based on RFM analysis.
         Flags customers likely to churn based on recency and frequency trends.
@@ -2377,7 +2378,7 @@ class WorkspaceEngine:
         try:
             # 1. Get raw transaction data
             invoices_df = pd.read_sql(
-                "SELECT customer_id, date, grand_total FROM invoices", conn
+                "SELECT customer_id, date, grand_total FROM invoices WHERE company_id = ?", conn, params=(company_id,)
             )
             if invoices_df.empty:
                 return []
@@ -2520,6 +2521,8 @@ class WorkspaceEngine:
             return {"status": "error", "message": "Invalid action"}
         finally:
             conn.close()
+
+
 
     @staticmethod
     def get_invoices(company_id: str):

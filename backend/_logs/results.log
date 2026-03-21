@@ -1,0 +1,73 @@
+﻿python : Traceback (most recent call last):
+At line:1 char:1
++ python -X utf8 -c "exec(open('test_api.py', 
+encoding='utf-8').read()) ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Trac 
+   eback (most recent call last)::String) [], Re  
+  moteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  File "<string>", line 1, in <module>
+  File "<string>", line 120, in <module>
+NameError: name '__file__' is not defined. Did 
+you mean: '__name__'?
+AUTH OK
+
+OK   Onboarding Status
+FAIL Company Profile: 405 - {"detail":"Method Not Allowed"}
+FAIL System Health: 404 - {"detail":"Not Found"}
+FAIL Copilot Chat: 422 - {"detail":[{"type":"string_type","loc":["body"],"msg":"Input should be a valid string","input":{"message":"What is my re
+OK   NLBI Chart
+FAIL Analytics Dashboard: 404 - {"detail":"Not Found"}
+FAIL Leaderboard: 404 - {"detail":"Not Found"}
+OK   Lead Scoring
+OK   Churn Risk
+FAIL Forecast: 404 - {"detail":"Not Found"}
+FAIL Recommendations: 404 - {"detail":"Not Found"}
+OK   List Segments
+OK   RFM Compute
+OK   RFM Auto-Create
+OK   AI Cluster
+OK   Segment Insights
+OK   Auto Detect
+OK   Create Segment
+OK   Segment Detail
+OK   Segment Trigger
+OK   Templates List
+OK   Doc List
+OK   Gen Sales PDF
+OK   Gen Finance DOCX
+OK   Gen Proposal
+OK   Schedule Report
+OK   Scheduled List
+OK   Customers
+FAIL Invoices: 500 - Internal Server Error
+OK   Inventory
+FAIL Employees: 404 - {"detail":"Not Found"}
+FAIL Ledger: 500 - Internal Server Error
+OK   Ledger Entries
+OK   PO List
+OK   Expense Analytics
+FAIL User State: 404 - {"detail":"Not Found"}
+FAIL Accounting Reports: 404 - {"detail":"Not Found"}
+OK   Audit Solvency
+OK   Derivatives
+OK   Portal Dashboard
+OK   Tally Status
+OK   Tally Sync
+FAIL Adoption Confidence: TIMEOUT
+OK   Incident Readiness
+OK   Backup Drill
+FAIL What-If Sim: 404 - {"detail":"Not Found"}
+FAIL CFO Report: 404 - {"detail":"Not Found"}
+OK   Anomalies
+FAIL Market Intel: 404 - {"detail":"Not Found"}
+OK   Dynamic Pricing
+OK   AI Outreach
+FAIL Dataset List: 404 - {"detail":"Not Found"}
+
+
+===== SUMMARY =====
+PASSED: 1 ... calculating properly

@@ -21,7 +21,6 @@ NeuralBI is a **production-ready AI platform** that transforms raw business data
 ### 💼 Enterprise Management Silos
 - **Workforce Management (HR)**: Personnel mapping, payroll integrity, and workforce analytics
 - **Finance Center (Treasury)**: Deep ledger segregation and automated financial health auditing
-- **Communication Hub**: Integrated meetings and direct SMTP email integration
 - **Cross-Device Persistence**: Cloud-synced workspace sessions to resume work anywhere
 - **GST-Compliant Invoicing**: Automated tax calculations and E-invoicing support
 - **Inventory Intelligence**: Multi-location stock optimization and demand forecasting
@@ -111,7 +110,6 @@ Expected behavior in this profile:
 - No synthetic LLM fallback responses (AI returns explicit service error if provider is not configured)
 - Frontend demo mode disabled
 - Unified chat fallback responses are blocked (returns explicit service errors when inference fails)
-- Mock-only Meetings and Messaging route modules are disabled until backed by persistent services
 
 **Docker Deployment**
 ```bash
@@ -141,16 +139,12 @@ MEETING_PROVIDER=jitsi
 DAILY_API_KEY=your-daily-api-key
 
 # Email
-SMTP_SERVER=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USERNAME=your-email@gmail.com
-SMTP_PASSWORD=your-app-password
+# SMTP settings typically go here if enabled
 
 # Payments
 RAZORPAY_KEY_ID=your-razorpay-key-id
 RAZORPAY_KEY_SECRET=your-razorpay-key-secret
 STRIPE_SECRET_KEY=your-stripe-secret-key
-
 # Monitoring
 SENTRY_DSN=your-sentry-dsn
 PROMETHEUS_ENABLED=true

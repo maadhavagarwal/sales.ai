@@ -10,7 +10,6 @@ import WorkspaceInventory from "@/components/workspace/WorkspaceInventory"
 import WorkspaceAccounts from "@/components/workspace/WorkspaceAccounts"
 import WorkspaceHR from "@/components/workspace/WorkspaceHR"
 import WorkspaceFinance from "@/components/workspace/WorkspaceFinance"
-import WorkspaceCommHub from "@/components/workspace/WorkspaceCommHub"
 import WorkspaceNexus from "@/components/workspace/WorkspaceNexus"
 import { Card, Button, Badge } from "@/components/ui"
 import { uploadCSV, syncWorkspaceToDashboard, getUserState, saveUserState } from "@/services/api"
@@ -83,13 +82,12 @@ function WorkspaceContent() {
     const { showToast } = useToast()
 
     const sections: Section[] = [
-        { id: "nexus", label: "Enterprise Nexus", icon: "NX", description: "Central Data Portal", color: "var(--primary)" },
+    { id: "nexus", label: "Enterprise Nexus", icon: "NX", description: "Central Data Portal", color: "var(--primary)" },
         { id: "billing", label: "Financial Engine", icon: "FI", description: "Invoicing & GST", color: "var(--accent-cyan)" },
         { id: "crm", label: "Sales CRM", icon: "CR", description: "Deals & Targets", color: "#f97316" },
         { id: "marketing", label: "Growth Ops", icon: "MK", description: "Campaign Intelligence", color: "#14b8a6" },
         { id: "hr", label: "Workforce", icon: "HR", description: "HR & Employees", color: "var(--accent-rose)" },
         { id: "finance", label: "Finance Center", icon: "FN", description: "Treasury Center", color: "var(--accent-emerald)" },
-        { id: "comm", label: "Comm Hub", icon: "CH", description: "Meetings & Mail", color: "var(--accent-violet)" },
         { id: "inventory", label: "Asset Lab", icon: "ST", description: "Stock Optimization", color: "var(--accent-amber)" },
         { id: "accounts", label: "Ledger Core", icon: "AC", description: "Bookkeeping", color: "#64748b" },
     ]
@@ -273,7 +271,6 @@ function WorkspaceContent() {
                         {activeSection === "accounts" && <WorkspaceAccounts />}
                         {activeSection === "hr" && <WorkspaceHR />}
                         {activeSection === "finance" && <WorkspaceFinance />}
-                        {activeSection === "comm" && <WorkspaceCommHub />}
                     </motion.section>
                 </AnimatePresence>
             </div>

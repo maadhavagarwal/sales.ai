@@ -5,7 +5,6 @@ This document outlines the core capabilities and modules of the Sales AI Platfor
 ## 🚀 1. Enterprise Data Nexus & Onboarding
 - **Workspace Nexus**: A unified command center for orchestrating all enterprise data silos and operational workflows.
 - **Neural Ingestion Engine**: Universal bulk uploader for multiple CSV/Excel files simultaneously with AI-driven neural mapping.
-- **Visual Neural Nodes**: High-fidelity animations masking complex background processing to ensure a smooth, professional user experience.
 - **Silo Persistence Monitor**: Real-time system integrity tracking with live record counts for Personnel, Ledger, Inventory, and Invoices.
 - **Navigation Guard**: Enforced onboarding flow that ensures every business instance is correctly initialized.
 - **Multi-Tenant Isolation (Advanced)**: Strict database-level segregation ensures that enterprise data remains completely siloed with zero leakage between corporate accounts.
@@ -32,7 +31,6 @@ This document outlines the core capabilities and modules of the Sales AI Platfor
 ## 🏢 4. Global Workspace (Extended Operations)
 - **Workforce Management (HR)**: Intelligent personnel data ingestion, efficiency scoring (90+ validation), and workforce analytics.
 - **Finance Center (Treasury)**: Specialized multi-record ledger handling with automated bookkeeping and financial health auditing.
-- **Communication Hub**: Integrated meeting scheduler, team chat relay, and direct enterprise email functionality.
 - **Cross-Device State Persistence**: Cloud-synced workspace sessions via backend state-vaulting; resume where you left off on any device.
 - **Logistics & PO Management**: Full lifecycle tracking of Purchase Orders with multi-location stock inflow and lead-time tracking.
 - **Asset Lab (Inventory)**: Multi-location stock management with automated "Low Stock" alerts and SKU-velocity/demand forecasting.
@@ -56,8 +54,6 @@ This document outlines the core capabilities and modules of the Sales AI Platfor
 - **Immutable Audit Trail**: Forensic logging of every business transaction, ensuring full transparency for statutory audits.
 
 ## ⚡ 7. Performance & Infrastructure
-- **Offline-First PWA**: Service Worker-enabled for field operations in low-connectivity environments.
-- **Scheduled Strategy Delivery**: Automated business intelligence and board reports delivered via scheduled transactional emails.
 - **REST API v1**: Versioned public endpoints for 3rd-party integration.
 - **Live KPI Nexus**: High-performance streaming of mission-critical metrics with sub-second latency.
 

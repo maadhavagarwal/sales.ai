@@ -92,7 +92,7 @@ export default function EnterpriseIntelligence() {
                         <p className="text-[10px] font-black text-[--accent-rose] uppercase tracking-widest mt-2">Unsupervised Anomaly Detection • Isolation Forest Layer</p>
                     </div>
                     <Badge variant="outline" className="border-[--accent-rose]/30 text-[--accent-rose]">
-                        <Activity className="w-3 h-3 mr-1" /> Monitoring Active
+                        <Activity className="w-3 h-3 mr-1" /> AI Analysis Live
                     </Badge>
                 </div>
 

@@ -103,16 +103,6 @@ const demoSteps: DemoStep[] = [
     estimatedTime: "3 minutes"
   },
   {
-    id: "operations",
-    title: "Operations Center",
-    description: "Monitor workflows, automation, and operational efficiency",
-    icon: "⚙️",
-    module: "Operations",
-    path: "/operations",
-    features: ["Workflow Monitoring", "Automation Rules", "Performance Metrics"],
-    estimatedTime: "2 minutes"
-  },
-  {
     id: "portal",
     title: "Executive Portal",
     description: "Strategic insights and executive decision support",

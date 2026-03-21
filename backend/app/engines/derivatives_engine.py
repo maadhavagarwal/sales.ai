@@ -7,10 +7,10 @@ import pandas as pd
 
 class DerivativesEngine:
     UNDERLYINGS = {
-        "NIFTY": {"spot": 22450.0, "lot_size": 50, "step": 50},
-        "BANKNIFTY": {"spot": 48600.0, "lot_size": 15, "step": 100},
-        "FINNIFTY": {"spot": 23650.0, "lot_size": 40, "step": 50},
-        "SENSEX": {"spot": 73950.0, "lot_size": 10, "step": 100},
+        "USD/INR": {"spot": 83.45, "lot_size": 1000, "step": 0.25},
+        "CRUDE OIL": {"spot": 6850.0, "lot_size": 100, "step": 20},
+        "COPPER": {"spot": 725.0, "lot_size": 2500, "step": 2},
+        "REVENUE": {"spot": 100.0, "lot_size": 1, "step": 1},
     }
 
     @staticmethod
@@ -67,34 +67,34 @@ class DerivativesEngine:
         atm_row = min(option_chain, key=lambda row: abs(row["strike"] - spot))
         factor_cards = [
             {
-                "name": "Delta",
+                "name": "Price Delta",
                 "value": round(atm_row["call_greeks"]["delta"], 3),
-                "description": "Directional hedge exposure",
+                "description": "Sensitivity to underlying rate price shift",
             },
             {
-                "name": "Gamma",
+                "name": "Impact Convexity",
                 "value": round(atm_row["call_greeks"]["gamma"], 4),
-                "description": "Convexity and re-hedge risk",
+                "description": "Rate of change in hedge sensitivity",
             },
             {
-                "name": "Theta",
+                "name": "Time Carry",
                 "value": round(atm_row["call_greeks"]["theta"], 3),
-                "description": "Time carry cost",
+                "description": "Daily cost of maintaining risk hedge",
             },
             {
-                "name": "Vega",
+                "name": "Vol Impact",
                 "value": round(atm_row["call_greeks"]["vega"], 3),
-                "description": "Volatility sensitivity",
+                "description": "Stability of risk premium",
             },
             {
-                "name": "Beta",
+                "name": "Beta Exposure",
                 "value": round(portfolio_beta, 3),
-                "description": "Portfolio market sensitivity",
+                "description": "Business sensitivity to external benchmarks",
             },
             {
-                "name": "Confidence",
+                "name": "Risk Coverage",
                 "value": "98.4%",
-                "description": "Model convergence and backtest accuracy",
+                "description": "Model confidence in treasury hedge coverage",
             },
         ]
 
@@ -127,13 +127,11 @@ class DerivativesEngine:
     def _generate_expiries():
         today = datetime.utcnow().date()
         expiries = []
-        cursor = today
-        while len(expiries) < 4:
-            if cursor.weekday() == 3:
-                expiries.append(cursor.strftime("%Y-%m-%d"))
-                cursor += timedelta(days=7)
-            else:
-                cursor += timedelta(days=1)
+        # Corporate hedges usually settle on last day of month or last Thursday
+        for i in range(1, 5):
+            # Last day of current + i month
+            next_mnth = (today.replace(day=1) + timedelta(days=32 * i)).replace(day=1) - timedelta(days=1)
+            expiries.append(next_mnth.strftime("%Y-%m-%d"))
         return expiries
 
     @staticmethod
