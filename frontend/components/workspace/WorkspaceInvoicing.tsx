@@ -34,35 +34,9 @@ export default function WorkspaceInvoicing() {
     const refreshData = async () => {
         try {
             const [invRes, custRes, stockRes] = await Promise.all([getInvoices(), getCustomers(), getInventory()])
-
-            // In dev mode, seed sample data when backend returns empty sets
-            const isDev = process.env.NODE_ENV === "development"
-            const sampleInvoices = [
-                {
-                    id: "SAMPLE-001",
-                    customer_id: "Acme Corp",
-                    customer_gstin: "27AAAAA0000A1Z5",
-                    subtotal: 45200,
-                    total_tax: 8136,
-                    grand_total: 53336,
-                    due_date: new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0],
-                    status: "PENDING",
-                    payment_terms: "Net 7",
-                    items_json: JSON.stringify([{ inventory_id: "SKU-0001", desc: "Widget Pro", qty: 10, price: 4520 }]),
-                },
-            ]
-
-            const sampleCustomers = [
-                { id: 1, name: "Acme Corp", email: "accounts@acme.com", phone: "+91-9876543210", gstin: "27AAAAA0000A1Z5" },
-            ]
-
-            const sampleInventory = [
-                { sku: "SKU-0001", name: "Widget Pro", quantity: 125, sale_price: 4520, hsn_code: "998311" },
-            ]
-
-            setInvoices(invRes.length || !isDev ? invRes : sampleInvoices)
-            setCustomers(custRes.length || !isDev ? custRes : sampleCustomers)
-            setInventory(stockRes.length || !isDev ? stockRes : sampleInventory)
+            setInvoices(invRes || [])
+            setCustomers(custRes || [])
+            setInventory(stockRes || [])
         } catch (e) {
             console.error(e)
         }

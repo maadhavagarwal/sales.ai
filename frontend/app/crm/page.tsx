@@ -1,5 +1,7 @@
 "use client"
 
+export const dynamic = 'force-dynamic'
+
 import React, { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { 
@@ -114,9 +116,9 @@ export default function CRMPage() {
 
     return (
         <DashboardLayout title="Predictive CRM" subtitle="Neural Intelligence & Sales Operations">
-            <div className="min-h-screen bg-transparent text-white selection:bg-cyan-500/30 pb-32">
+            <div className="page-rhythm bg-transparent text-white selection:bg-cyan-500/30 pb-24">
                 {/* Navigation Tabs */}
-                <div className="flex p-1 gap-1 bg-white/5 border border-white/10 rounded-full w-fit mb-10 overflow-hidden">
+                <div className="flex p-1 gap-1 bg-white/5 border border-white/10 rounded-full w-fit mb-2 overflow-x-auto">
                     {[
                         { id: "pipeline", label: "Sales Pipeline", icon: LayoutDashboard },
                         { id: "health", label: "Customer Health", icon: Users },
@@ -145,7 +147,7 @@ export default function CRMPage() {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -20 }}
-                            className="grid grid-cols-1 md:grid-cols-5 gap-6"
+                            className="grid grid-cols-1 md:grid-cols-5 gap-4 sm:gap-5"
                         >
                             {STAGES.map((stage) => (
                                 <div key={stage} className="flex flex-col gap-4">
@@ -157,7 +159,7 @@ export default function CRMPage() {
                                             ({deals.filter(d => d.stage === stage).length})
                                         </span>
                                     </div>
-                                    <div className="flex flex-col gap-3 min-h-[500px] p-2 bg-white/[0.02] border border-dashed border-white/5 rounded-3xl">
+                                    <div className="flex flex-col gap-3 min-h-125 p-2 bg-white/2 border border-dashed border-white/5 rounded-3xl">
                                         {deals.filter(d => d.stage === stage).map((deal) => (
                                             <motion.div
                                                 key={deal.id}
@@ -206,7 +208,8 @@ export default function CRMPage() {
                             exit={{ opacity: 0, y: -20 }}
                         >
                             <div className="bg-[#0a0a0a] border border-white/10 rounded-[2.5rem] overflow-hidden">
-                                <table className="w-full text-left border-collapse">
+                                <div className="overflow-x-auto">
+                                <table className="w-full min-w-215 text-left border-collapse">
                                     <thead>
                                         <tr className="border-b border-white/5 bg-white/5">
                                             <th className="px-8 py-6 text-[10px] font-black tracking-widest uppercase text-white/40 italic">Customer ID</th>
@@ -219,11 +222,11 @@ export default function CRMPage() {
                                     </thead>
                                     <tbody>
                                         {healthScores.map((h) => (
-                                            <tr key={h.customer_id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors group">
+                                            <tr key={h.customer_id} className="border-b border-white/5 hover:bg-white/2 transition-colors group">
                                                 <td className="px-8 py-6 font-mono text-xs font-bold text-white/80">{h.customer_id}</td>
                                                 <td className="px-8 py-6">
                                                     <div className="flex items-center gap-4">
-                                                        <div className="flex-1 h-1.5 max-w-[100px] bg-white/5 rounded-full overflow-hidden">
+                                                        <div className="flex-1 h-1.5 max-w-25 bg-white/5 rounded-full overflow-hidden">
                                                             <div 
                                                                 className={`h-full transition-all duration-1000 ${
                                                                     h.health_score > 70 ? 'bg-emerald-500' : h.health_score > 40 ? 'bg-yellow-500' : 'bg-rose-500'
@@ -259,6 +262,7 @@ export default function CRMPage() {
                                         ))}
                                     </tbody>
                                 </table>
+                                </div>
                             </div>
                         </motion.div>
                     )}
@@ -269,7 +273,7 @@ export default function CRMPage() {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -20 }}
-                            className="space-y-4"
+                            className="page-stack"
                         >
                             {auditLogs.map((log) => (
                                 <div key={log.id} className="flex flex-col md:flex-row md:items-center justify-between p-6 bg-[#0a0a0a] border border-white/10 rounded-3xl group hover:border-white/20 transition-all">
@@ -308,7 +312,7 @@ export default function CRMPage() {
                 <motion.div 
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    className="fixed bottom-10 right-10 w-[450px] bg-white/5 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] p-8 shadow-2xl overflow-hidden group hover:bg-white/[0.07] transition-all z-[100]"
+                    className="fixed bottom-6 left-4 right-4 sm:left-auto sm:right-8 sm:w-md bg-white/5 backdrop-blur-3xl border border-white/10 rounded-4xl p-6 sm:p-8 shadow-2xl overflow-hidden group hover:bg-white/[0.07] transition-all z-100"
                 >
                     <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 blur-3xl -z-10 group-hover:bg-cyan-500/20 transition-all" />
                     <div className="flex items-center gap-4 mb-6">
@@ -316,7 +320,7 @@ export default function CRMPage() {
                             <TrendingUp className="w-6 h-6 text-black" />
                         </div>
                         <div>
-                            <h5 className="text-sm font-black tracking-tight tracking-[0.1em]">AI CRM ADVISOR</h5>
+                            <h5 className="text-sm font-black tracking-widest">AI CRM ADVISOR</h5>
                             <div className="flex items-center gap-1.5">
                                 <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
                                 <span className="text-[9px] font-black tracking-widest uppercase text-white/30">Active Intelligence</span>

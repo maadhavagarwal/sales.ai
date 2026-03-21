@@ -84,13 +84,13 @@ export default function RevenueForecastChart({ data, reasoning, confidence }: Re
                 animate={{ opacity: 1, y: 0 }}
                 className="chart-card"
             >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
+                <div className="mb-6 flex items-center justify-between">
                     <div>
-                        <h3 style={{ fontSize: "1rem", fontWeight: 700 }}>🔮 AI 30-Day Revenue Forecast</h3>
-                        <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "2px" }}>Neural network time-series prediction</p>
+                        <h3 className="text-base font-bold text-[--text-primary]">AI 30-Day Revenue Forecast</h3>
+                        <p className="mt-0.5 text-xs text-[--text-muted]">Neural network time-series prediction</p>
                     </div>
                 </div>
-                <div style={{ height: "350px", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.05)", background: "rgba(255,255,255,0.01)" }}>
+                <div className="flex h-87.5 items-center justify-center rounded-[--radius-md] border border-[--border-default] bg-[--surface-1] text-[--text-muted]">
                     <div>Loading forecast data...</div>
                 </div>
             </motion.div>
@@ -103,29 +103,29 @@ export default function RevenueForecastChart({ data, reasoning, confidence }: Re
             animate={{ opacity: 1, y: 0 }}
             className="chart-card"
         >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
                 <div>
-                    <h3 style={{ fontSize: "1rem", fontWeight: 700 }}>🔮 AI 30-Day Revenue Forecast</h3>
-                    <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "2px" }}>Neural network time-series prediction</p>
+                    <h3 className="text-base font-bold text-[--text-primary]">AI 30-Day Revenue Forecast</h3>
+                    <p className="mt-0.5 text-xs text-[--text-muted]">Neural network time-series prediction</p>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+                <div className="flex items-center gap-3">
                     {confidence && (
                         <div className="text-[10px] font-black text-[--accent-emerald] bg-[--accent-emerald]/10 px-3 py-1 rounded-full border border-[--accent-emerald]/20">
                             CONFIDENCE: {((1 - (confidence.upper - confidence.lower) / (confidence.upper + confidence.lower)) * 100).toFixed(0)}%
                         </div>
                     )}
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                        <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#6366f1", boxShadow: "0 0 8px #6366f1" }}></span>
-                        <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", fontWeight: 600 }}>ML PREDICTION</span>
+                    <div className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-[--primary] shadow-[0_0_8px_var(--primary)]" />
+                        <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[--text-muted]">ML Prediction</span>
                     </div>
                 </div>
             </div>
 
-            <div style={{ height: "350px", width: "100%" }}>
+            <div className="h-87.5 w-full">
                 <SafeChart option={chartOption} style={{ height: "350px", width: "100%" }} />
             </div>
 
-            <div style={{ marginTop: "1rem", padding: "1.5rem", background: "rgba(99,102,241,0.04)", border: "1px solid rgba(99,102,241,0.1)", borderRadius: "16px", fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+            <div className="mt-4 rounded-[--radius-md] border border-[--primary]/20 bg-[--primary]/8 p-6 text-sm text-[--text-secondary]">
                 <div className="flex gap-4 items-start">
                     <div className="w-10 h-10 rounded-xl bg-[--primary]/10 flex items-center justify-center text-xl shrink-0">🧠</div>
                     <div>

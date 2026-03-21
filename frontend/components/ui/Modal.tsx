@@ -36,7 +36,7 @@ export default function Modal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-slate-950/50 backdrop-blur-sm z-40"
+            className="fixed inset-0 bg-black/65 backdrop-blur-sm z-40"
           />
 
           {/* Modal */}
@@ -47,21 +47,21 @@ export default function Modal({
             className={`
               fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
               ${sizeClasses[size]} w-[90vw] sm:w-full
-              bg-slate-900 rounded-xl border border-slate-800
-              shadow-2xl z-50
+              bg-[--surface-1] rounded-[--radius-md] border border-[--border-default]
+              shadow-[--shadow-lg] z-50
               flex flex-col max-h-[90vh]
               overflow-hidden
             `}
           >
             {/* Header */}
             {title && (
-              <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-slate-800">
-                <h2 className="text-lg sm:text-xl font-bold text-slate-100">
+              <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-[--border-subtle]">
+                <h2 className="text-lg sm:text-xl font-semibold tracking-tight text-[--text-primary]">
                   {title}
                 </h2>
                 <button
                   onClick={onClose}
-                  className="p-1 hover:bg-slate-800 rounded-lg transition-colors"
+                  className="p-1.5 hover:bg-white/8 rounded-lg transition-colors text-[--text-secondary] hover:text-[--text-primary]"
                   aria-label="Close modal"
                 >
                   <svg

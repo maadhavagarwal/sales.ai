@@ -13,7 +13,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
   width,
   height,
 }) => {
-  const baseStyles = "animate-pulse bg-white/5 relative overflow-hidden"
+  const baseStyles = "animate-pulse bg-white/6 relative overflow-hidden"
   const variantStyles = {
     rect: "rounded-md",
     circle: "rounded-full",
@@ -28,14 +28,14 @@ export const Skeleton: React.FC<SkeletonProps> = ({
         height: height,
       }}
     >
-      <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/5 to-transparent shadow-[0_0_40px_rgba(255,255,255,0.05)]" />
+      <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/12 to-transparent" />
     </div>
   )
 }
 
 export const SkeletonCard: React.FC<{ rows?: number }> = ({ rows = 3 }) => {
   return (
-    <div className="p-6 rounded-2xl border border-white/5 bg-white/[0.02] space-y-4">
+    <div className="p-6 rounded-2xl border border-[--border-default] bg-[--surface-1] space-y-4">
       <div className="flex items-center gap-4">
         <Skeleton variant="circle" width={40} height={40} />
         <div className="space-y-2 flex-1">
@@ -54,7 +54,7 @@ export const SkeletonCard: React.FC<{ rows?: number }> = ({ rows = 3 }) => {
 
 export const SkeletonChart: React.FC = () => {
     return (
-        <div className="p-6 rounded-2xl border border-white/5 bg-white/[0.02] space-y-6">
+        <div className="p-6 rounded-2xl border border-[--border-default] bg-[--surface-1] space-y-6">
             <div className="flex justify-between items-end h-48 gap-2">
                 {[40, 70, 45, 90, 65, 30, 85, 50].map((h, i) => (
                     <Skeleton 

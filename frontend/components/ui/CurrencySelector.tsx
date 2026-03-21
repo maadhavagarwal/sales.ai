@@ -21,33 +21,12 @@ export default function CurrencySelector() {
     }, [])
 
     return (
-        <div ref={ref} style={{ position: "relative" }}>
+        <div ref={ref} className="relative">
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.5rem",
-                    padding: "0.5rem 0.875rem",
-                    background: "rgba(255,255,255,0.03)",
-                    border: "1px solid var(--border-subtle)",
-                    borderRadius: "99px",
-                    cursor: "pointer",
-                    fontSize: "0.8rem",
-                    fontWeight: 600,
-                    color: "var(--text-secondary)",
-                    transition: "all 0.2s"
-                }}
-                onMouseEnter={e => {
-                    e.currentTarget.style.borderColor = "var(--primary-500)";
-                    e.currentTarget.style.color = "var(--text-primary)";
-                }}
-                onMouseLeave={e => {
-                    e.currentTarget.style.borderColor = "var(--border-subtle)";
-                    e.currentTarget.style.color = "var(--text-secondary)";
-                }}
+                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full border border-[--border-default] bg-white/3 text-[12px] font-semibold text-[--text-secondary] hover:text-[--text-primary] hover:border-[--border-accent] transition-colors"
             >
-                <span style={{ color: "var(--primary-400)" }}>{currencySymbol}</span>
+                <span className="text-[--primary-400]">{currencySymbol}</span>
                 {currencyCode}
             </button>
 
@@ -58,24 +37,12 @@ export default function CurrencySelector() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 8, scale: 0.95 }}
                         transition={{ duration: 0.15 }}
-                        style={{
-                            position: "absolute",
-                            top: "calc(100% + 0.5rem)",
-                            right: 0,
-                            background: "rgba(10, 15, 30, 0.95)",
-                            backdropFilter: "blur(16px)",
-                            border: "1px solid var(--border-subtle)",
-                            borderRadius: "var(--radius-md)",
-                            padding: "0.5rem",
-                            width: "200px",
-                            boxShadow: "var(--shadow-lg)",
-                            zIndex: 100,
-                        }}
+                        className="absolute top-[calc(100%+0.5rem)] right-0 w-52.5 p-2 rounded-[--radius-md] border border-[--border-default] bg-[--surface-1]/95 backdrop-blur-xl shadow-[--shadow-lg] z-100"
                     >
-                        <div style={{ padding: "0.25rem 0.5rem", fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)", marginBottom: "0.25rem" }}>
+                        <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[--text-muted] mb-1">
                             Select Currency
                         </div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                        <div className="flex flex-col gap-0.5">
                             {CURRENCIES.map((curr) => (
                                 <button
                                     key={curr.code}
@@ -83,27 +50,11 @@ export default function CurrencySelector() {
                                         setCurrency(curr.code, curr.symbol)
                                         setIsOpen(false)
                                     }}
-                                    style={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "space-between",
-                                        padding: "0.5rem 0.75rem",
-                                        background: currencyCode === curr.code ? "rgba(99,102,241,0.15)" : "transparent",
-                                        border: "none",
-                                        borderRadius: "6px",
-                                        cursor: "pointer",
-                                        textAlign: "left",
-                                        fontSize: "0.8rem",
-                                        color: currencyCode === curr.code ? "var(--primary-300)" : "var(--text-primary)",
-                                        fontWeight: currencyCode === curr.code ? 600 : 500,
-                                        transition: "background 0.15s"
-                                    }}
-                                    onMouseEnter={e => {
-                                        if (currencyCode !== curr.code) e.currentTarget.style.background = "rgba(255,255,255,0.05)"
-                                    }}
-                                    onMouseLeave={e => {
-                                        if (currencyCode !== curr.code) e.currentTarget.style.background = "transparent"
-                                    }}
+                                    className={`flex items-center justify-between px-3 py-2 rounded-lg text-left text-sm transition-colors ${
+                                        currencyCode === curr.code
+                                            ? "bg-[--primary]/18 text-[--primary-300] font-semibold"
+                                            : "text-[--text-primary] font-medium hover:bg-white/6"
+                                    }`}
                                 >
                                     <span>{curr.label}</span>
                                     {currencyCode === curr.code && <span>✓</span>}

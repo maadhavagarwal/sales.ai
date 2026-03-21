@@ -2,36 +2,35 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 
 export default function LandingPage() {
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
-  const handleDemo = async (e: React.FormEvent) => {
+  const handleAccessRequest = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitted(true);
     setTimeout(() => setSubmitted(false), 3000);
     // In production: POST to backend
-    console.log('Demo request:', email);
+    console.log('Access request:', email);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
+    <div className="min-h-screen bg-[--bg-primary] text-[--text-primary]">
       {/* Navigation */}
-      <nav className="sticky top-0 z-50 bg-slate-900/80 backdrop-blur-md border-b border-slate-700">
+      <nav className="sticky top-0 z-50 border-b border-[--border-default] bg-[--surface-1]/90 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-purple-600 rounded-lg flex items-center justify-center font-bold text-sm">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-linear-to-br from-[--primary] to-[--secondary] text-sm font-bold text-white">
               NB
             </div>
             <span className="font-bold text-lg">NeuralBI</span>
           </div>
           <div className="flex gap-8 items-center">
-            <a href="#features" className="hover:text-blue-400 transition">Features</a>
-            <a href="#pricing" className="hover:text-blue-400 transition">Pricing</a>
-            <a href="#demo" className="hover:text-blue-400 transition">Demo</a>
-            <Link href="/login" className="bg-blue-600 px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+            <a href="#features" className="transition hover:text-[--primary]">Features</a>
+            <a href="#pricing" className="transition hover:text-[--primary]">Pricing</a>
+            <a href="#tour" className="transition hover:text-[--primary]">Tour</a>
+            <Link href="/login" className="rounded-lg bg-[--primary] px-4 py-2 transition hover:brightness-110">
               Sign In
             </Link>
           </div>
@@ -41,25 +40,25 @@ export default function LandingPage() {
       {/* Hero Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
         <div className="space-y-6">
-          <h1 className="text-5xl md:text-6xl font-bold leading-tight bg-gradient-to-r from-blue-400 via-cyan-400 to-purple-500 bg-clip-text text-transparent">
+          <h1 className="bg-linear-to-r from-[--primary-light] via-[--accent-cyan] to-[--secondary] bg-clip-text text-5xl font-bold leading-tight text-transparent md:text-6xl">
             Transform Your Business Data Into Strategic Advantage
           </h1>
-          <p className="text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed">
+          <p className="mx-auto max-w-2xl text-xl leading-relaxed text-[--text-secondary]">
             NeuralBI combines AI-powered analytics with enterprise-grade financial management. 
             Integrated with Tally, Zoho, and auto-generates GST compliance reports.
           </p>
           
           <div className="flex gap-4 justify-center pt-8">
-            <button className="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-3 rounded-lg font-semibold hover:shadow-lg hover:shadow-blue-500/50 transition">
+            <button className="rounded-lg bg-linear-to-r from-[--primary] to-[--primary-dark] px-8 py-3 font-semibold text-white transition hover:brightness-110">
               Start Free Trial (30 days)
             </button>
-            <button className="border border-slate-500 px-8 py-3 rounded-lg font-semibold hover:bg-slate-800 transition">
-              Watch Demo (3 min)
+            <button className="rounded-lg border border-[--border-strong] px-8 py-3 font-semibold transition hover:bg-[--surface-2]">
+              Watch Product Tour (3 min)
             </button>
           </div>
 
           {/* Trust Badges */}
-          <div className="flex justify-center gap-8 pt-12 text-sm text-slate-400 flex-wrap">
+          <div className="flex flex-wrap justify-center gap-8 pt-12 text-sm text-[--text-muted]">
             <div className="flex items-center gap-2">
               <span className="text-green-500">✓</span> Used by 200+ SMBs
             </div>
@@ -77,7 +76,7 @@ export default function LandingPage() {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="bg-slate-800/50 py-20 border-y border-slate-700">
+      <section id="features" className="border-y border-[--border-default] bg-[--surface-1]/40 py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-4xl font-bold text-center mb-16">Why Choose NeuralBI?</h2>
           
@@ -114,10 +113,10 @@ export default function LandingPage() {
                 desc: 'JWT auth, role-based access, audit trails, end-to-end encryption',
               },
             ].map((feature, idx) => (
-              <div key={idx} className="p-6 bg-slate-700/50 rounded-lg border border-slate-600 hover:border-blue-500 transition">
+              <div key={idx} className="rounded-lg border border-[--border-default] bg-[--surface-1] p-6 transition hover:border-[--border-accent]">
                 <div className="text-3xl mb-3">{feature.icon}</div>
                 <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
-                <p className="text-slate-400">{feature.desc}</p>
+                <p className="text-[--text-secondary]">{feature.desc}</p>
               </div>
             ))}
           </div>
@@ -125,7 +124,7 @@ export default function LandingPage() {
       </section>
 
       {/* Stats Section */}
-      <section className="py-16 bg-gradient-to-r from-blue-600/10 to-purple-600/10">
+      <section className="bg-linear-to-r from-[--primary]/10 to-[--secondary]/10 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-4 gap-8 text-center">
             {[
@@ -135,16 +134,16 @@ export default function LandingPage() {
               { number: '$2.5M', label: 'Revenue Tracked' },
             ].map((stat, idx) => (
               <div key={idx}>
-                <div className="text-3xl font-bold text-blue-400 mb-2">{stat.number}</div>
-                <p className="text-slate-400">{stat.label}</p>
+                <div className="mb-2 text-3xl font-bold text-[--primary-light]">{stat.number}</div>
+                <p className="text-[--text-secondary]">{stat.label}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Demo Section */}
-      <section id="demo" className="py-20">
+      {/* Product Tour Section */}
+      <section id="tour" className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-4xl font-bold text-center mb-16">See It In Action</h2>
           
@@ -167,12 +166,12 @@ export default function LandingPage() {
               </ul>
             </div>
             
-            <div className="bg-slate-700/50 rounded-lg p-8 border border-slate-600">
-              <div className="bg-slate-800 rounded p-4 mb-4 h-40 flex items-center justify-center text-slate-400">
-                [Live Demo Preview]
+            <div className="rounded-lg border border-[--border-default] bg-[--surface-1] p-8">
+              <div className="mb-4 flex h-40 items-center justify-center rounded bg-[--surface-2] p-4 text-[--text-secondary]">
+                [Live Product Preview]
               </div>
-              <button className="w-full bg-blue-600 py-2 rounded-lg hover:bg-blue-700 transition">
-                Launch Live Demo
+              <button className="w-full rounded-lg bg-[--primary] py-2 font-semibold text-white transition hover:brightness-110">
+                Launch Guided Tour
               </button>
             </div>
           </div>
@@ -180,10 +179,10 @@ export default function LandingPage() {
       </section>
 
       {/* Pricing Section */}
-      <section id="pricing" className="bg-slate-800/50 py-20 border-y border-slate-700">
+      <section id="pricing" className="border-y border-[--border-default] bg-[--surface-1]/40 py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-4xl font-bold text-center mb-4">Simple, Transparent Pricing</h2>
-          <p className="text-center text-slate-400 mb-12">Start free, scale as you grow</p>
+          <p className="mb-12 text-center text-[--text-secondary]">Start free, scale as you grow</p>
           
           <div className="grid md:grid-cols-3 gap-8">
             {[
@@ -209,13 +208,13 @@ export default function LandingPage() {
             ].map((tier, idx) => (
               <div key={idx} className={`p-8 rounded-lg border transition ${
                 tier.highlighted 
-                  ? 'bg-gradient-to-br from-blue-600/20 to-purple-600/20 border-blue-500 ring-2 ring-blue-500/30' 
-                  : 'bg-slate-700/50 border-slate-600'
+                    ? 'bg-linear-to-br from-[--primary]/15 to-[--secondary]/15 border-[--primary] ring-2 ring-[--primary]/25' 
+                    : 'bg-[--surface-1] border-[--border-default]'
               }`}>
                 <h3 className="text-2xl font-bold mb-2">{tier.name}</h3>
                 <div className="mb-6">
                   <span className="text-3xl font-bold">{tier.price}</span>
-                  <span className="text-slate-400 text-sm">{tier.period}</span>
+                  <span className="text-sm text-[--text-secondary]">{tier.period}</span>
                 </div>
                 <ul className="space-y-3 mb-8">
                   {tier.features.map((feature, fidx) => (
@@ -227,7 +226,7 @@ export default function LandingPage() {
                 <button className={`w-full py-2 rounded-lg transition ${
                   tier.highlighted
                     ? 'bg-blue-600 hover:bg-blue-700'
-                    : 'border border-slate-500 hover:bg-slate-800'
+                    : 'border border-[--border-strong] hover:bg-[--surface-2]'
                 }`}>
                   {tier.name === 'Enterprise' ? 'Contact Sales' : 'Get Started'}
                 </button>
@@ -263,17 +262,17 @@ export default function LandingPage() {
                 company: 'Finance Consulting',
               },
             ].map((testimonial, idx) => (
-              <div key={idx} className="p-6 bg-slate-700/50 rounded-lg border border-slate-600">
+              <div key={idx} className="rounded-lg border border-[--border-default] bg-[--surface-1] p-6">
                 <div className="flex gap-2 mb-4">
                   {[...Array(5)].map((_, i) => (
                     <span key={i} className="text-yellow-400">★</span>
                   ))}
                 </div>
-                <p className="text-slate-300 mb-4 italic">"{testimonial.quote}"</p>
+                <p className="mb-4 italic text-[--text-secondary]">"{testimonial.quote}"</p>
                 <div>
                   <p className="font-semibold">{testimonial.name}</p>
-                  <p className="text-sm text-slate-400">{testimonial.role}</p>
-                  <p className="text-xs text-slate-500">{testimonial.company}</p>
+                  <p className="text-sm text-[--text-secondary]">{testimonial.role}</p>
+                  <p className="text-xs text-[--text-muted]">{testimonial.company}</p>
                 </div>
               </div>
             ))}
@@ -282,43 +281,43 @@ export default function LandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="bg-gradient-to-r from-blue-600 to-purple-600 py-16">
+      <section className="bg-linear-to-r from-[--primary] to-[--secondary] py-16 text-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-4xl font-bold mb-6">Ready to Take Your Business to the Next Level?</h2>
-          <p className="text-lg text-blue-100 mb-8">Join 200+ businesses already using NeuralBI</p>
+          <p className="mb-8 text-lg text-white/85">Join 200+ businesses already using NeuralBI</p>
           
-          <form onSubmit={handleDemo} className="flex gap-3 max-w-md mx-auto">
+          <form onSubmit={handleAccessRequest} className="flex gap-3 max-w-md mx-auto">
             <input
               type="email"
               placeholder="your@email.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="flex-1 px-4 py-3 rounded-lg bg-white text-black placeholder-gray-500 focus:outline-none"
+              className="flex-1 rounded-lg bg-white px-4 py-3 text-black placeholder-gray-500 focus:outline-none"
               required
             />
             <button
               type="submit"
-              className="bg-slate-900 hover:bg-slate-800 px-6 py-3 rounded-lg font-semibold transition"
+              className="rounded-lg bg-black/70 px-6 py-3 font-semibold text-white transition hover:bg-black/85"
             >
               Start Free
             </button>
           </form>
           
           {submitted && (
-            <p className="text-green-200 mt-4">✓ Check your email for demo access!</p>
+            <p className="text-green-200 mt-4">✓ Check your email for onboarding access!</p>
           )}
           
-          <p className="text-sm text-blue-100 mt-6">No credit card required • 30-day free trial • Cancel anytime</p>
+          <p className="mt-6 text-sm text-white/80">No credit card required • 30-day free trial • Cancel anytime</p>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-slate-900 border-t border-slate-700">
+      <footer className="border-t border-[--border-default] bg-[--surface-1]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
               <h4 className="font-semibold mb-4">Product</h4>
-              <ul className="space-y-2 text-sm text-slate-400">
+              <ul className="space-y-2 text-sm text-[--text-secondary]">
                 <li><a href="#" className="hover:text-white transition">Features</a></li>
                 <li><a href="#" className="hover:text-white transition">Pricing</a></li>
                 <li><a href="#" className="hover:text-white transition">API Docs</a></li>
@@ -326,7 +325,7 @@ export default function LandingPage() {
             </div>
             <div>
               <h4 className="font-semibold mb-4">Company</h4>
-              <ul className="space-y-2 text-sm text-slate-400">
+              <ul className="space-y-2 text-sm text-[--text-secondary]">
                 <li><a href="#" className="hover:text-white transition">About</a></li>
                 <li><a href="#" className="hover:text-white transition">Blog</a></li>
                 <li><a href="#" className="hover:text-white transition">Contact</a></li>
@@ -334,21 +333,21 @@ export default function LandingPage() {
             </div>
             <div>
               <h4 className="font-semibold mb-4">Legal</h4>
-              <ul className="space-y-2 text-sm text-slate-400">
+              <ul className="space-y-2 text-sm text-[--text-secondary]">
                 <li><a href="#" className="hover:text-white transition">Privacy</a></li>
                 <li><a href="#" className="hover:text-white transition">Terms</a></li>
               </ul>
             </div>
             <div>
               <h4 className="font-semibold mb-4">Follow</h4>
-              <ul className="space-y-2 text-sm text-slate-400">
+              <ul className="space-y-2 text-sm text-[--text-secondary]">
                 <li><a href="#" className="hover:text-white transition">Twitter</a></li>
                 <li><a href="#" className="hover:text-white transition">LinkedIn</a></li>
               </ul>
             </div>
           </div>
           
-          <div className="border-t border-slate-700 pt-8 flex justify-between items-center text-sm text-slate-500">
+          <div className="flex items-center justify-between border-t border-[--border-default] pt-8 text-sm text-[--text-muted]">
             <p>© 2026 NeuralBI. All rights reserved.</p>
             <p>Made with ❤️ in India</p>
           </div>

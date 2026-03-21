@@ -147,6 +147,7 @@ interface AppState {
     setUploadProgress: (progress: number) => void
     setFileName: (name: string | null) => void
     toggleSidebar: () => void
+    setTheme: (theme: "dark" | "light") => void
     toggleTheme: () => void
     clearResults: () => void
     setCurrency: (code: string, symbol: string) => void
@@ -225,6 +226,13 @@ export const useStore = create<AppState>((set) => ({
     setUploadProgress: (uploadProgress) => set({ uploadProgress }),
     setFileName: (fileName) => set({ fileName }),
     toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
+    setTheme: (theme) => {
+        if (typeof window !== "undefined") {
+            localStorage.setItem("nb-enterprise-theme", theme)
+            document.documentElement.setAttribute("data-theme", theme)
+        }
+        set({ theme })
+    },
     toggleTheme: () => set((state) => {
         const next = state.theme === "dark" ? "light" : "dark"
         if (typeof window !== "undefined") {

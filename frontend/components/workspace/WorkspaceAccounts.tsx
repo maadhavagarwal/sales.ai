@@ -837,7 +837,25 @@ function LedgerView(props: any) {
 
 function PLView({ data, onExport, setLedgerSearch, setActiveTab }: any) {
     const { currencySymbol } = useStore()
-    if (!data || data.status === "ERROR" || !data.revenue) return <div className="text-white text-xs opacity-50 p-4 font-mono">Loading / Processing P&L Stream...</div>
+    if (!data || data.status === "ERROR" || !data.revenue || !data.revenue.items) {
+        return <div className="text-white text-xs opacity-50 p-4 font-mono">Loading / Processing P&L Stream...</div>
+    }
+
+    // Safe data extraction with defaults
+    const revenue = {
+        total: data.revenue?.total || 0,
+        items: data.revenue?.items || [],
+    }
+    const cogs = {
+        total: data.cogs?.total || 0,
+        items: data.cogs?.items || [],
+    }
+    const overheads = {
+        total: data.overheads?.total || 0,
+        items: data.overheads?.items || [],
+    }
+    const gross_profit = data.gross_profit ?? 0
+    const net_profit = data.net_profit ?? 0
 
     return (
         <Card variant="bento" padding="lg" className="max-w-4xl mx-auto bg-black/40 border-[--accent-emerald]/20">
@@ -857,16 +875,16 @@ function PLView({ data, onExport, setLedgerSearch, setActiveTab }: any) {
                 <section>
                     <div className="flex justify-between items-center mb-4 text-[--accent-emerald]">
                         <h4 className="border-b-2 border-current pb-1 text-[10px] font-black uppercase tracking-widest">Revenue from Operations</h4>
-                        <span className="font-black">{currencySymbol}{data.revenue.total.toLocaleString()}</span>
+                        <span className="font-black">{currencySymbol}{revenue.total.toLocaleString()}</span>
                     </div>
                     <div className="space-y-2 pl-4">
-                        {data.revenue.items.map((item: any, i: number) => (
+                        {revenue.items.map((item: any, i: number) => (
                             <div 
                                 key={i} 
                                 className="flex justify-between items-center text-xs font-bold text-white/60 group px-2 py-1 rounded hover:bg-white/5 transition-all"
                             >
                                 <span className="flex-1">{item.account_name}</span>
-                                <span className="mr-4">{item.balance.toLocaleString()}</span>
+                                <span className="mr-4">{(item.balance || 0).toLocaleString()}</span>
                                 <button 
                                     className="text-[--primary] text-[8px] font-black uppercase opacity-0 group-hover:opacity-100 hover:underline"
                                     onClick={() => { setLedgerSearch(item.account_name); setActiveTab("ledger"); }}
@@ -882,16 +900,16 @@ function PLView({ data, onExport, setLedgerSearch, setActiveTab }: any) {
                 <section>
                     <div className="flex justify-between items-center mb-4 text-[--accent-rose]">
                         <h4 className="border-b-2 border-current pb-1 text-[10px] font-black uppercase tracking-widest">Cost of Goods Sold (Direct)</h4>
-                        <span className="font-black">({currencySymbol}{data.cogs.total.toLocaleString()})</span>
+                        <span className="font-black">({currencySymbol}{cogs.total.toLocaleString()})</span>
                     </div>
                     <div className="space-y-2 pl-4">
-                        {data.cogs.items.map((item: any, i: number) => (
+                        {cogs.items.map((item: any, i: number) => (
                             <div 
                                 key={i} 
                                 className="flex justify-between items-center text-xs font-bold text-white/40 group px-2 py-1 rounded hover:bg-white/5 transition-all"
                             >
                                 <span className="flex-1">{item.account_name}</span>
-                                <span className="mr-4">{item.balance.toLocaleString()}</span>
+                                <span className="mr-4">{(item.balance || 0).toLocaleString()}</span>
                                 <button 
                                     className="text-[--primary] text-[8px] font-black uppercase opacity-0 group-hover:opacity-100 hover:underline"
                                     onClick={() => { setLedgerSearch(item.account_name); setActiveTab("ledger"); }}
@@ -906,23 +924,23 @@ function PLView({ data, onExport, setLedgerSearch, setActiveTab }: any) {
                 {/* Gross Profit Divider */}
                 <div className="p-4 bg-[--accent-emerald]/5 rounded-xl border border-[--accent-emerald]/20 flex justify-between items-center">
                     <span className="text-[10px] font-black text-[--accent-emerald] uppercase tracking-widest italic">Gross Profit Transferred</span>
-                    <span className="text-xl font-black text-white">{currencySymbol}{data.gross_profit.toLocaleString()}</span>
+                    <span className="text-xl font-black text-white">{currencySymbol}{gross_profit.toLocaleString()}</span>
                 </div>
 
                 {/* 3. Indirect Expenses Section */}
                 <section>
                     <div className="flex justify-between items-center mb-4 text-[--accent-rose]">
                         <h4 className="border-b-2 border-current pb-1 text-[10px] font-black uppercase tracking-widest">Indirect Operational Expenses</h4>
-                        <span className="font-black">({currencySymbol}{data.overheads.total.toLocaleString()})</span>
+                        <span className="font-black">({currencySymbol}{overheads.total.toLocaleString()})</span>
                     </div>
                     <div className="space-y-2 pl-4">
-                        {data.overheads.items.map((item: any, i: number) => (
+                        {overheads.items.map((item: any, i: number) => (
                             <div 
                                 key={i} 
                                 className="flex justify-between items-center text-xs font-bold text-white/40 group px-2 py-1 rounded hover:bg-white/5 transition-all"
                             >
                                 <span className="flex-1">{item.account_name}</span>
-                                <span className="mr-4">{item.balance.toLocaleString()}</span>
+                                <span className="mr-4">{(item.balance || 0).toLocaleString()}</span>
                                 <button 
                                     className="text-[--primary] text-[8px] font-black uppercase opacity-0 group-hover:opacity-100 hover:underline"
                                     onClick={() => { setLedgerSearch(item.account_name); setActiveTab("ledger"); }}
@@ -941,8 +959,8 @@ function PLView({ data, onExport, setLedgerSearch, setActiveTab }: any) {
                         <h4 className="text-2xl font-black text-white italic">Net Realizable Profit</h4>
                     </div>
                     <div className="text-right">
-                        <span className={`text-4xl font-black ${data.net_profit >= 0 ? "text-[--accent-emerald]" : "text-[--accent-rose]"} tracking-tighter drop-shadow-[0_0_15px_rgba(16,185,129,0.3)]`}>
-                            {currencySymbol}{data.net_profit.toLocaleString()}
+                        <span className={`text-4xl font-black ${net_profit >= 0 ? "text-[--accent-emerald]" : "text-[--accent-rose]"} tracking-tighter drop-shadow-[0_0_15px_rgba(16,185,129,0.3)]`}>
+                            {currencySymbol}{net_profit.toLocaleString()}
                         </span>
                     </div>
                 </div>
@@ -953,7 +971,14 @@ function PLView({ data, onExport, setLedgerSearch, setActiveTab }: any) {
 
 function BSView({ data, onExport, setLedgerSearch, setActiveTab }: any) {
     const { currencySymbol } = useStore()
-    if (!data) return <div className="text-white">Loading Solvent Matrix...</div>
+    if (!data || !data.equity || !data.liabilities || !data.assets) {
+        return <div className="text-white">Loading Solvent Matrix...</div>
+    }
+
+    // Safe data extraction
+    const retained_earnings = data.equity?.retained_earnings ?? 0
+    const assets = data.assets?.items || []
+    const liabilities = data.liabilities?.items || []
 
     return (
         <Card variant="glass" padding="none" className="max-w-5xl mx-auto overflow-hidden border-white/5">
@@ -975,7 +1000,7 @@ function BSView({ data, onExport, setLedgerSearch, setActiveTab }: any) {
                             <div className="space-y-2 pl-4">
                                 <div className="flex justify-between text-xs font-bold text-white/60">
                                     <span>Retained Earnings</span>
-                                    <span>{data.equity.retained_earnings.toLocaleString()}</span>
+                                    <span>{retained_earnings.toLocaleString()}</span>
                                 </div>
                                 <div className="flex justify-between text-xs font-bold text-white/40 italic">
                                     <span>Statutory Reserves</span>
@@ -987,13 +1012,13 @@ function BSView({ data, onExport, setLedgerSearch, setActiveTab }: any) {
                         <section>
                             <h4 className="text-xs font-black text-white uppercase mb-4">Current Liabilities</h4>
                             <div className="space-y-2 pl-4">
-                                {data.liabilities.items.map((item: any, i: number) => (
+                                {liabilities.map((item: any, i: number) => (
                                     <div 
                                         key={i} 
                                         className="flex justify-between items-center text-xs font-bold text-white/60 group px-2 py-1 rounded hover:bg-white/5 transition-all"
                                     >
                                         <span className="flex-1">{item.account_name}</span>
-                                        <span className="mr-4">{item.balance.toLocaleString()}</span>
+                                        <span className="mr-4">{(item.balance || 0).toLocaleString()}</span>
                                         <button 
                                             className="text-[--primary] text-[8px] font-black uppercase opacity-0 group-hover:opacity-100 hover:underline"
                                             onClick={() => { setLedgerSearch(item.account_name); setActiveTab("ledger"); }}
@@ -1020,13 +1045,13 @@ function BSView({ data, onExport, setLedgerSearch, setActiveTab }: any) {
                         <section>
                             <h4 className="text-xs font-black text-white uppercase mb-4">Fixed & Current Assets</h4>
                             <div className="space-y-2 pl-4">
-                                {data.assets.items.map((item: any, i: number) => (
+                                {assets.map((item: any, i: number) => (
                                     <div 
                                         key={i} 
                                         className="flex justify-between items-center text-xs font-bold text-white/60 group px-2 py-1 rounded hover:bg-white/5 transition-all"
                                     >
                                         <span className="flex-1">{item.account_name}</span>
-                                        <span className="mr-4">{item.balance.toLocaleString()}</span>
+                                        <span className="mr-4">{(item.balance || 0).toLocaleString()}</span>
                                         <button 
                                             className="text-[--primary] text-[8px] font-black uppercase opacity-0 group-hover:opacity-100 hover:underline"
                                             onClick={() => { setLedgerSearch(item.account_name); setActiveTab("ledger"); }}
@@ -1040,7 +1065,7 @@ function BSView({ data, onExport, setLedgerSearch, setActiveTab }: any) {
 
                         <div className="pt-[14.5rem] border-t border-white/10 flex justify-between font-black text-xl text-white">
                             <span>TOTAL</span>
-                            <span>{currencySymbol}{data.assets.total.toLocaleString()}</span>
+                            <span>{currencySymbol}{(data.assets?.total || 0).toLocaleString()}</span>
                         </div>
                     </div>
                 </div>

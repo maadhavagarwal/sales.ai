@@ -17,22 +17,22 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
     return (
       <div className={fullWidth ? "w-full" : ""}>
         {label && (
-          <label className="block text-sm font-medium text-slate-200 mb-2">
+          <label className="block text-sm font-medium text-[--text-secondary] mb-2">
             {label}
           </label>
         )}
         <select
           ref={ref}
           className={`
-            w-full px-4 py-2.5 rounded-lg
-            bg-slate-800/50 border border-slate-700
-            text-slate-100
+            w-full px-4 py-2.5 rounded-[--radius-sm]
+            bg-[--surface-1] border border-[--border-default]
+            text-[--text-primary]
             transition-all duration-200
-            hover:border-slate-600
-            focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30
+            hover:border-[--border-strong]
+            focus:outline-none focus:border-[--border-accent] focus:ring-2 focus:ring-[--primary]/25
             disabled:opacity-50 disabled:cursor-not-allowed
             appearance-none bg-right
-            ${error ? "border-red-500 focus:border-red-500 focus:ring-red-500/30" : ""}
+            ${error ? "border-[--accent-rose] focus:border-[--accent-rose] focus:ring-[--accent-rose]/25" : ""}
             ${className}
           `}
           style={{
@@ -50,7 +50,7 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
             </option>
           ))}
         </select>
-        {error && <p className="text-red-400 text-sm mt-1">{error}</p>}
+        {error && <p className="text-[--accent-rose] text-sm mt-1">{error}</p>}
       </div>
     )
   }

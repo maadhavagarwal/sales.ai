@@ -17,7 +17,7 @@ from app.main import app
 @pytest.fixture(autouse=True)
 def strict_profile(monkeypatch):
     monkeypatch.setenv("NEURALBI_STRICT_PRODUCTION", "true")
-    monkeypatch.setenv("ENABLE_DEMO_SEED_DATA", "false")
+    monkeypatch.setenv("ENABLE_LIVE_KPI_SIMULATOR", "false")
 
 
 @pytest.fixture

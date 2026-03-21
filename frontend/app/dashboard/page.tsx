@@ -264,19 +264,19 @@ export default function Dashboard() {
       ) : "Awaiting autonomous data ingestion..."}
       actions={results ? headerActions : null}
     >
-      <div className="space-y-16">
+      <div className="page-rhythm">
         {!results ? (
           <motion.div
             initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="max-w-3xl mx-auto text-center py-20"
+            className="max-w-3xl mx-auto text-center py-10 sm:py-16"
           >
             <Card variant="glass" padding="lg" className="border-dashed border-white/10 bg-white/1">
               <div className="w-24 h-24 bg-linear-to-br from-[--primary]/20 to-[--accent-violet]/20 rounded-[40px] flex items-center justify-center mx-auto mb-10 shadow-[--shadow-glow] border border-white/10 relative overflow-hidden group">
                 <div className="absolute inset-0 bg-[--primary]/10 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
                 <span className="text-4xl relative z-10 transition-transform group-hover:scale-110">🚀</span>
               </div>
-              <h2 className="text-4xl font-black text-white tracking-tighter mb-4 font-jakarta">
+              <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tighter mb-4 font-jakarta">
                 Initialize Neural Analysis
               </h2>
               <p className="text-md text-[--text-muted] font-medium max-w-lg mx-auto leading-relaxed mb-12 italic">
@@ -307,16 +307,16 @@ export default function Dashboard() {
             </Card>
           </motion.div>
         ) : (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col gap-12">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="page-rhythm">
             {/* Top Bar Status */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-6 pb-6 border-b border-white/5">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pb-5 border-b border-white/5">
               <div className="flex bg-black/40 p-1.5 rounded-2xl border border-white/10 shadow-inner overflow-hidden">
                 {(["dashboard", "data", "ai"] as const).map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
                     className={`
-                                    relative px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.3em] transition-all duration-500
+                                    relative px-4 sm:px-8 py-2 sm:py-2.5 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] sm:tracking-[0.3em] transition-all duration-500
                                     ${activeTab === tab
                         ? "text-white"
                         : "text-[--text-muted] hover:text-white"}
@@ -346,7 +346,7 @@ export default function Dashboard() {
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 10 }}
-                  className="space-y-12"
+                  className="page-stack"
                 >
                   <NLBIChartGenerator />
 
@@ -412,7 +412,7 @@ export default function Dashboard() {
                   {widgets.length < 8 && (
                     <button
                       onClick={() => { setEditingId(null); setShowEditor(true) }}
-                      className="w-full py-24 rounded-3xl border-2 border-dashed border-white/5 text-[--text-muted] hover:border-[--primary]/50 hover:text-white hover:bg-[--primary]/5 transition-all group relative overflow-hidden"
+                      className="w-full py-14 sm:py-24 rounded-3xl border-2 border-dashed border-white/5 text-[--text-muted] hover:border-[--primary]/50 hover:text-white hover:bg-[--primary]/5 transition-all group relative overflow-hidden"
                     >
                       <div className="relative z-10 flex flex-col items-center gap-4">
                         <span className="text-3xl group-hover:scale-125 group-hover:rotate-12 transition-transform opacity-40 group-hover:opacity-100">📡</span>
@@ -430,7 +430,7 @@ export default function Dashboard() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  className="space-y-12"
+                  className="page-stack"
                 >
                   <Card variant="bento" padding="lg">
                     <DataTable data={rawData} columns={allCols} />
@@ -444,7 +444,7 @@ export default function Dashboard() {
                   initial={{ opacity: 0, scale: 0.99 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.99 }}
-                  className="space-y-12"
+                  className="page-stack"
                 >
                   {results.dataset_type === "market_dataset" && results.market_intelligence && (
                     <div className="mb-12">
@@ -497,7 +497,7 @@ export default function Dashboard() {
               )}
             </AnimatePresence>
 
-            <div className="pt-16 border-t border-white/5">
+            <div className="pt-12 border-t border-white/5 page-stack">
               <div className="flex items-center gap-4 mb-10">
                 <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">📥</div>
                 <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-[--text-muted]">Ingestion Stream Aggregator</h4>
@@ -560,7 +560,7 @@ function CopilotFloating({ datasetId }: { datasetId?: string }) {
   }
 
   return (
-    <div className="fixed bottom-8 right-8 z-100">
+    <div className="fixed bottom-4 right-4 sm:bottom-8 sm:right-8 z-100">
       <AnimatePresence>
         {isOpen && (
           <motion.div

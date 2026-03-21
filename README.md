@@ -97,18 +97,15 @@ npm run dev
 Set these values in your environment before launch:
 
 ```bash
-ERP_SYNC_MODE=tally
-ENABLE_DEMO_SEED_DATA=false
+# Optional (only if you use ERP integration): ERP_SYNC_MODE=tally or zoho
+ERP_SYNC_MODE=
 ENABLE_LIVE_KPI_SIMULATOR=false
 NEURALBI_STRICT_PRODUCTION=true
-NEXT_PUBLIC_ENABLE_DEMO_MODE=false
 ```
 
 Expected behavior in this profile:
-- No demo dataset auto-seeding
 - No synthetic KPI simulator streaming
 - No synthetic LLM fallback responses (AI returns explicit service error if provider is not configured)
-- Frontend demo mode disabled
 - Unified chat fallback responses are blocked (returns explicit service errors when inference fails)
 
 **Docker Deployment**
@@ -126,13 +123,12 @@ SECRET_KEY=your-256-bit-secret-key
 JWT_SECRET_KEY=your-jwt-secret
 
 # AI/ML
-OPENAI_API_KEY=your-openai-key
-ANTHROPIC_API_KEY=your-anthropic-key
+GOOGLE_API_KEY=your-google-api-key
 
-# ERP Integration
-TALLY_URL=https://your-tally-server.com
-ZOHO_CLIENT_ID=your-zoho-client-id
-ERP_SYNC_MODE=tally
+# ERP Integration (optional - skip if not using Tally/Zoho)
+TALLY_URL=
+ZOHO_CLIENT_ID=
+ERP_SYNC_MODE=
 
 # Meetings Provider
 MEETING_PROVIDER=jitsi
@@ -141,10 +137,10 @@ DAILY_API_KEY=your-daily-api-key
 # Email
 # SMTP settings typically go here if enabled
 
-# Payments
-RAZORPAY_KEY_ID=your-razorpay-key-id
-RAZORPAY_KEY_SECRET=your-razorpay-key-secret
-STRIPE_SECRET_KEY=your-stripe-secret-key
+# Payments (optional: choose Razorpay OR Stripe)
+RAZORPAY_KEY_ID=
+RAZORPAY_KEY_SECRET=
+STRIPE_SECRET_KEY=
 # Monitoring
 SENTRY_DSN=your-sentry-dsn
 PROMETHEUS_ENABLED=true

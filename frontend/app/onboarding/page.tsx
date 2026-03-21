@@ -382,26 +382,41 @@ export default function EnterpriseOnboarding() {
                                 className="p-5 rounded-2xl bg-white/[0.03] border border-white/5 flex items-center justify-between group hover:bg-white/[0.05] transition-colors"
                             >
                                 <div className="flex items-center gap-5">
-                                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center border transition-transform group-hover:scale-110
-                                        ${res.category === 'INVOICE' ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' : 
-                                          res.category === 'CUSTOMER' ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400' : 
-                                          res.category === 'INVENTORY' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 
-                                          'bg-slate-500/10 border-white/10 text-slate-400'}`}
+                                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center border transition-transform group-hover:scale-110 ${
+                                        res.category === 'INVOICE' ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' : 
+                                        res.category === 'CUSTOMER' ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400' : 
+                                        res.category === 'INVENTORY' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 
+                                        res.category === 'STAFF' ? 'bg-orange-500/10 border-orange-500/20 text-orange-400' :
+                                        res.category === 'LEDGER' ? 'bg-purple-500/10 border-purple-500/20 text-purple-400' :
+                                        res.category === 'LEADS' ? 'bg-pink-500/10 border-pink-500/20 text-pink-400' :
+                                        res.category === 'PURCHASE_ORDERS' ? 'bg-cyan-500/10 border-cyan-500/20 text-cyan-400' :
+                                        res.category === 'RFM_CHURN' ? 'bg-red-500/10 border-red-500/20 text-red-400' :
+                                        'bg-slate-500/10 border-white/10 text-slate-400'}`}
                                     >
                                         {res.category === 'INVOICE' ? <Server className="w-6 h-6" /> : 
                                          res.category === 'CUSTOMER' ? <Users className="w-6 h-6" /> : 
-                                         res.category === 'INVENTORY' ? <Database className="w-6 h-6" /> : <Info className="w-6 h-6" />}
+                                         res.category === 'INVENTORY' ? <Database className="w-6 h-6" /> : 
+                                         res.category === 'STAFF' ? <Users className="w-6 h-6" /> :
+                                         res.category === 'LEDGER' ? <Database className="w-6 h-6" /> :
+                                         res.category === 'LEADS' ? <FileSpreadsheet className="w-6 h-6" /> :
+                                         res.category === 'PURCHASE_ORDERS' ? <FileSpreadsheet className="w-6 h-6" /> :
+                                         res.category === 'RFM_CHURN' ? <Info className="w-6 h-6" /> : <Info className="w-6 h-6" />}
                                     </div>
                                     <div>
                                         <p className="text-sm font-black uppercase text-slate-200 tracking-tight">{res.name}</p>
                                         <div className="flex items-center gap-2 mt-1">
-                                            <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest
-                                                ${res.category === 'INVOICE' ? 'bg-blue-500/20 text-blue-300' : 
-                                                  res.category === 'CUSTOMER' ? 'bg-indigo-500/20 text-indigo-300' : 
-                                                  res.category === 'INVENTORY' ? 'bg-emerald-500/20 text-emerald-300' : 
-                                                  'bg-slate-800 text-slate-500'}`}
+                                            <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${
+                                                res.category === 'INVOICE' ? 'bg-blue-500/20 text-blue-300' : 
+                                                res.category === 'CUSTOMER' ? 'bg-indigo-500/20 text-indigo-300' : 
+                                                res.category === 'INVENTORY' ? 'bg-emerald-500/20 text-emerald-300' : 
+                                                res.category === 'STAFF' ? 'bg-orange-500/20 text-orange-300' :
+                                                res.category === 'LEDGER' ? 'bg-purple-500/20 text-purple-300' :
+                                                res.category === 'LEADS' ? 'bg-pink-500/20 text-pink-300' :
+                                                res.category === 'PURCHASE_ORDERS' ? 'bg-cyan-500/20 text-cyan-300' :
+                                                res.category === 'RFM_CHURN' ? 'bg-red-500/20 text-red-300' :
+                                                'bg-slate-800 text-slate-500'}`}
                                             >
-                                                {res.category === 'UNTYPED' ? "SYST. IGNORED" : res.category}
+                                                {res.category === 'UNSUPPORTED' ? "SYST. IGNORED" : res.category}
                                             </span>
                                             <span className="text-[8px] font-bold text-slate-600 uppercase tracking-tighter">Schema Validated</span>
                                         </div>

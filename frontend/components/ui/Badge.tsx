@@ -14,7 +14,7 @@ const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
     ref
   ) => {
     const baseStyles =
-      "inline-flex items-center font-black uppercase tracking-[0.15em] rounded-full transition-all duration-300 relative"
+      "inline-flex items-center font-semibold uppercase tracking-[0.12em] rounded-full transition-all duration-200 relative"
 
     const variants: Record<string, string> = {
       primary: "bg-[--primary]/10 text-[--primary] border border-[--primary]/20",
@@ -23,7 +23,7 @@ const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
       danger: "bg-[--accent-rose]/10 text-[--accent-rose] border border-[--accent-rose]/20",
       info: "bg-[--accent-cyan]/10 text-[--accent-cyan] border border-[--accent-cyan]/20",
       outline: "bg-transparent text-[--text-muted] border border-[--border-strong] group-hover:border-[--primary]/50 transition-colors",
-      pro: "bg-gradient-to-r from-[--primary] to-[--accent-violet] text-white border-none shadow-[--shadow-glow]",
+      pro: "bg-gradient-to-r from-[--primary] to-[--primary-dark] text-white border-none shadow-[--shadow-glow]",
     }
 
     const sizes: Record<string, string> = {

@@ -409,6 +409,36 @@ def init_workspace_db():
             )
         """)
 
+        # Sales Leads (CRM Pipeline)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS sales_leads (
+                id TEXT PRIMARY KEY,
+                company_id TEXT,
+                name TEXT NOT NULL,
+                email TEXT,
+                phone TEXT,
+                stage TEXT DEFAULT 'PROSPECT', -- PROSPECT, QUALIFIED, PROPOSAL, NEGOTIATION, CLOSED_WON, CLOSED_LOST
+                value REAL DEFAULT 0.0,
+                source TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        # RFM Analysis (Customer Segmentation & Churn)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS rfm_analysis (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                company_id TEXT,
+                customer_id TEXT,
+                recency_days INTEGER,
+                frequency_count INTEGER,
+                monetary_value REAL,
+                churn_risk TEXT DEFAULT 'LOW', -- LOW, MEDIUM, HIGH
+                segment_code TEXT, -- E.g., 'CHAMPIONS', 'LOYAL', 'AT_RISK', 'NEW'
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
         # Migration logic (Ensure columns exist in existing DB)
         cols_to_add = [
             ("users", "role", "TEXT DEFAULT 'ADMIN'"),
@@ -449,211 +479,7 @@ def init_workspace_db():
         if conn:
             conn.close()
 
-    # Seed sample data only when explicitly enabled.
-    # This keeps default runtime behavior production-safe (real data only).
-    if os.getenv("ENABLE_DEMO_SEED_DATA", "false").lower() == "true":
-        _seed_demo_data()
-
-
-def _seed_demo_data():
-    """Populate the database with seed data when tables are empty."""
-    conn, _ = get_db_connection()
-    try:
-        cursor = conn.cursor()
-
-        cursor.execute("SELECT COUNT(*) FROM customers")
-        if cursor.fetchone()[0] == 0:
-            cursor.executemany(
-                "INSERT INTO customers (name, email, phone, address, gstin, pan, total_spend) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                [
-                    (
-                        "Acme Corp",
-                        "accounts@acme.com",
-                        "+91-9876543210",
-                        "123 Industrial Park, Bangalore",
-                        "27AAAAA0000A1Z5",
-                        "AAAAA0000A",
-                        0.0,
-                    ),
-                    (
-                        "Neural Labs",
-                        "finance@neural-labs.ai",
-                        "+91-9123456789",
-                        "77 Innovation Drive, Pune",
-                        "27BBBBB0000B1Z6",
-                        "BBBBB0000B",
-                        0.0,
-                    ),
-                ],
-            )
-
-        cursor.execute("SELECT COUNT(*) FROM inventory")
-        if cursor.fetchone()[0] == 0:
-            cursor.executemany(
-                "INSERT INTO inventory (sku, name, quantity, cost_price, sale_price, category, hsn_code) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                [
-                    (
-                        "SKU-0001",
-                        "Widget Pro",
-                        150,
-                        3200.0,
-                        4520.0,
-                        "Hardware",
-                        "998311",
-                    ),
-                    (
-                        "SKU-0002",
-                        "Neural Module",
-                        80,
-                        7200.0,
-                        9800.0,
-                        "Electronics",
-                        "998312",
-                    ),
-                ],
-            )
-
-        cursor.execute("SELECT COUNT(*) FROM invoices")
-        if cursor.fetchone()[0] == 0:
-            invoice_id = (
-                f"GST-{datetime.now().year}-{cast(str, uuid.uuid4().hex)[:6].upper()}"
-            )
-            cursor.execute(
-                "INSERT INTO invoices (id, invoice_number, customer_id, customer_gstin, date, due_date, payment_timeline, payment_days, items_json, subtotal, total_tax, cgst_total, sgst_total, igst_total, grand_total, status, currency) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                (
-                    invoice_id,
-                    invoice_id,
-                    "Acme Corp",
-                    "27AAAAA0000A1Z5",
-                    datetime.now().strftime("%Y-%m-%d"),
-                    (datetime.now() + pd.Timedelta(days=7)).strftime("%Y-%m-%d"),
-                    "Net 7",
-                    7,
-                    json.dumps(
-                        [
-                            {
-                                "inventory_id": "SKU-0001",
-                                "desc": "Widget Pro",
-                                "qty": 10,
-                                "price": 4520.0,
-                                "cgst": 407.0,
-                                "sgst": 407.0,
-                                "igst": 0,
-                            }
-                        ]
-                    ),
-                    45200.0,
-                    814.0,
-                    407.0,
-                    407.0,
-                    0.0,
-                    46014.0,
-                    "PENDING",
-                    "₹",
-                ),
-            )
-
-        cursor.execute("SELECT COUNT(*) FROM personnel")
-        if cursor.fetchone()[0] == 0:
-            cursor.executemany(
-                "INSERT INTO personnel (id, name, email, role, efficiency_score, status, avatar) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                [
-                    (
-                        "STAFF-001",
-                        "Elena Rodriguez",
-                        "elena@neural.ai",
-                        "Sr. Data Engineer",
-                        98.5,
-                        "Active",
-                        "ER",
-                    ),
-                    (
-                        "STAFF-002",
-                        "James Chen",
-                        "james@neural.ai",
-                        "Financial Controller",
-                        95.0,
-                        "Active",
-                        "JC",
-                    ),
-                    (
-                        "STAFF-003",
-                        "Sarah Miller",
-                        "sarah@neural.ai",
-                        "Warehouse Lead",
-                        88.0,
-                        "Offline",
-                        "SM",
-                    ),
-                ],
-            )
-
-        cursor.execute("SELECT COUNT(*) FROM tasks")
-        if cursor.fetchone()[0] == 0:
-            cursor.executemany(
-                "INSERT INTO tasks (id, title, description, assignee_id, priority, status, deadline) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                [
-                    (
-                        "TASK-001",
-                        "Q3 Data Migration",
-                        "Migrate all legacy records to neural store",
-                        "STAFF-001",
-                        "High",
-                        "IN_PROGRESS",
-                        "2026-03-20",
-                    ),
-                    (
-                        "TASK-002",
-                        "Tax Compliance Audit",
-                        "Review GST filings for Q2",
-                        "STAFF-002",
-                        "High",
-                        "TODO",
-                        "2026-03-25",
-                    ),
-                    (
-                        "TASK-003",
-                        "Inventory Rebalancing",
-                        "Move stock to cluster 4",
-                        "STAFF-003",
-                        "Medium",
-                        "REVIEW",
-                        "2026-03-22",
-                    ),
-                ],
-            )
-
-        cursor.execute("SELECT COUNT(*) FROM operational_schedules")
-        if cursor.fetchone()[0] == 0:
-            cursor.executemany(
-                "INSERT INTO operational_schedules (id, title, type, date, hours, role_requirement) VALUES (?, ?, ?, ?, ?, ?)",
-                [
-                    (
-                        "SCHED-001",
-                        "Morning Ops Sync",
-                        "SHIFT",
-                        "2026-03-15",
-                        "09:00 - 10:00",
-                        "All Leads",
-                    ),
-                    (
-                        "SCHED-002",
-                        "Strategic Planning",
-                        "MILESTONE",
-                        "2026-03-16",
-                        "14:00 - 16:00",
-                        "Management",
-                    ),
-                ],
-            )
-
-        conn.commit()
-    except Exception as e:
-        print(f"Demo data seeding failed: {e}")
-    finally:
-        if conn:
-            conn.close()
-
+    # Seeded sample initialization removed: runtime now relies on real data only.
 
 def init_auth_db():
     """Enterprise Auth Init: Ensures users table exists."""
@@ -671,7 +497,7 @@ def _encrypt_val(val):
     if not val:
         return None
     # For production: Use cryptography.fernet
-    # Here we use a reversible base64-xor stub to demonstrate the pipeline
+    # Here we use a reversible base64-xor stub to validate the pipeline
     encoded = base64.b64encode(str(val).encode()).decode()
     return f"ENC:{encoded}"
 

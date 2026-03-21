@@ -92,7 +92,7 @@ export default function WorkspaceHR() {
                                             {emp.status}
                                         </Badge>
                                     </td>
-                                    <td className="px-6 py-4 text-right text-sm font-geist text-white">₹{emp.salary.toLocaleString()}</td>
+                                    <td className="px-6 py-4 text-right text-sm font-geist text-white">₹{(emp.salary || 0).toLocaleString()}</td>
                                 </tr>
                             ))}
                         </tbody>

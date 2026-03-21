@@ -5,60 +5,65 @@ import { usePathname } from "next/navigation"
 import { useStore } from "@/store/useStore"
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import {
+    BarChart3,
+    Bot,
+    Briefcase,
+    Database,
+    FileText,
+    FolderSync,
+    LayoutDashboard,
+    LineChart,
+    Package,
+    ShoppingCart,
+    Users,
+    type LucideIcon,
+} from "lucide-react"
 
-const navItems = [
+type NavItem = {
+    href: string
+    label: string
+    icon: LucideIcon
+    roles?: string[]
+    match?: string[]
+}
+
+type NavSection = {
+    section: string
+    roles?: string[]
+    items: NavItem[]
+}
+
+const navItems: NavSection[] = [
     {
-        section: "Intelligence Hub",
+        section: "Core",
         roles: ["ADMIN", "SALES", "FINANCE"],
         items: [
-            { href: "/overview", label: "System Overview", icon: "🏠" },
-            { href: "/dashboard", label: "Executive Nexus", icon: "📊" },
-            { href: "/demo", label: "Interactive Demo", icon: "🎯" },
-            { href: "/analytics", label: "Synthetic Analytics", icon: "📈" },
+            { href: "/overview", label: "Overview", icon: LayoutDashboard },
+            { href: "/dashboard", label: "Dashboard", icon: BarChart3 },
+            { href: "/analytics", label: "Analytics", icon: LineChart },
+            { href: "/copilot", label: "AI Copilot", icon: Bot },
         ],
     },
     {
-        section: "Cognitive Engine",
+        section: "Operations",
         roles: ["ADMIN", "SALES", "FINANCE", "WAREHOUSE"],
         items: [
-            { href: "/copilot", label: "Neural Intelligence", icon: "🧠" },
-            { href: "/portal", label: "Customer Portal", icon: "🌐" },
+            { href: "/workspace", label: "Workspace", icon: Briefcase, match: ["/workspace"] },
+            { href: "/workspace/procurement", label: "Procurement", icon: ShoppingCart },
+            { href: "/workspace/sync", label: "Sync Center", icon: FolderSync },
+            { href: "/documents", label: "Documents", icon: FileText },
+            { href: "/datasets", label: "Datasets", icon: Database },
         ],
     },
     {
-        section: "Decision Layer",
-        roles: ["ADMIN", "FINANCE"],
-        items: [
-            { href: "/simulations", label: "Probabilistic Sims", icon: "🔬" },
-            { href: "/workspace/sync", label: "Tally Sync Hub", icon: "🔄" },
-        ],
-    },
-
-    {
-        section: "Enterprise Stack",
+        section: "Business",
         roles: ["ADMIN", "SALES", "FINANCE", "WAREHOUSE"],
         items: [
-            { href: "/workspace", label: "Data Nexus", icon: "🧩" },
-            { href: "/workspace?section=billing", label: "Financial Engine", icon: "🧾", roles: ["ADMIN", "FINANCE"] },
-            { href: "/workspace/procurement", label: "Procurement & PO", icon: "🛒", roles: ["ADMIN", "FINANCE"] },
-            { href: "/workspace?section=inventory", label: "Asset Lab", icon: "📦", roles: ["ADMIN", "WAREHOUSE"] },
-            { href: "/workspace?section=accounts", label: "Accounting Core", icon: "🏛️", roles: ["ADMIN", "FINANCE"] },
-        ],
-    },
-    {
-        section: "Analysis & Automation",
-        roles: ["ADMIN", "SALES", "FINANCE"],
-        items: [
-            { href: "/segments", label: "Segment Analysis", icon: "🎯" },
-            { href: "/documents", label: "Document Engine", icon: "📄" },
-        ],
-    },
-    {
-        section: "Human Capital & Ops",
-        roles: ["ADMIN"],
-        items: [
-            { href: "/workspace?section=hr", label: "Workforce & HR", icon: "👥" },
-            { href: "/workspace?section=finance", label: "Finance Control", icon: "⚖️" },
+            { href: "/crm", label: "CRM", icon: Users },
+            { href: "/simulations", label: "Simulations", icon: Package },
+            { href: "/segments", label: "Segments", icon: LineChart },
+            { href: "/portal", label: "Executive Portal", icon: Briefcase },
         ],
     },
 ]
@@ -75,10 +80,9 @@ export default function Sidebar() {
 
     return (
         <>
-            {/* Mobile Menu Button */}
             <button
                 onClick={() => setMobileOpen(!mobileOpen)}
-                className="fixed top-6 left-6 z-100 md:hidden p-3 rounded-2xl bg-black/40 backdrop-blur-xl border border-white/10 shadow-2xl"
+                className="fixed top-5 left-5 z-100 md:hidden p-3 rounded-xl bg-[--surface-1]/90 backdrop-blur-xl border border-[--border-default] shadow-lg"
                 aria-label="Toggle menu"
             >
                 <div className="w-6 h-6 flex flex-col justify-center items-center relative gap-1.5">
@@ -104,72 +108,72 @@ export default function Sidebar() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/80 backdrop-blur-md z-80 md:hidden"
+                        className="fixed inset-0 bg-black/70 backdrop-blur-sm z-80 md:hidden"
                         onClick={() => setMobileOpen(false)}
                     />
                 )}
             </AnimatePresence>
 
-            {/* Sidebar Container */}
             <aside
                 className={`
                     fixed md:sticky
                     top-0 left-0
-                    w-72 md:w-72
+                    w-72
                     h-screen
-                    bg-black/20 backdrop-blur-xl md:bg-black/10
-                    border-r border-white/5
+                    bg-[--surface-1]/95 backdrop-blur-xl
+                    border-r border-[--border-subtle]
                     z-90
-                    transition-transform duration-700
+                    transition-transform duration-500
                     flex flex-col
-                    ${mobileOpen ? 'translate-x-0 shadow-[20px_0_80px_rgba(0,0,0,0.5)]' : '-translate-x-full md:translate-x-0'}
+                    ${mobileOpen ? 'translate-x-0 shadow-[20px_0_50px_rgba(0,0,0,0.5)]' : '-translate-x-full md:translate-x-0'}
                 `}
             >
-                {/* Logo Section */}
-                <div className="p-10 pb-6">
+                <div className="p-7 pb-4 border-b border-[--border-subtle]">
                     <Link href="/" onClick={() => setMobileOpen(false)} className="flex items-center gap-4 group">
-                        <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-[--primary] to-[--accent-violet] flex items-center justify-center font-black text-white text-xl">
+                        <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[--primary] to-[--secondary] flex items-center justify-center font-black text-white text-lg shadow-[0_8px_20px_rgba(0,0,0,0.35)]">
                             N
                         </div>
                         <div>
-                            <span className="text-xl font-black tracking-tighter text-white block leading-none">NeuralBI</span>
-                            <span className="text-[9px] font-black uppercase tracking-[0.4em] text-[--primary] mt-1 block">Pro Edition</span>
+                            <span className="text-lg font-extrabold tracking-tight text-white block leading-none">NeuralBI</span>
+                            <span className="text-[10px] font-bold tracking-wide text-[--text-secondary] mt-1 block">Enterprise Platform</span>
                         </div>
                     </Link>
                 </div>
 
-                {/* Navigation */}
-                <nav className="flex-1 overflow-y-auto px-6 py-8 space-y-10 scrollbar-pro font-jakarta">
+                <nav className="flex-1 overflow-y-auto px-4 py-6 space-y-7 scrollbar-pro font-jakarta">
                     {navItems.filter(s => !s.roles || ((userRole || "ADMIN") && s.roles.includes(userRole || "ADMIN"))).map((section) => (
                         <div key={section.section}>
-                            <div className="px-4 mb-5 text-[10px] uppercase tracking-[0.3em] font-black text-[--text-muted] opacity-50">
+                            <div className="px-3 mb-3 text-[11px] uppercase tracking-[0.16em] font-semibold text-[--text-muted]">
                                 {section.section}
                             </div>
-                            <div className="space-y-2">
+                            <div className="space-y-1.5">
                                 {section.items.filter(i => !(i as any).roles || ((userRole || "ADMIN") && (i as any).roles.includes(userRole || "ADMIN"))).map((item) => {
-                                    const isActive = pathname === item.href
+                                    const itemPath = item.href.split("?")[0]
+                                    const isActive = item.match
+                                        ? item.match.some(matchPath => pathname.startsWith(matchPath))
+                                        : pathname === itemPath
                                     return (
                                         <Link
                                             key={item.href}
                                             href={item.href}
                                             onClick={() => setMobileOpen(false)}
                                             className={`
-                                                relative flex items-center gap-4 px-5 py-4 rounded-2xl text-sm font-bold transition-all group overflow-hidden
+                                                relative flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-semibold transition-all group overflow-hidden border
                                                 ${isActive
-                                                    ? 'bg-white/5 text-white border border-white/10'
-                                                    : 'text-[--text-muted] hover:text-white hover:bg-white/2'
+                                                    ? 'bg-[--primary]/12 text-white border-[--border-accent]'
+                                                    : 'text-[--text-secondary] border-transparent hover:text-white hover:bg-white/3 hover:border-white/10'
                                                 }
                                             `}
                                         >
-                                            <span className={`text-xl transition-all duration-500 group-hover:scale-125 ${isActive ? 'scale-110 drop-shadow-[0_0_8px_rgba(99,102,241,0.5)]' : 'opacity-60'}`}>
-                                                {item.icon}
+                                            <span className={`rounded-lg p-1.5 ${isActive ? 'bg-[--primary]/25 text-[--primary]' : 'bg-white/2 text-[--text-muted] group-hover:text-[--text-primary]'}`}>
+                                                <item.icon size={16} strokeWidth={2.2} />
                                             </span>
-                                            <span className="font-geist tracking-tight">{item.label}</span>
+                                            <span className="tracking-tight">{item.label}</span>
                                             
                                             {isActive && (
                                                 <motion.div
                                                     layoutId="activeNavHighlight"
-                                                    className="absolute left-0 w-1 h-6 bg-[--primary] rounded-full shadow-[0_0_15px_rgba(99,102,241,0.8)]"
+                                                    className="absolute left-0 w-0.5 h-5 bg-[--primary] rounded-full"
                                                 />
                                             )}
                                         </Link>
@@ -180,17 +184,16 @@ export default function Sidebar() {
                     ))}
                 </nav>
 
-                {/* Bottom Actions */}
-                <div className="mt-auto p-8 border-t border-white/5 bg-black/40">
+                <div className="mt-auto p-5 border-t border-[--border-subtle] bg-[--surface-0]/70">
                     <button
                         onClick={toggleTheme}
-                        className="w-full flex items-center justify-between p-4 rounded-2xl bg-white/3 border border-white/5 text-white text-xs font-black hover:bg-white/6 transition-all gro"
+                        className="w-full flex items-center justify-between p-3 rounded-xl bg-white/2 border border-[--border-default] text-white text-xs font-semibold hover:bg-white/4 transition-colors"
                     >
                         <div className="flex items-center gap-4">
-                            <div className="w-8 h-8 rounded-xl bg-black/40 flex items-center justify-center text-lg">
+                            <div className="w-8 h-8 rounded-lg bg-black/30 flex items-center justify-center text-base">
                                 {theme === 'dark' ? "🌙" : "☀️"}
                             </div>
-                            <span className="font-geist uppercase tracking-widest">{theme === 'dark' ? "Midnight" : "Light Aura"}</span>
+                            <span className="uppercase tracking-[0.12em]">{theme === 'dark' ? "Dark" : "Light"}</span>
                         </div>
                         <div className={`w-12 h-6 rounded-full relative transition-all duration-500 ${theme === 'dark' ? 'bg-[--primary]' : 'bg-slate-700'}`}>
                             <motion.div
@@ -201,14 +204,14 @@ export default function Sidebar() {
                         </div>
                     </button>
 
-                    <div className="flex items-center gap-4 mt-8 px-4">
+                    <div className="flex items-center gap-3 mt-5 px-2">
                         <div className="flex items-center justify-center w-2.5 h-2.5 rounded-full relative">
                             <div className="absolute inset-0 bg-[--accent-emerald] rounded-full animate-ping opacity-40" />
                             <div className="relative w-2.5 h-2.5 bg-[--accent-emerald] rounded-full" />
                         </div>
                         <div className="min-w-0">
-                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white block">Core Engine Active</span>
-                            <span className="text-[8px] font-bold text-[--text-muted] block mt-0.5 font-mono opacity-50 truncate">{engineId}</span>
+                            <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-white block">System Status: Online</span>
+                            <span className="text-[9px] font-medium text-[--text-muted] block mt-0.5 font-mono opacity-70 truncate">{engineId}</span>
                         </div>
                     </div>
                 </div>

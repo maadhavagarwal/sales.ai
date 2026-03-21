@@ -24,50 +24,58 @@ export default function TradingIntelligencePanel({ marketIntelligence, report }:
     }, [indicators])
 
     const sentimentResult = pcr?.sentiment || "Neutral"
-    const sentimentColor = sentimentResult.includes("Bullish") ? "#10b981" :
-        sentimentResult.includes("Bearish") ? "#ef4444" : "#f59e0b"
+    const sentimentTone = sentimentResult.includes("Bullish")
+        ? "text-[--accent-emerald] bg-[--accent-emerald]/10 border-[--accent-emerald]/25"
+        : sentimentResult.includes("Bearish")
+            ? "text-[--accent-rose] bg-[--accent-rose]/10 border-[--accent-rose]/25"
+            : "text-[--accent-amber] bg-[--accent-amber]/10 border-[--accent-amber]/25"
 
     const rsiValue = latestIndicator?.rsi || 50
-    const rsiColor = rsiValue > 70 ? "#ef4444" :
-        rsiValue < 30 ? "#10b981" : "#8b5cf6"
+    const rsiTone = rsiValue > 70
+        ? "text-[--accent-rose]"
+        : rsiValue < 30
+            ? "text-[--accent-emerald]"
+            : "text-[--secondary]"
+    const rsiBarClass = rsiValue > 70
+        ? "bg-[--accent-rose]"
+        : rsiValue < 30
+            ? "bg-[--accent-emerald]"
+            : "bg-[--secondary]"
 
     return (
-        <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
+        <div className="space-y-6">
+            <div className="grid gap-6 xl:grid-cols-2">
                 {/* Sentiment & PCR Card */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="chart-card"
-                    style={{ position: "relative", overflow: "hidden" }}
                 >
-                    <div style={{ position: "absolute", top: 0, right: 0, width: "120px", height: "120px", background: `radial-gradient(circle at center, ${sentimentColor}15 0%, transparent 70%)`, pointerEvents: "none" }} />
-
-                    <h3 style={{ fontSize: "1rem", fontWeight: 700, marginBottom: "1rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                        📊 Market Sentiment (PCR)
+                    <h3 className="mb-4 text-base font-bold text-[--text-primary]">
+                        Market Sentiment (PCR)
                     </h3>
 
-                    <div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.5rem" }}>
-                        <span style={{ fontSize: "2.5rem", fontWeight: 800, color: sentimentColor }}>
+                    <div className="mb-2 flex items-end gap-2">
+                        <span className={`text-4xl font-black ${sentimentTone.split(' ')[0]}`}>
                             {typeof pcr?.pcr_oi === 'number' ? pcr.pcr_oi.toFixed(2) : "0.00"}
                         </span>
-                        <span style={{ fontSize: "0.85rem", color: "var(--text-muted)", fontWeight: 600 }}>Put-Call Ratio (OI)</span>
+                        <span className="pb-1 text-sm font-semibold text-[--text-muted]">Put-Call Ratio (OI)</span>
                     </div>
 
-                    <div style={{ fontSize: "0.9rem", fontWeight: 700, color: sentimentColor, marginBottom: "1.5rem", padding: "0.5rem 0.75rem", background: `${sentimentColor}10`, borderRadius: "8px", display: "inline-block" }}>
+                    <div className={`mb-6 inline-flex rounded-[--radius-sm] border px-3 py-2 text-sm font-bold ${sentimentTone}`}>
                         {pcr?.sentiment || "Neutral Sentiment"}
                     </div>
 
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                    <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase" }}>Volume PCR</p>
-                            <p style={{ fontSize: "1.1rem", fontWeight: 700 }}>
+                            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[--text-muted]">Volume PCR</p>
+                            <p className="mt-1 text-lg font-bold text-[--text-primary]">
                                 {typeof pcr?.pcr_vol === 'number' ? pcr.pcr_vol.toFixed(2) : "0.00"}
                             </p>
                         </div>
                         <div>
-                            <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase" }}>Flow Status</p>
-                            <p style={{ fontSize: "1.1rem", fontWeight: 700 }}>{(pcr?.pcr_oi || 0) > 1 ? "Put Heavy" : "Call Heavy"}</p>
+                            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[--text-muted]">Flow Status</p>
+                            <p className="mt-1 text-lg font-bold text-[--text-primary]">{(pcr?.pcr_oi || 0) > 1 ? "Put Heavy" : "Call Heavy"}</p>
                         </div>
                     </div>
                 </motion.div>
@@ -79,39 +87,39 @@ export default function TradingIntelligencePanel({ marketIntelligence, report }:
                     className="chart-card"
                     transition={{ delay: 0.1 }}
                 >
-                    <h3 style={{ fontSize: "1rem", fontWeight: 700, marginBottom: "1rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                        📈 Tactical Indicators
+                    <h3 className="mb-4 text-base font-bold text-[--text-primary]">
+                        Tactical Indicators
                     </h3>
 
                     {latestIndicator ? (
                         <>
-                            <div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "1rem" }}>
-                                <span style={{ fontSize: "2.5rem", fontWeight: 800, color: rsiColor }}>{latestIndicator.rsi.toFixed(1)}</span>
-                                <span style={{ fontSize: "0.85rem", color: "var(--text-muted)", fontWeight: 600 }}>RSI (14)</span>
+                            <div className="mb-4 flex items-end gap-2">
+                                <span className={`text-4xl font-black ${rsiTone}`}>{latestIndicator.rsi.toFixed(1)}</span>
+                                <span className="pb-1 text-sm font-semibold text-[--text-muted]">RSI (14)</span>
                             </div>
 
-                            <div style={{ width: "100%", height: "8px", background: "rgba(255,255,255,0.05)", borderRadius: "4px", overflow: "hidden", marginBottom: "1.5rem" }}>
+                            <div className="mb-6 h-2 w-full overflow-hidden rounded-full bg-[--surface-2]">
                                 <motion.div
                                     initial={{ width: 0 }}
                                     animate={{ width: `${latestIndicator.rsi}%` }}
                                     transition={{ duration: 1, ease: "easeOut" }}
-                                    style={{ height: "100%", background: rsiColor, boxShadow: `0 0 10px ${rsiColor}` }}
+                                    className={`h-full ${rsiBarClass}`}
                                 />
                             </div>
 
-                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                            <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase" }}>BB Upper</p>
-                                    <p style={{ fontSize: "1.1rem", fontWeight: 700 }}>{latestIndicator.bb_upper?.toFixed(2)}</p>
+                                    <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[--text-muted]">BB Upper</p>
+                                    <p className="mt-1 text-lg font-bold text-[--text-primary]">{latestIndicator.bb_upper?.toFixed(2)}</p>
                                 </div>
                                 <div>
-                                    <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase" }}>BB Lower</p>
-                                    <p style={{ fontSize: "1.1rem", fontWeight: 700 }}>{latestIndicator.bb_lower?.toFixed(2)}</p>
+                                    <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[--text-muted]">BB Lower</p>
+                                    <p className="mt-1 text-lg font-bold text-[--text-primary]">{latestIndicator.bb_lower?.toFixed(2)}</p>
                                 </div>
                             </div>
                         </>
                     ) : (
-                        <p style={{ color: "var(--text-muted)" }}>No technical data available.</p>
+                        <p className="text-[--text-muted]">No technical data available.</p>
                     )}
                 </motion.div>
             </div>
@@ -123,58 +131,46 @@ export default function TradingIntelligencePanel({ marketIntelligence, report }:
                 className="chart-card"
                 transition={{ delay: 0.2 }}
             >
-                <div style={{ borderBottom: "1px solid var(--border-subtle)", paddingBottom: "1rem", marginBottom: "1.5rem", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div className="mb-6 border-b border-[--border-default] pb-4">
                     <div>
-                        <h3 style={{ fontSize: "1rem", fontWeight: 700 }}>🦅 Quantitative Strategy Brief</h3>
-                        <p style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>AI-Synthesized Market Directives</p>
+                        <h3 className="text-base font-bold text-[--text-primary]">Quantitative Strategy Brief</h3>
+                        <p className="text-xs text-[--text-muted]">AI-synthesized market directives</p>
                     </div>
                 </div>
 
                 <div
-                    style={{
-                        fontSize: "0.95rem",
-                        lineHeight: 1.6,
-                        color: "var(--text-secondary)",
-                        padding: "1.5rem",
-                        background: "rgba(255,255,255,0.02)",
-                        borderRadius: "16px",
-                        border: "1px solid var(--border-subtle)",
-                        marginBottom: "1.5rem",
-                        maxHeight: "300px",
-                        overflowY: "auto"
-                    }}
+                    className="mb-6 max-h-75 overflow-y-auto rounded-[--radius-md] border border-[--border-default] bg-[--surface-1] p-5 text-[15px] leading-relaxed text-[--text-secondary]"
                     dangerouslySetInnerHTML={{ 
                         __html: report
                             .replace(/\n/g, '<br/>')
-                            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') 
-                            .replace(/> (.*?)(<br\/>|$)/g, '<div style="border-left: 3px solid #8b5cf6; padding-left: 12px; margin: 8px 0; color: #a78bfa; background: rgba(139,92,246,0.1); border-radius: 4px; padding: 10px;">$1</div>')
+                            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
                     }}
                 />
 
-                <div style={{ marginTop: "2rem", borderTop: "1px solid var(--border-subtle)", paddingTop: "1.5rem" }}>
-                    <h3 style={{ fontSize: "1rem", fontWeight: 700, marginBottom: "1rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                        🛡️ Greek Risk Analysis (Option Physics)
+                <div className="border-t border-[--border-default] pt-6">
+                    <h3 className="mb-4 text-base font-bold text-[--text-primary]">
+                        Greek Risk Analysis
                     </h3>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1rem" }}>
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
                         <div className="greek-box">
                             <span className="greek-label">Delta (Δ)</span>
-                            <span className="greek-value" style={{ color: "#8b5cf6" }}>{latestIndicator?.delta?.toFixed(3) || "0.500"}</span>
+                            <span className="greek-value text-[--secondary]">{latestIndicator?.delta?.toFixed(3) || "0.500"}</span>
                         </div>
                         <div className="greek-box">
                             <span className="greek-label">Gamma (Γ)</span>
-                            <span className="greek-value" style={{ color: "#ec4899" }}>{latestIndicator?.gamma?.toFixed(4) || "0.0240"}</span>
+                            <span className="greek-value text-[--accent-rose]">{latestIndicator?.gamma?.toFixed(4) || "0.0240"}</span>
                         </div>
                         <div className="greek-box">
                             <span className="greek-label">Vega (ν)</span>
-                            <span className="greek-value" style={{ color: "#0ea5e9" }}>{latestIndicator?.vega?.toFixed(2) || "0.15"}</span>
+                            <span className="greek-value text-[--accent-cyan]">{latestIndicator?.vega?.toFixed(2) || "0.15"}</span>
                         </div>
                         <div className="greek-box">
                             <span className="greek-label">Theta (Θ)</span>
-                            <span className="greek-value" style={{ color: "#f43f5e" }}>{latestIndicator?.theta?.toFixed(3) || "-0.08"}</span>
+                            <span className="greek-value text-[--accent-rose]">{latestIndicator?.theta?.toFixed(3) || "-0.08"}</span>
                         </div>
                         <div className="greek-box">
                             <span className="greek-label">Rho (ρ)</span>
-                            <span className="greek-value" style={{ color: "#10b981" }}>{latestIndicator?.rho?.toFixed(3) || "0.015"}</span>
+                            <span className="greek-value text-[--accent-emerald]">{latestIndicator?.rho?.toFixed(3) || "0.015"}</span>
                         </div>
                     </div>
                 </div>

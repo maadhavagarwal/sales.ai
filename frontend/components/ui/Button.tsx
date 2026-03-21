@@ -29,20 +29,20 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     ref
   ) => {
     const baseStyles =
-      "relative font-semibold rounded-[--radius-sm] transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden group"
+      "relative font-semibold rounded-[--radius-sm] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden group border"
 
     const variants: Record<string, string> = {
       primary:
-        "bg-[--primary] text-white hover:brightness-110 shadow-[0_4px_15px_-1px_var(--primary-glow)] hover:shadow-[0_8px_25px_-1px_var(--primary-glow)]",
+        "bg-[--primary] text-white border-[--primary] hover:brightness-105 shadow-[--shadow-glow]",
       secondary:
-        "bg-[--surface-3] text-[--text-primary] hover:bg-[--surface-4] border border-[--border-strong]",
+        "bg-[--surface-2] text-[--text-primary] border-[--border-default] hover:bg-[--surface-3] hover:border-[--border-strong]",
       outline:
-        "bg-transparent border border-[--border-strong] text-[--text-primary] hover:border-[--text-primary] hover:bg-[--surface-1]",
+        "bg-transparent border-[--border-strong] text-[--text-primary] hover:border-[--border-accent] hover:bg-white/3",
       ghost:
-        "text-[--text-secondary] hover:text-[--text-primary] hover:bg-[--surface-1]",
+        "text-[--text-secondary] border-transparent hover:text-[--text-primary] hover:bg-white/3",
       danger:
-        "bg-[--accent-rose] text-white hover:brightness-110 shadow-[0_4px_15px_-1px_rgba(244,63,94,0.3)]",
-      pro: "btn-pro-primary",
+        "bg-[--accent-rose] text-white border-[--accent-rose] hover:brightness-105 shadow-[0_8px_22px_-14px_rgba(244,63,94,0.7)]",
+      pro: "btn-pro-primary border-transparent",
     }
 
     const sizes: Record<string, string> = {
@@ -59,13 +59,13 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <motion.button
         ref={ref}
-        whileHover={!disabled && !loading ? { y: -2 } : undefined}
+        whileHover={!disabled && !loading ? { y: -1 } : undefined}
         whileTap={!disabled && !loading ? { scale: 0.98, y: 0 } : undefined}
         disabled={disabled || loading}
         className={className}
         {...(props as any)}
       >
-        <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+        <div className="absolute inset-0 bg-white/8 opacity-0 group-hover:opacity-100 transition-opacity" />
 
         {loading && (
           <svg
@@ -89,9 +89,9 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
             />
           </svg>
         )}
-        {icon && iconPosition === "left" && !loading && <span className="flex-shrink-0">{icon}</span>}
-        <span className="relative z-10">{children}</span>
-        {icon && iconPosition === "right" && !loading && <span className="flex-shrink-0">{icon}</span>}
+        {icon && iconPosition === "left" && !loading && <span className="shrink-0">{icon}</span>}
+        <span className="relative z-10 tracking-[0.01em]">{children}</span>
+        {icon && iconPosition === "right" && !loading && <span className="shrink-0">{icon}</span>}
       </motion.button>
     )
   }

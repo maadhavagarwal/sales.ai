@@ -137,7 +137,7 @@ function WorkspaceContent() {
             title="Enterprise Workspace"
             subtitle="Centralized operational hub for statutory compliance and logistical orchestration."
         >
-            <div className="flex flex-col gap-12">
+            <div className="page-rhythm">
                 {/* ── CSV Import Banner ── */}
                 <motion.div
                     initial={{ opacity: 0, y: -10 }}
@@ -145,17 +145,17 @@ function WorkspaceContent() {
                     className={`relative rounded-2xl border p-5 flex flex-col sm:flex-row items-center justify-between gap-5 transition-all duration-300 overflow-hidden
                         ${isDragging
                             ? "border-[--primary] bg-[--primary]/10 shadow-[0_0_40px_rgba(99,102,241,0.2)]"
-                            : "border-white/10 bg-white/[0.02]"
+                            : "border-white/10 bg-white/2"
                         }`}
                     onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
                     onDragLeave={() => setIsDragging(false)}
                     onDrop={handleDrop}
                 >
                     {/* Animated gradient accent */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-[--primary]/5 via-transparent to-[--accent-cyan]/5 pointer-events-none" />
+                    <div className="absolute inset-0 bg-linear-to-r from-[--primary]/5 via-transparent to-[--accent-cyan]/5 pointer-events-none" />
 
                     <div className="flex items-center gap-5 relative z-10">
-                        <div className="w-12 h-12 rounded-xl bg-[--primary]/15 border border-[--primary]/30 flex items-center justify-center text-xl flex-shrink-0">
+                        <div className="w-12 h-12 rounded-xl bg-[--primary]/15 border border-[--primary]/30 flex items-center justify-center text-xl shrink-0">
                             {isSyncing ? "⏳" : syncResult ? "✅" : "📁"}
                         </div>
                         <div>
@@ -172,7 +172,7 @@ function WorkspaceContent() {
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-3 relative z-10 flex-shrink-0">
+                    <div className="flex items-center gap-3 relative z-10 shrink-0">
                         {syncResult && (
                             <Badge variant="pro" pulse size="sm" className="tracking-widest hidden sm:flex">
                                 SYNCED
@@ -207,7 +207,7 @@ function WorkspaceContent() {
                 </motion.div>
 
                 {/* ── Section Nav ── */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3.5">
                     {sections.map((s) => (
                         <motion.div
                             key={s.id}

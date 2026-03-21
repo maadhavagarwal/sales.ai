@@ -8,6 +8,7 @@ import { getDerivativesSnapshot } from "@/services/api"
 
 export default function GreeksPanel() {
     const [loading, setLoading] = useState(false)
+    const [error, setError] = useState<string | null>(null)
     const [data, setData] = useState<any>(null)
     const [params, setParams] = useState({
         underlying: "USD/INR",
@@ -20,17 +21,25 @@ export default function GreeksPanel() {
     const loadData = async (overrides?: Partial<typeof params>) => {
         const nextParams = { ...params, ...overrides }
         setLoading(true)
+        setError(null)
         try {
             const res = await getDerivativesSnapshot(nextParams)
+            if (!res || typeof res !== 'object') {
+                throw new Error("Invalid response from derivatives API")
+            }
             setData(res)
+            setError(null)
             setParams((prev) => ({
                 ...prev,
                 ...overrides,
                 underlying: res.selected_underlying || nextParams.underlying,
                 expiry: res.selected_expiry || nextParams.expiry,
             }))
-        } catch (e) {
-            console.error("Derivatives analytics failed", e)
+        } catch (e: any) {
+            const errorMsg = e?.response?.data?.detail || e?.message || "Failed to load derivatives data"
+            console.error("Derivatives analytics failed:", errorMsg)
+            setError(errorMsg)
+            setData(null)
         } finally {
             setLoading(false)
         }
@@ -100,10 +109,25 @@ export default function GreeksPanel() {
 
     if (!data) {
         return (
-            <Card variant="glass" padding="lg" className="min-h-[360px] flex items-center justify-center">
-                <p className="text-sm font-bold text-white/60 uppercase tracking-[0.3em]">
-                    {loading ? "Loading derivatives analytics..." : "Initializing derivatives analytics..."}
-                </p>
+            <Card variant="glass" padding="lg" className="min-h-[360px] flex flex-col items-center justify-center gap-4">
+                {error ? (
+                    <>
+                        <p className="text-sm font-bold text-[--accent-rose] uppercase tracking-[0.3em]">
+                            Error Loading Derivatives Data
+                        </p>
+                        <p className="text-xs text-white/50 text-center max-w-md">{error}</p>
+                        <button 
+                            onClick={() => loadData()}
+                            className="mt-4 px-4 py-2 bg-[--primary] text-white text-xs font-black rounded hover:opacity-80 transition-opacity"
+                        >
+                            Retry
+                        </button>
+                    </>
+                ) : (
+                    <p className="text-sm font-bold text-white/60 uppercase tracking-[0.3em]">
+                        {loading ? "Loading derivatives analytics..." : "Initializing derivatives analytics..."}
+                    </p>
+                )}
             </Card>
         )
     }

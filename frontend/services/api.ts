@@ -1,12 +1,4 @@
 import axios from "axios"
-import { 
-  isDemoMode, 
-  getDemoCustomers, 
-  getDemoInvoices, 
-  getDemoInventory, 
-  getDemoKPIs,
-  demoIntelligence 
-} from './demoData'
 
 const ENV_API_URL = (process.env.NEXT_PUBLIC_API_URL || "").trim()
 const API_BASE_CANDIDATES = Array.from(
@@ -16,10 +8,6 @@ const API_BASE_CANDIDATES = Array.from(
   ]),
 )
 const API_URL = API_BASE_CANDIDATES[0]
-const DEMO_MODE_ENABLED = process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === "true"
-const IS_PRODUCTION_BUILD = process.env.NODE_ENV === "production"
-
-const useDemoData = () => !IS_PRODUCTION_BUILD && DEMO_MODE_ENABLED && isDemoMode()
 
 const buildApiUrl = (path: string) => {
   if (path.startsWith("/")) {
@@ -97,7 +85,6 @@ export interface Invoice {
 
 // API Functions
 export const getCustomers = async () => {
-  if (useDemoData()) return getDemoCustomers()
   const res = await api.get('/workspace/customers')
   return res.data
 }
@@ -118,7 +105,6 @@ export const deleteCustomer = async (customerId: number) => {
 }
 
 export const getInvoices = async (datasetId?: string) => {
-    if (useDemoData()) return getDemoInvoices()
   const res = await api.get('/workspace/invoices', { params: { dataset_id: datasetId } })
   return res.data
 }
@@ -141,7 +127,6 @@ export const deleteInvoice = async (invoiceId: string) => {
 
 
 export const getInventory = async () => {
-    if (useDemoData()) return getDemoInventory()
   const res = await api.get('/workspace/inventory')
   return res.data
 }
@@ -219,12 +204,6 @@ export const getUploadStatus = async (datasetId: string) => {
 }
 
 export const getCopilotResponse = async (query: string, datasetId?: string) => {
-  if (useDemoData()) {
-        return {
-            response: "Neural simulation of demo data suggests healthy growth. Our LLM-driven analysis indicates a 12% revenue upside if you optimize your networking inventory for the enterprise segment.",
-            type: "text"
-        }
-    }
     const res = await api.post('/copilot-chat', {
         query,
         dataset_id: datasetId,
@@ -262,7 +241,6 @@ export const reprocessDataset = async (datasetId: string, sheetName: string) => 
 }
 
 export const getLiveKPIs = async () => {
-  if (useDemoData()) return getDemoKPIs()
   const res = await api.get('/api/live-kpis')
   return res.data
 }
@@ -566,13 +544,11 @@ export const managePurchaseOrders = async (action: "CREATE" | "RECEIVE" | "LIST"
 
 // --- ADVANCED ANALYTICS ---
 export const getRevenueScenarios = async () => {
-  if (useDemoData()) return demoIntelligence.scenarios
     const res = await api.get("/workspace/analytics/scenarios")
     return res.data
 }
 
 export const getSalesLeaderboard = async () => {
-  if (useDemoData()) return demoIntelligence.leaderboard
     const res = await api.get("/workspace/analytics/leaderboard")
     return res.data
 }
@@ -589,28 +565,16 @@ export const handleReturn = async (invoiceId: string, items: any[]) => {
 
 // --- INTELLIGENCE & STRATEGY ---
 export const getIntelligenceAnomalies = async () => {
-  if (useDemoData()) return { alerts: demoIntelligence.anomalies }
   const res = await api.get("/api/anomalies/alerts")
   return res.data
 }
 
 export const getCashFlowForecast = async () => {
-  if (useDemoData()) return demoIntelligence.cashFlow
     const res = await api.get("/workspace/accounting/cash-flow-gap")
     return res.data
 }
 
 export const simulateWhatIf = async (query: string) => {
-  if (useDemoData()) {
-        await new Promise(r => setTimeout(r, 1000))
-        return {
-            baseline_revenue: 2450000,
-            hypothetical_revenue: query.toLowerCase().includes('lose') ? 2100000 : 2750000,
-            confidence_interval: 0.92,
-            impact_description: `Neural simulation suggests that ${query} would result in a significant shift in monthly liquidity buffers.`,
-            recommendation: "Hedge capital via short-term debt instruments or accelerate AR collection cycles."
-        }
-    }
     const res = await api.post("/ai/intelligence/what-if", { query })
     return res.data
 }

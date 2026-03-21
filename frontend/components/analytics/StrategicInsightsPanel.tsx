@@ -18,21 +18,21 @@ export default function StrategicInsightsPanel({ insights, recommendations, stra
             transition={{ duration: 0.5, delay: 0.4 }}
             className="chart-card"
         >
-            <div style={{ marginBottom: "2rem" }}>
-                <h3 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "0.5rem" }}>🎯 Strategic AI Roadmap</h3>
-                <p style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>Deep-learning derived business strategy and optimizations</p>
+            <div className="mb-8">
+                <h3 className="text-xl font-bold text-[--text-primary]">Strategic AI Roadmap</h3>
+                <p className="mt-1 text-sm text-[--text-muted]">Deep-learning derived business strategy and optimizations</p>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "2rem" }}>
+            <div className="grid gap-7 lg:grid-cols-3">
                 {/* Insights Section */}
                 <section>
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem" }}>
-                        <div style={{ width: "32px", height: "32px", borderRadius: "8px", background: "rgba(99,102,241,0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--primary-400)" }}>🔍</div>
-                        <h4 style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-secondary)" }}>Market Insights</h4>
+                    <div className="mb-4 flex items-center gap-2">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-[--radius-xs] bg-[--primary]/10 text-[--primary]">🔍</div>
+                        <h4 className="text-sm font-semibold text-[--text-secondary]">Market Insights</h4>
                     </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                    <div className="space-y-3">
                         {insights?.map((item, i) => (
-                            <div key={i} style={{ padding: "1rem", background: "rgba(255,255,255,0.02)", borderRadius: "12px", border: "1px solid var(--border-subtle)", fontSize: "0.875rem", color: "var(--text-secondary)", lineHeight: 1.5 }}>
+                            <div key={i} className="rounded-[--radius-sm] border border-[--border-default] bg-[--surface-1] p-4 text-sm leading-relaxed text-[--text-secondary]">
                                 {item}
                             </div>
                         ))}
@@ -41,14 +41,14 @@ export default function StrategicInsightsPanel({ insights, recommendations, stra
 
                 {/* Strategy Section */}
                 <section>
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem" }}>
-                        <div style={{ width: "32px", height: "32px", borderRadius: "8px", background: "rgba(168,85,247,0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: "#a855f7" }}>🛡️</div>
-                        <h4 style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-secondary)" }}>Tactical Strategy</h4>
+                    <div className="mb-4 flex items-center gap-2">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-[--radius-xs] bg-[--secondary]/10 text-[--secondary]">🛡️</div>
+                        <h4 className="text-sm font-semibold text-[--text-secondary]">Tactical Strategy</h4>
                     </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                    <div className="space-y-3">
                         {strategy?.map((item, i) => (
-                            <div key={i} style={{ padding: "1rem", background: "rgba(168,85,247,0.03)", borderRadius: "12px", border: "1px solid rgba(168,85,247,0.1)", fontSize: "0.875rem", color: "var(--text-secondary)", lineHeight: 1.5 }}>
-                                <span style={{ color: "#a855f7", fontWeight: 700, marginRight: "0.5rem" }}>STEP {i + 1}</span>
+                            <div key={i} className="rounded-[--radius-sm] border border-[--secondary]/20 bg-[--secondary]/6 p-4 text-sm leading-relaxed text-[--text-secondary]">
+                                <span className="mr-2 font-bold uppercase tracking-[0.08em] text-[--secondary]">Step {i + 1}</span>
                                 {item}
                             </div>
                         ))}
@@ -57,14 +57,14 @@ export default function StrategicInsightsPanel({ insights, recommendations, stra
 
                 {/* Recommendations Section */}
                 <section>
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem" }}>
-                        <div style={{ width: "32px", height: "32px", borderRadius: "8px", background: "rgba(16,185,129,0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--accent-emerald)" }}>⚡</div>
-                        <h4 style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-secondary)" }}>Action Items</h4>
+                    <div className="mb-4 flex items-center gap-2">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-[--radius-xs] bg-[--accent-emerald]/10 text-[--accent-emerald]">⚡</div>
+                        <h4 className="text-sm font-semibold text-[--text-secondary]">Action Items</h4>
                     </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                    <div className="space-y-3">
                         {recommendations?.map((item, i) => (
-                            <div key={i} style={{ padding: "1rem", background: "rgba(16,185,129,0.03)", borderRadius: "12px", border: "1px solid rgba(16,185,129,0.1)", fontSize: "0.875rem", color: "var(--text-secondary)", lineHeight: 1.5, display: "flex", gap: "0.75rem" }}>
-                                <div style={{ minWidth: "20px", height: "20px", borderRadius: "50%", background: "var(--accent-emerald)", display: "flex", alignItems: "center", justifyContent: "center", color: "black", fontSize: "0.7rem", fontWeight: 700 }}>✓</div>
+                            <div key={i} className="flex gap-3 rounded-[--radius-sm] border border-[--accent-emerald]/20 bg-[--accent-emerald]/6 p-4 text-sm leading-relaxed text-[--text-secondary]">
+                                <div className="mt-0.5 flex h-5 w-5 min-w-5 items-center justify-center rounded-full bg-[--accent-emerald] text-[10px] font-bold text-black">✓</div>
                                 {item}
                             </div>
                         ))}

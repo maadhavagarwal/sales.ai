@@ -83,7 +83,7 @@ export default function TallySyncPage() {
         <div>
           <h1 className="text-3xl font-bold">External ERP Integration</h1>
           <p className="text-slate-400 mt-1">
-            Synchronize your book-of-record with TallyPrime / Zoho Books (demo mode - connect a real gateway via environment
+            Synchronize your book-of-record with TallyPrime / Zoho Books (connect a real gateway via environment
             variables).
           </p>
         </div>

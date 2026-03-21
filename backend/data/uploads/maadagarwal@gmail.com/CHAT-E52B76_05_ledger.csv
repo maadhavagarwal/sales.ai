@@ -1,0 +1,21 @@
+ledger_id,date,voucher_no,voucher_type,account_code,account_name,account_type,debit,credit,narration,cost_center,ref_order_id,gstin_party,tds_section,tds_amount
+LDG0001,2025-01-02,JV-0001,Sales Invoice,4001,Sales Revenue,Income,0,202500,Sale to CUST001 - Enterprise Analytics Suite,Sales,ORD-2025-0001,27AABCT3518Q1ZD,,
+LDG0002,2025-01-02,JV-0001,Sales Invoice,2201,Output CGST,Liability,0,18225,CGST 9% on ORD-2025-0001,Sales,ORD-2025-0001,,,
+LDG0003,2025-01-02,JV-0001,Sales Invoice,2202,Output SGST,Liability,0,18225,SGST 9% on ORD-2025-0001,Sales,ORD-2025-0001,,,
+LDG0004,2025-01-02,JV-0001,Sales Invoice,1101,Accounts Receivable,Asset,238950,0,Receivable from CUST001,Sales,ORD-2025-0001,,,
+LDG0005,2025-01-08,RCP-0001,Receipt,1001,Bank - HDFC Current,Asset,238950,0,Payment received CUST001,Sales,ORD-2025-0001,,,
+LDG0006,2025-01-08,RCP-0001,Receipt,1101,Accounts Receivable,Asset,0,238950,Settlement of ORD-2025-0001,Sales,ORD-2025-0001,,,
+LDG0007,2025-01-03,JV-0002,Sales Invoice,4001,Sales Revenue,Income,0,171000,Sale to CUST004 - Hospital Management Module,Sales,ORD-2025-0002,33AAACH1234B1ZK,,
+LDG0008,2025-01-03,JV-0002,Sales Invoice,2201,Output CGST,Liability,0,15390,CGST 9% on ORD-2025-0002,Sales,ORD-2025-0002,,,
+LDG0009,2025-01-03,JV-0002,Sales Invoice,2202,Output SGST,Liability,0,15390,SGST 9% on ORD-2025-0002,Sales,ORD-2025-0002,,,
+LDG0010,2025-01-03,JV-0002,Sales Invoice,1101,Accounts Receivable,Asset,201780,0,Receivable from CUST004,Sales,ORD-2025-0002,,,
+LDG0011,2025-01-05,JV-0003,Purchase Invoice,5001,Purchases - Hardware,Expense,212500,0,Purchase IoT Sensors SUP002,Operations,ORD-2025-0003,,SUP002,,
+LDG0012,2025-01-05,JV-0003,Purchase Invoice,2101,Input CGST,Asset,12750,0,ITC CGST on purchase,Operations,ORD-2025-0003,,,
+LDG0013,2025-01-05,JV-0003,Purchase Invoice,2102,Input SGST,Asset,12750,0,ITC SGST on purchase,Operations,ORD-2025-0003,,,
+LDG0014,2025-01-05,JV-0003,Purchase Invoice,2301,Accounts Payable,Liability,0,238000,Payable to SUP002,Operations,ORD-2025-0003,,,
+LDG0015,2025-01-10,EXP-0001,Expense Voucher,6001,Salaries Expense,Expense,950000,0,January 2025 Salaries,HQ,,,194AA,9500
+LDG0016,2025-01-10,EXP-0001,Expense Voucher,2401,TDS Payable,Liability,0,9500,TDS u/s 194A on salaries,HQ,,,,
+LDG0017,2025-01-10,EXP-0001,Expense Voucher,1001,Bank - HDFC Current,Asset,0,940500,Net salary disbursement,HQ,,,,
+LDG0018,2025-01-15,EXP-0002,Expense Voucher,6002,Office Rent,Expense,180000,0,January 2025 Office Rent,HQ,,,,
+LDG0019,2025-01-15,EXP-0002,Expense Voucher,1001,Bank - HDFC Current,Asset,0,180000,Rent paid NEFT,HQ,,,,
+LDG0020,2025-01-20,EXP-0003,Expense Voucher,6003,Cloud Hosting Expense,Expense,85000,0,AWS Jan 2025 Invoice,Tech,,,194J,8500

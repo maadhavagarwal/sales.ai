@@ -25,6 +25,13 @@ const ICONS: Record<ToastType, string> = {
     info: "ℹ",
 }
 
+const ICON_BG: Record<ToastType, string> = {
+    success: "bg-[--accent-emerald]/20",
+    error: "bg-[--accent-rose]/20",
+    warning: "bg-[--accent-amber]/20",
+    info: "bg-[--primary]/20",
+}
+
 export function ToastProvider({ children }: { children: ReactNode }) {
     const [toasts, setToasts] = useState<Toast[]>([])
 
@@ -52,29 +59,15 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                             onClick={() => setToasts((prev) => prev.filter((t) => t.id !== toast.id))}
                             style={{ cursor: "pointer" }}
                         >
-                            <div style={{
-                                width: "22px",
-                                height: "22px",
-                                borderRadius: "50%",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                fontSize: "0.75rem",
-                                fontWeight: 800,
-                                flexShrink: 0,
-                                background: toast.type === "success" ? "rgba(16,185,129,0.2)"
-                                    : toast.type === "error" ? "rgba(244,63,94,0.2)"
-                                        : toast.type === "warning" ? "rgba(245,158,11,0.2)"
-                                            : "rgba(99,102,241,0.2)",
-                            }}>
+                            <div className={`w-5.5 h-5.5 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${ICON_BG[toast.type]}`}>
                                 {ICONS[toast.type]}
                             </div>
-                            <div style={{ flex: 1 }}>
-                                <p style={{ fontWeight: 700, marginBottom: toast.message ? "2px" : 0, fontSize: "0.875rem" }}>
+                            <div className="flex-1">
+                                <p className="font-semibold text-sm mb-0.5">
                                     {toast.title}
                                 </p>
                                 {toast.message && (
-                                    <p style={{ fontSize: "0.8rem", opacity: 0.8 }}>{toast.message}</p>
+                                    <p className="text-[13px] opacity-80 leading-relaxed">{toast.message}</p>
                                 )}
                             </div>
                         </motion.div>

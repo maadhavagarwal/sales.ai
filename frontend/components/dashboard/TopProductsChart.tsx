@@ -70,10 +70,10 @@ export default function TopProductsChart({ data }: { data: Record<string, number
             transition={{ duration: 0.5, delay: 0.25 }}
             className="chart-card"
         >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+            <div className="mb-4 flex items-center justify-between">
                 <div>
-                    <h3 style={{ fontSize: "1rem", fontWeight: 700 }}>Top Products</h3>
-                    <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "2px" }}>
+                    <h3 className="text-base font-bold text-[--text-primary]">Top Products</h3>
+                    <p className="mt-0.5 text-xs text-[--text-muted]">
                         By total revenue
                     </p>
                 </div>

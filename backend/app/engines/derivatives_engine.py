@@ -7,6 +7,7 @@ import pandas as pd
 
 class DerivativesEngine:
     UNDERLYINGS = {
+        "NIFTY": {"spot": 23500.0, "lot_size": 75, "step": 5},
         "USD/INR": {"spot": 83.45, "lot_size": 1000, "step": 0.25},
         "CRUDE OIL": {"spot": 6850.0, "lot_size": 100, "step": 20},
         "COPPER": {"spot": 725.0, "lot_size": 2500, "step": 2},
@@ -21,107 +22,131 @@ class DerivativesEngine:
         portfolio_beta: float = 0.95,
         hedge_ratio_target: float = 1.0,
     ):
-        cfg = DerivativesEngine.UNDERLYINGS.get(
-            underlying.upper(), DerivativesEngine.UNDERLYINGS["NIFTY"]
-        )
-        underlying = (
-            underlying.upper()
-            if underlying.upper() in DerivativesEngine.UNDERLYINGS
-            else "NIFTY"
-        )
-        expiries = DerivativesEngine._generate_expiries()
-        expiry = expiry or expiries[0]
-        days_to_expiry = max(
-            (
-                datetime.strptime(expiry, "%Y-%m-%d").date() - datetime.utcnow().date()
-            ).days,
-            1,
-        )
-        time_to_expiry = days_to_expiry / 365
+        try:
+            # Normalize underlying
+            underlying_normalized = str(underlying or "NIFTY").upper().strip()
+            
+            # Get config with safe fallback
+            cfg = DerivativesEngine.UNDERLYINGS.get(
+                underlying_normalized, DerivativesEngine.UNDERLYINGS.get("NIFTY")
+            )
+            
+            if not cfg:
+                raise ValueError(f"No derivatives configuration found for {underlying_normalized}")
+            
+            underlying = underlying_normalized if underlying_normalized in DerivativesEngine.UNDERLYINGS else "NIFTY"
+            
+            expiries = DerivativesEngine._generate_expiries()
+            expiry = expiry or expiries[0]
+            days_to_expiry = max(
+                (
+                    datetime.strptime(expiry, "%Y-%m-%d").date() - datetime.utcnow().date()
+                ).days,
+                1,
+            )
+            time_to_expiry = days_to_expiry / 365
 
-        prices = DerivativesEngine._generate_price_series(cfg["spot"], underlying)
-        indicators = DerivativesEngine._compute_indicators(prices)
-        spot = round(float(prices.iloc[-1]), 2)
-        realized_vol = max(
-            float(prices.pct_change().dropna().std() * math.sqrt(252)), 0.08
-        )
-        option_chain = DerivativesEngine._build_option_chain(
-            spot=spot,
-            step=cfg["step"],
-            lot_size=cfg["lot_size"],
-            time_to_expiry=time_to_expiry,
-            sigma=max(realized_vol, 0.12),
-            rate=0.065,
-            underlying=underlying,
-        )
-        portfolio = DerivativesEngine._build_portfolio_hedge(
-            portfolio_value=portfolio_value,
-            beta=portfolio_beta,
-            hedge_ratio_target=hedge_ratio_target,
-            spot=spot,
-            lot_size=cfg["lot_size"],
-            option_chain=option_chain,
-            days_to_expiry=days_to_expiry,
-        )
+            prices = DerivativesEngine._generate_price_series(cfg["spot"], underlying)
+            indicators = DerivativesEngine._compute_indicators(prices)
+            spot = round(float(prices.iloc[-1]), 2)
+            realized_vol = max(
+                float(prices.pct_change().dropna().std() * math.sqrt(252)), 0.08
+            )
+            option_chain = DerivativesEngine._build_option_chain(
+                spot=spot,
+                step=cfg["step"],
+                lot_size=cfg["lot_size"],
+                time_to_expiry=time_to_expiry,
+                sigma=max(realized_vol, 0.12),
+                rate=0.065,
+                underlying=underlying,
+            )
+            portfolio = DerivativesEngine._build_portfolio_hedge(
+                portfolio_value=portfolio_value,
+                beta=portfolio_beta,
+                hedge_ratio_target=hedge_ratio_target,
+                spot=spot,
+                lot_size=cfg["lot_size"],
+                option_chain=option_chain,
+                days_to_expiry=days_to_expiry,
+            )
 
-        atm_row = min(option_chain, key=lambda row: abs(row["strike"] - spot))
-        factor_cards = [
-            {
-                "name": "Price Delta",
-                "value": round(atm_row["call_greeks"]["delta"], 3),
-                "description": "Sensitivity to underlying rate price shift",
-            },
-            {
-                "name": "Impact Convexity",
-                "value": round(atm_row["call_greeks"]["gamma"], 4),
-                "description": "Rate of change in hedge sensitivity",
-            },
-            {
-                "name": "Time Carry",
-                "value": round(atm_row["call_greeks"]["theta"], 3),
-                "description": "Daily cost of maintaining risk hedge",
-            },
-            {
-                "name": "Vol Impact",
-                "value": round(atm_row["call_greeks"]["vega"], 3),
-                "description": "Stability of risk premium",
-            },
-            {
-                "name": "Beta Exposure",
-                "value": round(portfolio_beta, 3),
-                "description": "Business sensitivity to external benchmarks",
-            },
-            {
-                "name": "Risk Coverage",
-                "value": "98.4%",
-                "description": "Model confidence in treasury hedge coverage",
-            },
-        ]
+            atm_row = min(option_chain, key=lambda row: abs(row["strike"] - spot))
+            factor_cards = [
+                {
+                    "name": "Price Delta",
+                    "value": round(atm_row["call_greeks"]["delta"], 3),
+                    "description": "Sensitivity to underlying rate price shift",
+                },
+                {
+                    "name": "Impact Convexity",
+                    "value": round(atm_row["call_greeks"]["gamma"], 4),
+                    "description": "Rate of change in hedge sensitivity",
+                },
+                {
+                    "name": "Time Carry",
+                    "value": round(atm_row["call_greeks"]["theta"], 3),
+                    "description": "Daily cost of maintaining risk hedge",
+                },
+                {
+                    "name": "Vol Impact",
+                    "value": round(atm_row["call_greeks"]["vega"], 3),
+                    "description": "Stability of risk premium",
+                },
+                {
+                    "name": "Beta Exposure",
+                    "value": round(portfolio_beta, 3),
+                    "description": "Business sensitivity to external benchmarks",
+                },
+                {
+                    "name": "Risk Coverage",
+                    "value": "98.4%",
+                    "description": "Model confidence in treasury hedge coverage",
+                },
+            ]
 
-        return {
-            "underlyings": sorted(DerivativesEngine.UNDERLYINGS.keys()),
-            "selected_underlying": underlying,
-            "available_expiries": expiries,
-            "selected_expiry": expiry,
-            "market_snapshot": {
-                "spot": spot,
-                "days_to_expiry": days_to_expiry,
-                "lot_size": cfg["lot_size"],
-                "step": cfg["step"],
-                "realized_vol": round(realized_vol * 100, 2),
-                "trend_bias": indicators["trend_bias"],
-            },
-            "technical_indicators": indicators,
-            "factor_cards": factor_cards,
-            "option_chain": option_chain,
-            "portfolio_hedge": portfolio,
-            "price_series": [
-                {"date": idx.strftime("%Y-%m-%d"), "close": round(float(val), 2)}
-                for idx, val in prices.tail(90).items()
-            ],
-            "model_confidence": 0.984,
-            "engine_status": "synced",
-        }
+            return {
+                "underlyings": sorted(DerivativesEngine.UNDERLYINGS.keys()),
+                "selected_underlying": underlying,
+                "available_expiries": expiries,
+                "selected_expiry": expiry,
+                "market_snapshot": {
+                    "spot": spot,
+                    "days_to_expiry": days_to_expiry,
+                    "lot_size": cfg["lot_size"],
+                    "step": cfg["step"],
+                    "realized_vol": round(realized_vol * 100, 2),
+                    "trend_bias": indicators["trend_bias"],
+                },
+                "technical_indicators": indicators,
+                "factor_cards": factor_cards,
+                "option_chain": option_chain,
+                "portfolio_hedge": portfolio,
+                "price_series": [
+                    {"date": idx.strftime("%Y-%m-%d"), "close": round(float(val), 2)}
+                    for idx, val in prices.tail(90).items()
+                ],
+                "model_confidence": 0.984,
+                "engine_status": "synced",
+            }
+        except Exception as e:
+            # Return safe default on any error
+            print(f"DerivativesEngine error: {e}")
+            return {
+                "underlyings": sorted(DerivativesEngine.UNDERLYINGS.keys()),
+                "selected_underlying": "NIFTY",
+                "error": str(e),
+                "available_expiries": [],
+                "market_snapshot": {
+                    "spot": 23500.0,
+                    "days_to_expiry": 30,
+                    "realized_vol": 16.5,
+                    "trend_bias": "neutral"
+                },
+                "factor_cards": [],
+                "option_chain": [],
+                "engine_status": "error"
+            }
 
     @staticmethod
     def _generate_expiries():

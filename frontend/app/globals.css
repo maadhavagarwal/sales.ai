@@ -31,7 +31,7 @@
 
 :root {
     /* --- CORE PALETTE (Professional Midnight) --- */
-    --background: #020617;
+    --background: #040816;
     --foreground: #f8fafc;
 
     /* Mesh Gradients */
@@ -41,15 +41,19 @@
 
     /* Surfaces */
     --surface-0: #020617;
-    --surface-1: #060b1d;
-    --surface-2: #0f172a;
-    --surface-3: #1e293b;
-    --surface-4: #334155;
+    --surface-1: #0a1122;
+    --surface-2: #121b31;
+    --surface-3: #1d2941;
+    --surface-4: #2f3e5b;
 
     /* Brand Colors (Vibrant but controlled) */
-    --primary: #6366f1;
+    --primary: #4f7cff;
+    --primary-300: #8db0ff;
+    --primary-400: #6f96ff;
+    --primary-500: #4f7cff;
+    --primary-dark: #3559cd;
     --primary-glow: rgba(99, 102, 241, 0.4);
-    --secondary: #0ea5e9;
+    --secondary: #18a0c4;
     --accent-emerald: #10b981;
     --accent-violet: #8b5cf6;
     --accent-rose: #f43f5e;
@@ -66,7 +70,15 @@
     --border-subtle: rgba(255, 255, 255, 0.04);
     --border-default: rgba(255, 255, 255, 0.08);
     --border-strong: rgba(255, 255, 255, 0.12);
-    --border-accent: rgba(99, 102, 241, 0.3);
+    --border-accent: rgba(79, 124, 255, 0.35);
+
+    /* Shadows & Gradients */
+    --shadow-sm: 0 8px 20px -14px rgba(0, 0, 0, 0.6);
+    --shadow-md: 0 14px 35px -16px rgba(0, 0, 0, 0.65);
+    --shadow-lg: 0 24px 52px -20px rgba(0, 0, 0, 0.7);
+    --shadow-glow: 0 10px 28px -14px rgba(79, 124, 255, 0.65);
+    --gradient-primary: linear-gradient(135deg, #4f7cff 0%, #3b67e8 100%);
+    --gradient-surface: linear-gradient(160deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.015) 100%);
 
     /* Radius */
     --radius-xs: 8px;
@@ -85,8 +97,9 @@
     --space-12: 3rem;
 
     /* Transitions */
-    --transition-bounce: 600ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    --transition-bounce: 550ms cubic-bezier(0.22, 1, 0.36, 1);
     --transition-smooth: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-base: 260ms cubic-bezier(0.2, 0.7, 0.2, 1);
 
     /* Typography Clamp System */
     --text-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.8125rem);
@@ -100,12 +113,45 @@
     --text-5xl: clamp(3rem, 2.5rem + 2.5vw, 5rem);
 }
 
+:root[data-theme="light"] {
+    --background: #f2f5fb;
+    --foreground: #0f172a;
+
+    --surface-0: #ffffff;
+    --surface-1: #f8fafc;
+    --surface-2: #eef2f9;
+    --surface-3: #e2e8f0;
+    --surface-4: #cbd5e1;
+
+    --text-primary: #0f172a;
+    --text-secondary: #334155;
+    --text-muted: #64748b;
+    --text-dim: #94a3b8;
+
+    --border-subtle: rgba(15, 23, 42, 0.08);
+    --border-default: rgba(15, 23, 42, 0.14);
+    --border-strong: rgba(15, 23, 42, 0.2);
+    --border-accent: rgba(79, 124, 255, 0.4);
+
+    --shadow-sm: 0 8px 20px -16px rgba(15, 23, 42, 0.22);
+    --shadow-md: 0 14px 36px -20px rgba(15, 23, 42, 0.24);
+    --shadow-lg: 0 24px 52px -24px rgba(15, 23, 42, 0.28);
+}
+
 /* ===== Core Defaults & Layout Scaling ===== */
 html {
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     color-scheme: dark;
+}
+
+:root[data-theme="dark"] {
+    color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+    color-scheme: light;
 }
 
 body {
@@ -139,11 +185,11 @@ pre,
 
 /* ===== Professional Glass Utilities ===== */
 .glass-pro {
-    background: rgba(255, 255, 255, 0.02);
+    background: rgba(255, 255, 255, 0.03);
     backdrop-filter: blur(24px) saturate(200%);
     -webkit-backdrop-filter: blur(24px) saturate(200%);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    box-shadow: 0 12px 64px -12px rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    box-shadow: var(--shadow-md);
     transition: all var(--transition-smooth);
 }
 
@@ -154,9 +200,9 @@ pre,
 }
 
 .glass-card {
-    background: rgba(15, 23, 42, 0.3);
+    background: rgba(15, 23, 42, 0.45);
     backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: var(--radius-lg);
     transition: all var(--transition-smooth);
 }
@@ -225,18 +271,18 @@ pre,
 .bento-card {
     position: relative;
     overflow: hidden;
-    background: rgba(255, 255, 255, 0.01);
-    border: 1px solid rgba(255, 255, 255, 0.03);
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.07);
     border-radius: var(--radius-lg);
     padding: 2rem;
-    transition: all var(--transition-bounce);
+    transition: all var(--transition-smooth);
 }
 
 .bento-card:hover {
-    transform: translateY(-6px) scale(1.01);
-    border-color: var(--primary);
-    background: rgba(255, 255, 255, 0.03);
-    box-shadow: 0 32px 64px -16px rgba(0, 0, 0, 0.8), 0 0 40px rgba(99, 102, 241, 0.2);
+    transform: translateY(-3px);
+    border-color: var(--border-accent);
+    background: rgba(255, 255, 255, 0.04);
+    box-shadow: var(--shadow-lg);
 }
 
 /* ===== Text Gradient Effects ===== */
@@ -264,20 +310,21 @@ pre,
     border-radius: var(--radius-sm);
     font-size: var(--text-sm);
     font-weight: 600;
-    transition: all var(--transition-bounce);
+    transition: all var(--transition-base);
     cursor: pointer;
     border: 1px solid transparent;
 }
 
 .btn-pro-primary {
-    background: var(--primary);
+    background: var(--gradient-primary);
     color: white;
-    box-shadow: 0 4px 15px -1px var(--primary-glow);
+    box-shadow: var(--shadow-glow);
 }
 
 .btn-pro-primary:hover {
-    box-shadow: 0 8px 25px -1px var(--primary-glow);
-    transform: translateY(-2px);
+    filter: brightness(1.04);
+    box-shadow: 0 16px 32px -18px rgba(79, 124, 255, 0.9);
+    transform: translateY(-1px);
 }
 
 .btn-pro-outline {
@@ -288,8 +335,7 @@ pre,
 
 .btn-pro-outline:hover {
     background: var(--surface-2);
-    border-color: var(--text-primary);
-    transform: translateY(-1px);
+    border-color: var(--border-accent);
 }
 
 /* ===== Professional Inputs ===== */
@@ -674,6 +720,27 @@ pre,
     color: var(--text-muted);
 }
 
+/* ===== Page Rhythm Utilities ===== */
+.page-rhythm {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(2rem, 2.4vw, 3.25rem);
+}
+
+.page-stack {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(1.25rem, 1.8vw, 2rem);
+}
+
+.section-kicker {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--text-secondary);
+}
+
 /* ===== RESPONSIVE DESIGN ===== */
 
 /* Mobile First Approach - Base styles for mobile */
@@ -1017,6 +1084,19 @@ pre,
         font-size: 0.7rem;
         padding: 0.4rem 0.75rem;
         white-space: nowrap;
+    }
+
+    .page-rhythm {
+        gap: 1.25rem;
+    }
+
+    .page-stack {
+        gap: 0.9rem;
+    }
+
+    .section-kicker {
+        font-size: 0.65rem;
+        letter-spacing: 0.12em;
     }
 }
 

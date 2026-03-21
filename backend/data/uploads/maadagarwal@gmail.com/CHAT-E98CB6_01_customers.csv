@@ -1,0 +1,16 @@
+customer_id,name,email,phone,company,gstin,state,city,segment,account_type,annual_revenue,credit_limit,payment_terms,created_date,last_purchase_date,sales_rep_id,status
+CUST001,Rajesh Mehta,rajesh.mehta@techsol.in,9821001001,TechSolutions Pvt Ltd,27AABCT3518Q1ZD,Maharashtra,Mumbai,Enterprise,B2B,8500000,500000,Net30,2022-01-15,2025-02-10,EMP003,Active
+CUST002,Priya Sharma,priya@globalmfg.co,9911002002,Global Manufacturing Co,07AAACG2115R1ZP,Delhi,New Delhi,Mid-Market,B2B,3200000,200000,Net15,2022-03-20,2025-01-28,EMP005,Active
+CUST003,Amit Joshi,amit.joshi@retailking.com,9731003003,RetailKing Ltd,29AABCR4527Q1ZE,Karnataka,Bengaluru,SME,B2B,950000,75000,Net7,2022-06-01,2024-11-15,EMP003,Active
+CUST004,Sunita Rao,sunita@healthplus.in,9601004004,HealthPlus Hospitals,33AAACH1234B1ZK,Tamil Nadu,Chennai,Enterprise,B2B,12000000,1000000,Net45,2021-11-10,2025-02-20,EMP007,Active
+CUST005,Vikram Singh,vikram.singh@logistix.com,9501005005,Logistix India,24AAACL5678C1ZM,Gujarat,Ahmedabad,Mid-Market,B2B,2800000,150000,Net30,2022-08-14,2025-01-05,EMP005,Active
+CUST006,Neha Gupta,neha@fashionhub.in,9811006006,FashionHub Online,09AAACF9012D1ZN,Uttar Pradesh,Noida,SME,B2C,450000,25000,Prepaid,2023-01-20,2024-10-30,EMP003,Active
+CUST007,Suresh Patel,suresh@autocomp.in,9791007007,AutoComponents Ltd,24AAACA3456E1ZO,Gujarat,Surat,Enterprise,B2B,6700000,400000,Net30,2021-09-05,2025-02-15,EMP007,Active
+CUST008,Lakshmi Iyer,lakshmi@edtech.co,9841008008,EduTech Solutions,33AAACE7890F1ZP,Tamil Nadu,Coimbatore,SME,B2B,780000,50000,Net15,2023-04-12,2024-09-20,EMP005,Active
+CUST009,Rohit Agarwal,rohit@realestate.in,9901009009,Prime Realty Pvt Ltd,27AAACP2345G1ZQ,Maharashtra,Pune,Mid-Market,B2B,4100000,250000,Net30,2022-05-18,2025-01-22,EMP003,Active
+CUST010,Kavita Nair,kavita@pharmazone.com,9751010010,PharmaZone Ltd,32AAACP6789H1ZR,Kerala,Kochi,Enterprise,B2B,9300000,700000,Net45,2021-07-22,2025-02-05,EMP007,Active
+CUST011,Deepak Kumar,deepak@steel.in,9871011011,IndoSteel Corp,20AAAAI1234I1ZS,Jharkhand,Jamshedpur,Enterprise,B2B,15000000,1200000,Net60,2020-12-01,2025-02-18,EMP007,Active
+CUST012,Anita Desai,anita@foodchain.co,9651012012,FoodChain India,27AAAAF5678J1ZT,Maharashtra,Nashik,SME,B2B,620000,40000,Net15,2023-07-08,2024-08-14,EMP005,Active
+CUST013,Manoj Tiwari,manoj@itserv.in,9221013013,IT Services Global,27AAAIT9012K1ZU,Maharashtra,Mumbai,Mid-Market,B2B,2100000,125000,Net30,2022-10-30,2024-12-28,EMP003,Active
+CUST014,Ritu Verma,ritu@handicraft.com,9411014014,Heritage Handicrafts,08AAACH3456L1ZV,Rajasthan,Jaipur,SME,B2C,310000,15000,Prepaid,2023-09-15,2024-07-10,EMP005,At Risk
+CUST015,Ganesh Rao,ganesh@cement.in,9361015015,Coastal Cement Ltd,29AAAAC7890M1ZW,Karnataka,Mangaluru,Enterprise,B2B,11200000,900000,Net45,2021-03-28,2025-01-30,EMP007,Active

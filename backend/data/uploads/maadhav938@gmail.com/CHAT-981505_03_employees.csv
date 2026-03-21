@@ -1,0 +1,16 @@
+employee_id,name,email,department,designation,manager_id,date_of_joining,salary_monthly,performance_score,sales_target_monthly,sales_achieved_ytd,leave_balance,attendance_pct,city,state,employment_type,status
+EMP001,Arjun Kapoor,arjun@company.in,Sales,VP Sales,,2019-04-01,150000,4.5,10000000,18500000,12,96.5,Mumbai,Maharashtra,Full-Time,Active
+EMP002,Meera Pillai,meera@company.in,Finance,CFO,,2018-06-15,180000,4.8,,,,14,98.2,Mumbai,Maharashtra,Full-Time,Active
+EMP003,Karan Malhotra,karan@company.in,Sales,Senior Sales Manager,EMP001,2020-08-10,85000,4.2,5000000,9800000,10,94.8,Mumbai,Maharashtra,Full-Time,Active
+EMP004,Pooja Reddy,pooja@company.in,HR,HR Manager,,2020-11-01,75000,4.0,,,18,97.1,Hyderabad,Telangana,Full-Time,Active
+EMP005,Sanjay Bhat,sanjay@company.in,Sales,Sales Manager,EMP001,2021-03-15,78000,3.8,4000000,7100000,8,92.3,Bengaluru,Karnataka,Full-Time,Active
+EMP006,Divya Sharma,divya@company.in,Tech,Lead Developer,,2020-05-20,120000,4.6,,,15,95.6,Pune,Maharashtra,Full-Time,Active
+EMP007,Ravi Nair,ravi@company.in,Sales,Senior Sales Manager,EMP001,2019-09-01,90000,4.4,6000000,12400000,11,96.0,Chennai,Tamil Nadu,Full-Time,Active
+EMP008,Ananya Singh,ananya@company.in,Finance,Senior Accountant,EMP002,2021-07-12,55000,4.1,,,16,97.8,Mumbai,Maharashtra,Full-Time,Active
+EMP009,Tarun Jain,tarun@company.in,Tech,Backend Developer,EMP006,2022-01-10,95000,4.3,,,12,94.2,Pune,Maharashtra,Full-Time,Active
+EMP010,Sonia Mehta,sonia@company.in,Marketing,Marketing Head,,2020-02-14,95000,4.1,,,14,95.0,Mumbai,Maharashtra,Full-Time,Active
+EMP011,Prakash Raj,prakash@company.in,Logistics,Logistics Manager,,2021-05-20,62000,3.9,,,10,93.5,Chennai,Tamil Nadu,Full-Time,Active
+EMP012,Bhavna Patel,bhavna@company.in,Sales,Sales Executive,EMP003,2023-02-01,42000,3.6,1500000,2200000,6,91.0,Mumbai,Maharashtra,Full-Time,Active
+EMP013,Nitin Choudhary,nitin@company.in,Finance,Accounts Executive,EMP002,2022-09-05,38000,3.7,,,14,96.3,Mumbai,Maharashtra,Full-Time,Active
+EMP014,Harsha Gowda,harsha@company.in,Tech,Frontend Developer,EMP006,2023-06-15,80000,4.0,,,10,93.8,Bengaluru,Karnataka,Full-Time,Active
+EMP015,Shreya Kulkarni,shreya@company.in,HR,HR Executive,EMP004,2023-08-20,35000,3.8,,,18,97.5,Pune,Maharashtra,Full-Time,Active

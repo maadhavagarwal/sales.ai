@@ -152,7 +152,7 @@ export default function AnalyticsPage() {
 
     // Loading & Empty State Component
     const LoadingState = () => (
-        <div className="space-y-12">
+        <div className="page-stack">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <Skeleton height={140} className="rounded-2xl" />
                 <Skeleton height={140} className="rounded-2xl" />
@@ -190,11 +190,11 @@ export default function AnalyticsPage() {
             }
         >
             {isUploading ? (
-                <div className="space-y-10">
-                    <div className="flex items-center gap-4 mb-12 p-8 rounded-3xl bg-[--primary]/5 border border-[--primary]/10 animate-pulse">
+                <div className="page-stack">
+                    <div className="flex items-center gap-4 mb-10 p-5 sm:p-8 rounded-3xl bg-[--primary]/5 border border-[--primary]/10 animate-pulse">
                         <div className="w-12 h-12 rounded-2xl bg-[--primary]/20 flex items-center justify-center text-2xl">⚡</div>
                         <div>
-                            <h3 className="text-xl font-black text-white">Neural Processing Active</h3>
+                            <h3 className="text-lg sm:text-xl font-black text-white">Neural Processing Active</h3>
                             <p className="text-sm font-medium text-[--text-muted]">Orchestrating multi-model pipeline and synthesizing strategic vectors...</p>
                         </div>
                     </div>
@@ -202,7 +202,7 @@ export default function AnalyticsPage() {
                 </div>
             ) : !results ? (
                 <div className="flex flex-col items-center justify-center min-h-[60vh] text-center gap-8">
-                    <div className="w-24 h-24 rounded-3xl bg-white/[0.02] border border-white/5 flex items-center justify-center text-4xl shadow-inner relative">
+                    <div className="w-24 h-24 rounded-3xl bg-white/2 border border-white/5 flex items-center justify-center text-4xl shadow-inner relative">
                         <div className="absolute inset-0 bg-[--primary]/5 blur-2xl rounded-full" />
                         📈
                     </div>
@@ -214,7 +214,7 @@ export default function AnalyticsPage() {
                     </div>
                 </div>
             ) : (
-                <div className="space-y-20">
+                <div className="page-rhythm">
                     <EnterpriseIntelligence />
                     {/* Confidence & Intelligence Section */}
                     {(results.confidence_score !== undefined || results.data_quality !== undefined) && (
@@ -226,8 +226,8 @@ export default function AnalyticsPage() {
                     )}
 
                     {results.dataset_type === "market_dataset" && results.market_intelligence && (
-                        <div className="space-y-8">
-                            <h3 className="text-xs font-black uppercase tracking-[0.3em] text-[--primary] mb-6">Financial Market Intelligence (Greeks & Sentiment)</h3>
+                        <div className="page-stack">
+                            <h3 className="section-kicker text-[--primary]">Financial Market Intelligence (Greeks & Sentiment)</h3>
                             <TradingIntelligencePanel
                                 marketIntelligence={results.market_intelligence}
                                 report={results.analyst_report?.report || ""}
@@ -240,13 +240,13 @@ export default function AnalyticsPage() {
                     <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
                         {results.analytics?.region_sales && (
                             <Card variant="glass" padding="lg">
-                                <h3 className="text-xs font-black uppercase tracking-[0.3em] text-[--primary] mb-8">Geospatial Distribution</h3>
+                                <h3 className="section-kicker text-[--primary] mb-6">Geospatial Distribution</h3>
                                 <RevenueChart data={results.analytics.region_sales} />
                             </Card>
                         )}
                         {results.analytics?.top_products && (
                             <Card variant="glass" padding="lg">
-                                <h3 className="text-xs font-black uppercase tracking-[0.3em] text-[--accent-cyan] mb-8">Asset Performance Matrix</h3>
+                                <h3 className="section-kicker text-[--accent-cyan] mb-6">Asset Performance Matrix</h3>
                                 <TopProductsChart data={results.analytics.top_products} />
                             </Card>
                         )}
@@ -256,7 +256,7 @@ export default function AnalyticsPage() {
 
                     {results.ml_predictions?.time_series_forecast && (
                         <Card variant="bento" padding="lg">
-                            <h3 className="text-xs font-black uppercase tracking-[0.3em] text-[--accent-emerald] mb-8">Predictive Yield Forecast</h3>
+                            <h3 className="section-kicker text-[--accent-emerald] mb-6">Predictive Yield Forecast</h3>
                             <RevenueForecastChart 
                                 data={results.ml_predictions.time_series_forecast.forecast || []} 
                                 reasoning={results.ml_predictions.time_series_forecast.logic}
@@ -266,7 +266,7 @@ export default function AnalyticsPage() {
 
                     {results.forecast?.forecast && (
                         <Card variant="glass" padding="lg">
-                            <h3 className="text-xs font-black uppercase tracking-[0.3em] text-[--accent-violet] mb-8">Dynamic Forecasting Layer</h3>
+                            <h3 className="section-kicker text-[--accent-violet] mb-6">Dynamic Forecasting Layer</h3>
                             <RevenueForecastChart 
                                 data={results.forecast.forecast} 
                                 reasoning={(results.forecast as any).reasoning}
@@ -287,7 +287,7 @@ export default function AnalyticsPage() {
                         <div className="lg:col-span-8">
                             {results.clustering && (
                                 <Card variant="glass" padding="lg">
-                                    <h3 className="text-xs font-black uppercase tracking-[0.3em] text-[--accent-cyan] mb-8">Segment Clustering Map</h3>
+                                    <h3 className="section-kicker text-[--accent-cyan] mb-6">Segment Clustering Map</h3>
                                     <ClusteringPanel data={results.clustering} />
                                 </Card>
                             )}
@@ -301,7 +301,7 @@ export default function AnalyticsPage() {
 
                     {results.analyst_report && (
                         <Card variant="bento" padding="lg" className="bg-black/40 border-white/5">
-                            <h3 className="text-xs font-black uppercase tracking-[0.3em] text-[--primary] mb-10 pb-6 border-b border-white/5">Autonomous Board Report</h3>
+                            <h3 className="section-kicker text-[--primary] mb-8 pb-5 border-b border-white/5">Autonomous Board Report</h3>
                             <AnalystReportPanel report={results.analyst_report} />
                         </Card>
                     )}

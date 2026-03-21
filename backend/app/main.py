@@ -247,7 +247,7 @@ async def startup_event():
                 "Resolve blockers before startup."
             )
 
-        # Keep simulator opt-in for local demos only.
+        # Keep simulator opt-in for local non-production runs.
         if LIVE_KPI_SIMULATOR_ENABLED:
             asyncio.create_task(_update_live_data_from_db())
             print("Live Data Streaming Engine Started (Direct DB Sync).")
@@ -1689,7 +1689,7 @@ _tally_sync_state = {
     "logs": [],
     "gateway_config": {
         "tally_url": os.getenv("TALLY_URL", "http://localhost:9000"),
-        "tally_company": os.getenv("TALLY_COMPANY", "Demo Company"),
+        "tally_company": os.getenv("TALLY_COMPANY", ""),
         "zoho_client_id": os.getenv("ZOHO_CLIENT_ID"),
         "zoho_client_secret": os.getenv("ZOHO_CLIENT_SECRET"),
         "zoho_refresh_token": os.getenv("ZOHO_REFRESH_TOKEN"),
@@ -1705,7 +1705,7 @@ def _run_tally_sync(company_id: str = None, user_id: int = None):
     try:
         config = cast(Dict[str, Any], _tally_sync_state["gateway_config"])
         sync_mode = cast(str, config.get("sync_mode", "tally") or "tally")
-        company_for_sync = company_id or config.get("tally_company", "Demo Company")
+        company_for_sync = company_id or config.get("tally_company", "")
         
         # Validate company_id exists before syncing
         if not company_id:
@@ -1950,16 +1950,26 @@ async def get_derivatives_snapshot(data: dict = Body(default={})):
         pv = WorkspaceEngine._safe_number(data.get("portfolio_value"), 10_000_000)
         pb = WorkspaceEngine._safe_number(data.get("portfolio_beta"), 0.95)
         hr = WorkspaceEngine._safe_number(data.get("hedge_ratio_target"), 1.0)
-        return DerivativesEngine.get_derivatives_snapshot(
+        
+        result = DerivativesEngine.get_derivatives_snapshot(
             underlying=data.get("underlying", "NIFTY"),
             expiry=data.get("expiry"),
             portfolio_value=float(pv),
             portfolio_beta=float(pb),
             hedge_ratio_target=float(hr),
         )
+        
+        if not result:
+            raise HTTPException(status_code=500, detail="DerivativesEngine returned None")
+        
+        return result
+    except HTTPException:
+        raise
     except Exception as e:
+        print(f"Derivatives computation error: {str(e)}")
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Derivatives analytics failed: {str(e)}")
+
 
 
 @app.post("/workspace/accounting/reminders/{invoice_id}")
@@ -3210,6 +3220,34 @@ async def get_daybook(current_user: dict = Depends(get_current_user)):
 
 
 @app.get("/workspace/accounting/trial-balance")
+async def get_trial_balance(current_user: dict = Depends(get_current_user)):
+    try:
+        # User isolation: Only return trial balance for user's company
+        company_id = current_user.get("company_id", "DEFAULT")
+        if not company_id:
+            raise HTTPException(status_code=400, detail="Company ID is required")
+        
+        result = WorkspaceEngine.get_trial_balance(company_id)
+        if not result:
+            # Return empty trial balance if no data
+            return {
+                "status": "success",
+                "trial_balance": [],
+                "total_debit": 0.0,
+                "total_credit": 0.0,
+                "company_id": company_id,
+                "message": "No trial balance data available. Please upload invoices."
+            }
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Trial balance error: {e}")
+        log_activity(current_user.get("id", 1), "TRIAL_BALANCE_ERROR", "ACCOUNTING", details={"error": str(e)})
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve trial balance: {str(e)}")
+
+
+@app.get("/workspace/accounting/trial-balance/{custom_path}")
 async def get_trial_balance(current_user: dict = Depends(get_current_user)):
     """Financial Audit: Listing of all ledger balances for validation."""
     return WorkspaceEngine.get_trial_balance(current_user["company_id"])

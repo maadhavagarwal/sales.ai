@@ -98,7 +98,6 @@ def run_cutover_checks() -> Dict[str, Any]:
 
     strict_markers = {
         "NEURALBI_STRICT_PRODUCTION": ROOT / "backend/app/core/strict_mode.py",
-        "ENABLE_DEMO_SEED_DATA": ROOT / "backend/app/core/database_manager.py",
         "ENABLE_LIVE_KPI_SIMULATOR": ROOT / "backend/app/main.py",
     }
     strict_missing: List[str] = []

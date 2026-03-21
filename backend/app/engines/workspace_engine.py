@@ -2954,6 +2954,7 @@ class WorkspaceEngine:
         """
         Enterprise-Grade Data Segregation: Identifies file type with broad keyword scanning.
         Uses substring matching so generic CSVs (e.g. 'Invoice Date', 'Total Amount') are correctly classified.
+        Supports: INVOICE, CUSTOMER, INVENTORY, STAFF, LEDGER, LEADS, PURCHASE_ORDERS, RFM_CHURN
         """
         raw_cols = [str(c).strip() for c in df.columns]
         cols = [c.lower().replace("_", "").replace(" ", "") for c in raw_cols]
@@ -2992,6 +2993,24 @@ class WorkspaceEngine:
                            "payable", "receivable", "head"]
         ledger_score = has_keyword(ledger_keywords)
 
+        # --- Leads / Sales Pipeline signals ---
+        leads_keywords = ["lead", "prospect", "stage", "source", "conversion", "pipeline",
+                          "opportunity", "deal", "closedvalue", "closeddate", "salesperson",
+                          "value", "rating", "status"]
+        leads_score = has_keyword(leads_keywords)
+
+        # --- Purchase Orders signals ---
+        po_keywords = ["purchase", "po", "order", "supplier", "vendor", "receiving",
+                       "delivery", "status", "duedate", "expecteddate", "orderdate",
+                       "quantity", "rate", "amount"]
+        po_score = has_keyword(po_keywords)
+
+        # --- RFM / Churn Analysis signals ---
+        rfm_keywords = ["recency", "frequency", "monetary", "segment", "score", "churn",
+                        "retention", "lifetime", "ltv", "predictedchurn", "riskfactor",
+                        "engagement", "rfmsegment"]
+        rfm_score = has_keyword(rfm_keywords)
+
         # --- Determine best match by score ---
         scores = {
             "INVOICE": invoice_score,
@@ -2999,6 +3018,9 @@ class WorkspaceEngine:
             "INVENTORY": inventory_score,
             "STAFF": staff_score,
             "LEDGER": ledger_score,
+            "LEADS": leads_score,
+            "PURCHASE_ORDERS": po_score,
+            "RFM_CHURN": rfm_score,
         }
 
         # Normalize scores: favor specific hits
@@ -3008,6 +3030,12 @@ class WorkspaceEngine:
             scores["INVENTORY"] += 2
         if any(x in cols for x in ["invoice", "billno", "taxable"]):
             scores["INVOICE"] += 2
+        if any(x in cols for x in ["lead", "prospect", "opportunity"]):
+            scores["LEADS"] += 3
+        if any(x in cols for x in ["po", "purchase", "supplier"]):
+            scores["PURCHASE_ORDERS"] += 3
+        if any(x in cols for x in ["rfm", "churn", "recency"]):
+            scores["RFM_CHURN"] += 3
 
         best_category = max(scores, key=scores.get)
         best_score = scores[best_category]
@@ -3392,6 +3420,81 @@ class WorkspaceEngine:
                             )
                             record_count += 1
 
+                    elif category == "LEADS":
+                        # Sales Pipeline / Lead Management
+                        name_col = next((c for c in df.columns if "name" in c.lower() or "lead" in c.lower()), None)
+                        email_col = next((c for c in df.columns if "email" in c.lower()), None)
+                        stage_col = next((c for c in df.columns if "stage" in c.lower() or "status" in c.lower()), None)
+                        value_col = next((c for c in df.columns if "value" in c.lower() or "amount" in c.lower()), None)
+                        source_col = next((c for c in df.columns if "source" in c.lower()), None)
+
+                        for _, row in df.iterrows():
+                            name = str(row.get(name_col, "Unknown Lead"))
+                            if not name or name == "nan":
+                                continue
+                            email = str(row.get(email_col, ""))
+                            stage = str(row.get(stage_col, "PROSPECT"))
+                            value = WorkspaceEngine._safe_number(row.get(value_col, 0))
+                            source = str(row.get(source_col, "DIRECT"))
+                            
+                            lead_id = f"LEAD-{uuid.uuid4().hex[:6].upper()}"
+                            conn.execute(
+                                "INSERT OR REPLACE INTO sales_leads (company_id, id, name, email, stage, value, source) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                                (company_id, lead_id, name, email, stage, value, source),
+                            )
+                            record_count += 1
+
+                    elif category == "PURCHASE_ORDERS":
+                        # Procurement / PO Management
+                        po_col = next((c for c in df.columns if "po" in c.lower() or "orderno" in c.lower() or "ponum" in c.lower()), None)
+                        supplier_col = next((c for c in df.columns if "supplier" in c.lower() or "vendor" in c.lower()), None)
+                        date_col = next((c for c in df.columns if "date" in c.lower()), None)
+                        amount_col = next((c for c in df.columns if "amount" in c.lower() or "total" in c.lower()), None)
+                        status_col = next((c for c in df.columns if "status" in c.lower()), None)
+
+                        for _, row in df.iterrows():
+                            po_no = str(row.get(po_col, f"PO-{uuid.uuid4().hex[:6].upper()}"))
+                            supplier = str(row.get(supplier_col, "SUPPLIER"))
+                            if not supplier or supplier == "nan":
+                                continue
+                            dt = str(row.get(date_col, datetime.now().strftime("%Y-%m-%d")))
+                            amount = WorkspaceEngine._safe_number(row.get(amount_col, 0))
+                            status = str(row.get(status_col, "OPEN"))
+
+                            conn.execute(
+                                "INSERT OR REPLACE INTO purchase_orders (id, company_id, supplier_name, total_amount, status, expected_date) VALUES (?, ?, ?, ?, ?, ?)",
+                                (f"UP-{po_no}", company_id, supplier, amount, status, dt),
+                            )
+                            record_count += 1
+
+                    elif category == "RFM_CHURN":
+                        # Customer Segmentation / Churn Analysis
+                        cust_col = next((c for c in df.columns if "customer" in c.lower() or "cust" in c.lower()), None)
+                        recency_col = next((c for c in df.columns if "recency" in c.lower()), None)
+                        frequency_col = next((c for c in df.columns if "frequency" in c.lower()), None)
+                        monetary_col = next((c for c in df.columns if "monetary" in c.lower() or "ltv" in c.lower()), None)
+                        churn_col = next((c for c in df.columns if "churn" in c.lower() or "risk" in c.lower()), None)
+                        segment_col = next((c for c in df.columns if "segment" in c.lower()), None)
+
+                        for _, row in df.iterrows():
+                            cust = str(row.get(cust_col, f"CUST-{uuid.uuid4().hex[:4].upper()}"))
+                            if not cust or cust == "nan":
+                                continue
+                            recency = WorkspaceEngine._safe_number(row.get(recency_col, 0))
+                            frequency = WorkspaceEngine._safe_number(row.get(frequency_col, 0))
+                            monetary = WorkspaceEngine._safe_number(row.get(monetary_col, 0))
+                            churn_risk = str(row.get(churn_col, "LOW"))
+                            segment = str(row.get(segment_col, "NEW"))
+
+                            # Insert RFM data with metadata
+                            conn.execute(
+                                """INSERT OR REPLACE INTO rfm_analysis 
+                                   (company_id, customer_id, recency_days, frequency_count, monetary_value, churn_risk, segment_code) 
+                                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                                (company_id, cust, int(recency), int(frequency), monetary, churn_risk, segment),
+                            )
+                            record_count += 1
+
                     results.append(
                         {
                             "name": fname,
@@ -3617,34 +3720,49 @@ class WorkspaceEngine:
             where_clause = "WHERE company_id = ?" if company_id else "WHERE 1=1"
             params = (company_id,) if company_id else ()
 
-            revenue = (
-                conn.execute(
-                    f"SELECT SUM(amount) FROM ledger {where_clause} AND account_name = 'Sales Revenue'",
-                    params,
-                ).fetchone()[0]
-                or 0
-            )
-            cogs = (
-                conn.execute(
-                    f"SELECT SUM(amount) FROM ledger {where_clause} AND account_name = 'Cost of Goods Sold'",
-                    params,
-                ).fetchone()[0]
-                or 0
-            )
-            expenses = (
-                conn.execute(
-                    f"SELECT SUM(amount) FROM ledger {where_clause} AND type = 'EXPENSE' AND account_name != 'Cost of Goods Sold'",
-                    params,
-                ).fetchone()[0]
-                or 0
-            )
+            # Revenue items
+            revenue_rows = conn.execute(
+                f"SELECT account_name, SUM(amount) as balance FROM ledger {where_clause} AND account_name LIKE '%Revenue%' OR account_name = 'Sales' GROUP BY account_name",
+                params,
+            ).fetchall()
+            revenue_items = [dict(r) for r in revenue_rows]
+            revenue_total = sum(r["balance"] for r in revenue_items) if revenue_items else 0
+
+            # If no revenue items found, create placeholder
+            if not revenue_items:
+                revenue_items = [{"account_name": "Sales Revenue", "balance": 0}]
+
+            # COGS items
+            cogs_rows = conn.execute(
+                f"SELECT account_name, SUM(amount) as balance FROM ledger {where_clause} AND (account_name = 'Cost of Goods Sold' OR account_name LIKE '%COGS%') GROUP BY account_name",
+                params,
+            ).fetchall()
+            cogs_items = [dict(r) for r in cogs_rows]
+            cogs_total = sum(r["balance"] for r in cogs_items) if cogs_items else 0
+
+            if not cogs_items:
+                cogs_items = [{"account_name": "Cost of Goods Sold", "balance": 0}]
+
+            # Overheads/Indirect expenses
+            overheads_rows = conn.execute(
+                f"SELECT account_name, SUM(amount) as balance FROM ledger {where_clause} AND type = 'EXPENSE' AND account_name NOT LIKE '%Cost of Goods Sold%' AND account_name NOT LIKE '%COGS%' GROUP BY account_name",
+                params,
+            ).fetchall()
+            overheads_items = [dict(r) for r in overheads_rows]
+            overheads_total = sum(r["balance"] for r in overheads_items) if overheads_items else 0
+
+            if not overheads_items:
+                overheads_items = [{"account_name": "Administrative Expenses", "balance": 0}]
+
+            gross_profit = revenue_total - cogs_total
+            net_profit = gross_profit - overheads_total
 
             return {
-                "revenue": {"total": revenue},
-                "cogs": {"total": cogs},
-                "gross_profit": revenue - cogs,
-                "operating_expenses": expenses,
-                "net_profit": revenue - cogs - expenses,
+                "revenue": {"total": revenue_total, "items": revenue_items},
+                "cogs": {"total": cogs_total, "items": cogs_items},
+                "gross_profit": gross_profit,
+                "overheads": {"total": overheads_total, "items": overheads_items},
+                "net_profit": net_profit,
                 "period": "Current Fiscal Year",
             }
         finally:
@@ -3660,15 +3778,15 @@ class WorkspaceEngine:
             params = (company_id,) if company_id else ()
 
             assets_rows = conn.execute(
-                f"SELECT account_name, amount FROM ledger {where_clause} AND type = 'ASSET'",
+                f"SELECT account_name, SUM(amount) as balance FROM ledger {where_clause} AND type = 'ASSET' GROUP BY account_name",
                 params,
             ).fetchall()
             liabilities_rows = conn.execute(
-                f"SELECT account_name, amount FROM ledger {where_clause} AND type = 'LIABILITY'",
+                f"SELECT account_name, SUM(amount) as balance FROM ledger {where_clause} AND type = 'LIABILITY' GROUP BY account_name",
                 params,
             ).fetchall()
             equity_rows = conn.execute(
-                f"SELECT account_name, amount FROM ledger {where_clause} AND type = 'EQUITY'",
+                f"SELECT account_name, SUM(amount) as balance FROM ledger {where_clause} AND type = 'EQUITY' GROUP BY account_name",
                 params,
             ).fetchall()
 
@@ -3676,14 +3794,23 @@ class WorkspaceEngine:
             liabilities = [dict(l) for l in liabilities_rows]
             equity = [dict(e) for e in equity_rows]
 
-            total_assets = sum(a["amount"] for a in assets)
-            total_liabilities = sum(l["amount"] for l in liabilities)
-            total_equity = sum(e["amount"] for e in equity)
+            total_assets = sum(a["balance"] for a in assets)
+            total_liabilities = sum(l["balance"] for l in liabilities)
+            total_equity = sum(e["balance"] for e in equity)
+
+            # Calculate retained earnings from net profit (simplified - use accumulated equity)
+            retained_earnings = total_equity - (total_assets - total_liabilities) if total_assets else 0
+            if retained_earnings == 0 or total_equity > 0:
+                retained_earnings = total_equity
 
             return {
                 "assets": {"items": assets, "total": total_assets},
                 "liabilities": {"items": liabilities, "total": total_liabilities},
-                "equity": {"items": equity, "total": total_equity},
+                "equity": {
+                    "items": equity,
+                    "total": total_equity,
+                    "retained_earnings": retained_earnings,
+                },
                 "total_assets": total_assets,
                 "total_liabilities_equity": total_liabilities + total_equity,
             }

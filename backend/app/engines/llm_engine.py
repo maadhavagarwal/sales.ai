@@ -15,7 +15,7 @@ except ImportError:
 
 
 def mock_llm_response(prompt):
-    """Fallback: Synthetic Intelligence Layer for offline development/demo."""
+    """Fallback: Synthetic Intelligence Layer for offline development."""
     p = prompt.lower()
     if "recommendation" in p or "strategy" in p or "analyze" in p:
         return "### 🧠 AI Strategic Recommendation\nBased on your historical velocity and current margin profile, we recommend a **15% reallocation of capital** toward high-turnover SKUs. Focus on reducing inventory holding costs for stagnant assets."

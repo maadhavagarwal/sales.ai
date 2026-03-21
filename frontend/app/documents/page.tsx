@@ -1,6 +1,24 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import {
+  ArrowLeft,
+  CalendarClock,
+  FileChartColumn,
+  FileText,
+  FolderOpen,
+  HandCoins,
+  Library,
+  LayoutTemplate,
+  ReceiptText,
+  ScrollText,
+  Sparkles,
+  Trash2
+} from 'lucide-react';
+import Button from '@/components/ui/Button';
+import Card from '@/components/ui/Card';
+import Input from '@/components/ui/Input';
+import Badge from '@/components/ui/Badge';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -21,18 +39,48 @@ async function apiFetch(path: string, opts: any = {}) {
 
 // ──────────── DOC TYPE CONFIG ────────────
 const DOC_TYPES = [
-  { id: 'sales_report', name: 'Sales Report', icon: '📊', color: '#3b82f6', desc: 'Revenue, top customers, monthly trends' },
-  { id: 'financial_report', name: 'Financial Report', icon: '💰', color: '#10b981', desc: 'P&L, balance sheet, CFO insights' },
-  { id: 'gst_invoice', name: 'GST Invoice', icon: '🧾', color: '#f59e0b', desc: 'Tax invoice with CGST/SGST/IGST' },
-  { id: 'proposal', name: 'Business Proposal', icon: '📋', color: '#8b5cf6', desc: 'Professional proposal with pricing' },
-  { id: 'contract', name: 'Service Agreement', icon: '📝', color: '#ef4444', desc: 'Legal service agreement template' },
-];
+  {
+    id: 'sales_report',
+    name: 'Sales Report',
+    icon: FileChartColumn,
+    desc: 'Revenue, top customers, monthly trends',
+    tone: 'text-[--accent-cyan] border-[--accent-cyan]/30 bg-[--accent-cyan]/10',
+  },
+  {
+    id: 'financial_report',
+    name: 'Financial Report',
+    icon: HandCoins,
+    desc: 'P&L, balance sheet, CFO insights',
+    tone: 'text-[--accent-emerald] border-[--accent-emerald]/30 bg-[--accent-emerald]/10',
+  },
+  {
+    id: 'gst_invoice',
+    name: 'GST Invoice',
+    icon: ReceiptText,
+    desc: 'Tax invoice with CGST/SGST/IGST',
+    tone: 'text-[--accent-amber] border-[--accent-amber]/30 bg-[--accent-amber]/10',
+  },
+  {
+    id: 'proposal',
+    name: 'Business Proposal',
+    icon: FileText,
+    desc: 'Professional proposal with pricing',
+    tone: 'text-[--secondary] border-[--secondary]/30 bg-[--secondary]/10',
+  },
+  {
+    id: 'contract',
+    name: 'Service Agreement',
+    icon: ScrollText,
+    desc: 'Legal service agreement template',
+    tone: 'text-[--accent-rose] border-[--accent-rose]/30 bg-[--accent-rose]/10',
+  },
+] as const;
 
-const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
-  'generated': { bg: '#10b98122', text: '#34d399' },
-  'draft': { bg: '#f59e0b22', text: '#fbbf24' },
-  'sent': { bg: '#3b82f622', text: '#60a5fa' },
-  'archived': { bg: '#6b728022', text: '#94a3b8' },
+const STATUS_VARIANTS: Record<string, 'success' | 'warning' | 'info' | 'outline'> = {
+  generated: 'success',
+  draft: 'warning',
+  sent: 'info',
+  archived: 'outline',
 };
 
 // ──────────── MAIN PAGE ────────────
@@ -138,208 +186,191 @@ export default function DocumentGenerationPage() {
   };
 
   const tabs = [
-    { id: 'generate', label: '🚀 Generate', icon: '🚀' },
-    { id: 'library', label: '📁 Library', icon: '📁' },
-    { id: 'templates', label: '📋 Templates', icon: '📋' },
-    { id: 'scheduled', label: '⏰ Scheduled', icon: '⏰' },
+    { id: 'generate', label: 'Generate', icon: Sparkles },
+    { id: 'library', label: 'Library', icon: Library },
+    { id: 'templates', label: 'Templates', icon: LayoutTemplate },
+    { id: 'scheduled', label: 'Scheduled', icon: CalendarClock },
   ];
 
   return (
-    <div style={{
-      minHeight: '100vh', background: 'linear-gradient(135deg, #0f172a 0%, #1a1a2e 50%, #0f172a 100%)',
-      color: '#e2e8f0', fontFamily: "'Inter', 'Segoe UI', sans-serif",
-    }}>
+    <div className="min-h-screen px-4 py-6 sm:px-6 lg:px-10 space-y-6">
       {/* Notification */}
       {notification && (
-        <div style={{
-          position: 'fixed', top: 20, right: 20, zIndex: 1000,
-          background: notification.type === 'success' ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)',
-          border: `1px solid ${notification.type === 'success' ? '#10b981' : '#ef4444'}`,
-          borderRadius: 12, padding: '12px 20px', color: '#fff', fontWeight: 600,
-          backdropFilter: 'blur(12px)', animation: 'slideInRight 0.3s ease',
-        }}>
+        <div
+          className={`fixed right-5 top-5 z-50 rounded-[--radius-sm] border px-4 py-3 text-sm font-semibold shadow-[--shadow-md] backdrop-blur-xl ${
+            notification.type === 'success'
+              ? 'border-[--accent-emerald]/40 bg-[--accent-emerald]/15 text-[--accent-emerald]'
+              : 'border-[--accent-rose]/40 bg-[--accent-rose]/15 text-[--accent-rose]'
+          }`}
+        >
           {notification.message}
         </div>
       )}
 
       {/* Header */}
-      <div style={{
-        background: 'rgba(15,23,42,0.8)', backdropFilter: 'blur(20px)',
-        borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '20px 32px',
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-      }}>
-        <div>
-          <h1 style={{
-            margin: 0, fontSize: 28, fontWeight: 800,
-            background: 'linear-gradient(135deg, #f59e0b, #ef4444)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-          }}>
-            Document Generation
-          </h1>
-          <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: 14 }}>
-            AI-Powered Reports · PDF/DOCX · Templates · Scheduled Generation
-          </p>
+      <Card variant="glass" padding="md" className="rounded-[--radius-xl]">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="space-y-1">
+            <p className="text-rhythm-label">Document Operations</p>
+            <h1 className="text-rhythm-h1 text-white">Document Generation</h1>
+            <p className="text-sm text-[--text-secondary]">AI reports, templates, export, and scheduled delivery</p>
+          </div>
+          <Button variant="outline" icon={<ArrowLeft size={16} />} onClick={() => window.history.back()}>
+            Back
+          </Button>
         </div>
-        <button onClick={() => window.history.back()} style={{
-          background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
-          color: '#94a3b8', padding: '10px 20px', borderRadius: 12, fontWeight: 600, cursor: 'pointer',
-        }}>
-          ← Back
-        </button>
-      </div>
+      </Card>
 
       {/* Tabs */}
-      <div style={{
-        display: 'flex', gap: 4, padding: '16px 32px 0', borderBottom: '1px solid rgba(255,255,255,0.06)',
-      }}>
+      <div className="flex flex-wrap gap-2 rounded-[--radius-md] border border-[--border-default] bg-[--surface-1] p-2">
         {tabs.map(t => (
-          <button key={t.id} onClick={() => setActiveTab(t.id as any)} style={{
-            background: activeTab === t.id ? 'rgba(245,158,11,0.12)' : 'transparent',
-            border: 'none', borderBottom: activeTab === t.id ? '2px solid #f59e0b' : '2px solid transparent',
-            color: activeTab === t.id ? '#fbbf24' : '#64748b', padding: '12px 20px',
-            fontWeight: 600, cursor: 'pointer', fontSize: 14, borderRadius: '8px 8px 0 0',
-          }}>{t.label}</button>
+          <button
+            key={t.id}
+            onClick={() => setActiveTab(t.id as any)}
+            className={`inline-flex items-center gap-2 rounded-[--radius-sm] px-4 py-2 text-sm font-semibold transition-all ${
+              activeTab === t.id
+                ? 'bg-[--primary]/15 text-[--primary] border border-[--primary]/30'
+                : 'text-[--text-secondary] border border-transparent hover:text-[--text-primary] hover:bg-white/4'
+            }`}
+          >
+            <t.icon size={16} />
+            {t.label}
+          </button>
         ))}
       </div>
 
       {/* Content */}
-      <div style={{ padding: '24px 32px', maxWidth: 1400, margin: '0 auto' }}>
+      <div className="mx-auto w-full max-w-7xl">
 
         {/* GENERATE TAB */}
         {activeTab === 'generate' && (
-          <div>
-            <h2 style={{ color: '#f1f5f9', marginBottom: 4 }}>Generate New Document</h2>
-            <p style={{ color: '#64748b', marginBottom: 24, fontSize: 14 }}>
+          <div className="space-y-5">
+            <div>
+              <h2 className="text-rhythm-h2">Generate New Document</h2>
+              <p className="text-sm text-[--text-secondary]">
               Select a document type and format to generate from your live business data
-            </p>
+              </p>
+            </div>
 
             {/* Doc Type Selection */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12, marginBottom: 24 }}>
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {DOC_TYPES.map(dt => (
-                <div key={dt.id} onClick={() => setSelectedDocType(dt.id)} style={{
-                  background: selectedDocType === dt.id ? `${dt.color}15` : 'rgba(255,255,255,0.03)',
-                  border: `2px solid ${selectedDocType === dt.id ? dt.color : 'rgba(255,255,255,0.08)'}`,
-                  borderRadius: 16, padding: 20, cursor: 'pointer', transition: 'all 0.3s',
-                }}>
-                  <div style={{ fontSize: 32, marginBottom: 8 }}>{dt.icon}</div>
-                  <h3 style={{ margin: '0 0 4px', color: selectedDocType === dt.id ? dt.color : '#e2e8f0', fontSize: 16 }}>{dt.name}</h3>
-                  <p style={{ margin: 0, color: '#64748b', fontSize: 12 }}>{dt.desc}</p>
-                </div>
+                <button
+                  key={dt.id}
+                  onClick={() => setSelectedDocType(dt.id)}
+                  className={`rounded-[--radius-md] border p-5 text-left transition-all ${
+                    selectedDocType === dt.id
+                      ? `${dt.tone} shadow-[--shadow-glow]`
+                      : 'border-[--border-default] bg-[--surface-1] hover:border-[--border-accent]'
+                  }`}
+                >
+                  <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-[--radius-sm] border border-current/25">
+                    <dt.icon size={20} />
+                  </div>
+                  <h3 className="text-base font-semibold text-[--text-primary]">{dt.name}</h3>
+                  <p className="mt-1 text-xs text-[--text-secondary]">{dt.desc}</p>
+                </button>
               ))}
             </div>
 
             {/* Generation Form */}
-            <div style={{
-              background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: 16, padding: 24,
-            }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+            <Card variant="elevated" padding="md">
+              <div className="grid gap-4 md:grid-cols-2">
+                <Input
+                  label="Document Title (Optional)"
+                  value={docTitle}
+                  onChange={e => setDocTitle(e.target.value)}
+                  placeholder="Auto-generated if empty"
+                />
                 <div>
-                  <label style={{ color: '#94a3b8', fontSize: 13, display: 'block', marginBottom: 6 }}>Document Title (optional)</label>
-                  <input value={docTitle} onChange={e => setDocTitle(e.target.value)}
-                    placeholder="Auto-generated if empty"
-                    style={{
-                      width: '100%', padding: '10px 16px', background: 'rgba(255,255,255,0.06)',
-                      border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, color: '#e2e8f0',
-                      fontSize: 14, outline: 'none',
-                    }} />
-                </div>
-                <div>
-                  <label style={{ color: '#94a3b8', fontSize: 13, display: 'block', marginBottom: 6 }}>Output Format</label>
-                  <div style={{ display: 'flex', gap: 8 }}>
+                  <label className="mb-2 block text-sm font-medium text-[--text-secondary]">Output Format</label>
+                  <div className="grid grid-cols-2 gap-2">
                     {['pdf', 'docx'].map(f => (
-                      <button key={f} onClick={() => setDocFormat(f as any)} style={{
-                        flex: 1, padding: '10px', background: docFormat === f ? '#f59e0b22' : 'rgba(255,255,255,0.06)',
-                        border: `1px solid ${docFormat === f ? '#f59e0b' : 'rgba(255,255,255,0.1)'}`,
-                        borderRadius: 10, color: docFormat === f ? '#fbbf24' : '#94a3b8',
-                        fontWeight: 600, cursor: 'pointer', fontSize: 14, textTransform: 'uppercase' as const,
-                      }}>{f === 'pdf' ? '📄 PDF' : '📝 DOCX'}</button>
+                      <button
+                        key={f}
+                        onClick={() => setDocFormat(f as any)}
+                        className={`rounded-[--radius-sm] border px-3 py-2 text-sm font-semibold uppercase transition-all ${
+                          docFormat === f
+                            ? 'border-[--primary]/35 bg-[--primary]/15 text-[--primary]'
+                            : 'border-[--border-default] bg-[--surface-1] text-[--text-secondary] hover:text-[--text-primary]'
+                        }`}
+                      >
+                        {f}
+                      </button>
                     ))}
                   </div>
                 </div>
               </div>
 
               {selectedDocType === 'gst_invoice' && (
-                <div style={{ marginBottom: 16 }}>
-                  <label style={{ color: '#94a3b8', fontSize: 13, display: 'block', marginBottom: 6 }}>Invoice ID</label>
-                  <input value={invoiceId} onChange={e => setInvoiceId(e.target.value)}
+                <div className="mt-4">
+                  <Input
+                    label="Invoice ID"
+                    value={invoiceId}
+                    onChange={e => setInvoiceId(e.target.value)}
                     placeholder="Enter invoice ID to generate GST invoice"
-                    style={{
-                      width: '100%', padding: '10px 16px', background: 'rgba(255,255,255,0.06)',
-                      border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, color: '#e2e8f0',
-                      fontSize: 14, outline: 'none',
-                    }} />
+                  />
                 </div>
               )}
 
-              <button onClick={generateDocument} disabled={generating} style={{
-                background: generating
-                  ? 'rgba(255,255,255,0.1)'
-                  : 'linear-gradient(135deg, #f59e0b, #ef4444)',
-                border: 'none', color: '#fff', padding: '14px 32px', borderRadius: 12,
-                fontWeight: 700, cursor: generating ? 'default' : 'pointer', fontSize: 16,
-                width: '100%', transition: 'all 0.3s',
-              }}>
-                {generating ? '⏳ Generating...' : `🚀 Generate ${DOC_TYPES.find(d => d.id === selectedDocType)?.name || 'Document'}`}
-              </button>
-            </div>
+              <Button loading={generating} variant="pro" fullWidth className="mt-5" onClick={generateDocument}>
+                {generating
+                  ? 'Generating...'
+                  : `Generate ${DOC_TYPES.find(d => d.id === selectedDocType)?.name || 'Document'}`}
+              </Button>
+            </Card>
           </div>
         )}
 
         {/* LIBRARY TAB */}
         {activeTab === 'library' && (
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+          <div className="space-y-4">
+            <div className="flex items-end justify-between gap-4">
               <div>
-                <h2 style={{ margin: 0, color: '#f1f5f9' }}>Document Library</h2>
-                <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: 14 }}>{documents.length} documents</p>
+                <h2 className="text-rhythm-h2">Document Library</h2>
+                <p className="text-sm text-[--text-secondary]">{documents.length} documents</p>
               </div>
             </div>
 
             {documents.length === 0 ? (
-              <div style={{
-                textAlign: 'center', padding: 60, color: '#64748b',
-                background: 'rgba(255,255,255,0.02)', borderRadius: 16,
-              }}>
-                <div style={{ fontSize: 48, marginBottom: 12 }}>📄</div>
-                <p>No documents yet. Generate your first document!</p>
-              </div>
+              <Card variant="default" padding="lg" className="text-center">
+                <FolderOpen className="mx-auto mb-3 h-10 w-10 text-[--text-muted]" />
+                <p className="text-[--text-secondary]">No documents yet. Generate your first document.</p>
+              </Card>
             ) : (
-              <div style={{ display: 'grid', gap: 8 }}>
+              <div className="grid gap-3">
                 {documents.map((doc: any) => {
-                  const st = STATUS_COLORS[doc.status] || STATUS_COLORS['draft'];
+                  const statusVariant = STATUS_VARIANTS[doc.status] || 'warning';
                   const dt = DOC_TYPES.find(d => d.id === doc.doc_type);
+                  const Icon = dt?.icon || FileText;
                   return (
-                    <div key={doc.id} style={{
-                      background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
-                      borderRadius: 12, padding: '16px 20px', display: 'flex', justifyContent: 'space-between',
-                      alignItems: 'center', transition: 'background 0.2s',
-                    }}
-                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
-                      onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                        <div style={{
-                          width: 44, height: 44, borderRadius: 10, display: 'flex', alignItems: 'center',
-                          justifyContent: 'center', fontSize: 22, background: `${dt?.color || '#3b82f6'}15`,
-                        }}>{dt?.icon || '📄'}</div>
+                    <div
+                      key={doc.id}
+                      className="flex flex-wrap items-center justify-between gap-4 rounded-[--radius-md] border border-[--border-default] bg-[--surface-1] p-4 transition-colors hover:bg-[--surface-2]"
+                    >
+                      <div className="flex min-w-60 items-center gap-4">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-[--radius-sm] border border-[--border-default] bg-[--surface-2] text-[--text-secondary]">
+                          <Icon size={20} />
+                        </div>
                         <div>
-                          <div style={{ fontWeight: 600, color: '#e2e8f0', marginBottom: 2 }}>{doc.title}</div>
-                          <div style={{ fontSize: 12, color: '#64748b' }}>
+                          <div className="font-semibold text-[--text-primary]">{doc.title}</div>
+                          <div className="text-xs text-[--text-secondary]">
                             {doc.format?.toUpperCase()} · {doc.doc_type?.replace('_', ' ')} · v{doc.version} · {doc.created_at?.slice(0, 10)}
                           </div>
                         </div>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <span style={{
-                          background: st.bg, color: st.text, padding: '3px 10px', borderRadius: 8,
-                          fontSize: 11, fontWeight: 600, textTransform: 'uppercase' as const,
-                        }}>{doc.status}</span>
-                        <span style={{ fontSize: 12, color: '#64748b' }}>
+                      <div className="flex items-center gap-3">
+                        <Badge variant={statusVariant} size="md">{doc.status}</Badge>
+                        <span className="text-xs text-[--text-secondary]">
                           {doc.file_size ? `${(doc.file_size / 1024).toFixed(1)}KB` : ''}
                         </span>
-                        <button onClick={() => deleteDocument(doc.id)} style={{
-                          background: 'none', border: 'none', color: '#64748b', cursor: 'pointer',
-                          fontSize: 16, padding: 4,
-                        }} title="Archive">🗑️</button>
+                        <button
+                          onClick={() => deleteDocument(doc.id)}
+                          className="rounded-[--radius-xs] border border-[--border-default] p-2 text-[--text-muted] hover:text-[--accent-rose]"
+                          title="Archive"
+                        >
+                          <Trash2 size={15} />
+                        </button>
                       </div>
                     </div>
                   );
@@ -351,40 +382,34 @@ export default function DocumentGenerationPage() {
 
         {/* TEMPLATES TAB */}
         {activeTab === 'templates' && (
-          <div>
-            <h2 style={{ color: '#f1f5f9', marginBottom: 4 }}>Document Templates</h2>
-            <p style={{ color: '#64748b', marginBottom: 24, fontSize: 14 }}>
+          <div className="space-y-4">
+            <div>
+              <h2 className="text-rhythm-h2">Document Templates</h2>
+              <p className="text-sm text-[--text-secondary]">
               Pre-built and custom templates for document generation
-            </p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
+              </p>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {templates.map((tpl: any) => {
                 const dt = DOC_TYPES.find(d => d.id === tpl.doc_type);
+                const Icon = dt?.icon || FileText;
                 return (
-                  <div key={tpl.id} style={{
-                    background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-                    borderRadius: 16, padding: 24, transition: 'all 0.2s',
-                  }}
-                    onMouseEnter={e => (e.currentTarget.style.borderColor = dt?.color || '#3b82f6')}
-                    onMouseLeave={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-                      <span style={{ fontSize: 28 }}>{dt?.icon || '📄'}</span>
+                  <Card key={tpl.id} variant="default" padding="md" className="hover:border-[--border-accent]">
+                    <div className="mb-3 flex items-center justify-between">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-[--radius-sm] border border-[--border-default] bg-[--surface-2] text-[--text-secondary]">
+                        <Icon size={18} />
+                      </div>
                       {tpl.is_default ? (
-                        <span style={{
-                          background: '#10b98122', color: '#34d399', padding: '2px 10px', borderRadius: 12,
-                          fontSize: 11, fontWeight: 600,
-                        }}>DEFAULT</span>
+                        <Badge variant="success" size="sm">Default</Badge>
                       ) : (
-                        <span style={{
-                          background: '#3b82f622', color: '#60a5fa', padding: '2px 10px', borderRadius: 12,
-                          fontSize: 11, fontWeight: 600,
-                        }}>CUSTOM</span>
+                        <Badge variant="info" size="sm">Custom</Badge>
                       )}
                     </div>
-                    <h3 style={{ margin: '0 0 4px', color: '#e2e8f0' }}>{tpl.name}</h3>
-                    <p style={{ margin: 0, color: '#64748b', fontSize: 13 }}>
+                    <h3 className="text-base font-semibold text-[--text-primary]">{tpl.name}</h3>
+                    <p className="text-sm text-[--text-secondary]">
                       Type: {tpl.doc_type?.replace('_', ' ')} · ID: {tpl.id}
                     </p>
-                  </div>
+                  </Card>
                 );
               })}
             </div>
@@ -393,36 +418,40 @@ export default function DocumentGenerationPage() {
 
         {/* SCHEDULED TAB */}
         {activeTab === 'scheduled' && (
-          <div>
-            <h2 style={{ color: '#f1f5f9', marginBottom: 4 }}>Scheduled Reports</h2>
-            <p style={{ color: '#64748b', marginBottom: 24, fontSize: 14 }}>
+          <div className="space-y-4">
+            <div>
+              <h2 className="text-rhythm-h2">Scheduled Reports</h2>
+              <p className="text-sm text-[--text-secondary]">
               Configure automated report generation and delivery
-            </p>
+              </p>
+            </div>
 
             {/* Schedule Form */}
-            <div style={{
-              background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: 16, padding: 24, marginBottom: 24,
-            }}>
-              <h3 style={{ margin: '0 0 16px', color: '#fbbf24' }}>📅 Schedule New Report</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr', gap: 16, marginBottom: 16 }}>
+            <Card variant="elevated" padding="md" className="mb-4">
+              <h3 className="mb-4 flex items-center gap-2 text-base font-semibold text-[--text-primary]">
+                <CalendarClock size={18} className="text-[--primary]" />
+                Schedule New Report
+              </h3>
+              <div className="mb-4 grid gap-4 lg:grid-cols-[1fr_1fr_2fr]">
                 <div>
-                  <label style={{ color: '#94a3b8', fontSize: 13, display: 'block', marginBottom: 6 }}>Report Type</label>
-                  <select value={schedType} onChange={e => setSchedType(e.target.value)} style={{
-                    width: '100%', padding: 10, background: 'rgba(255,255,255,0.06)',
-                    border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#e2e8f0', fontSize: 13,
-                  }}>
+                  <label className="mb-2 block text-sm font-medium text-[--text-secondary]">Report Type</label>
+                  <select
+                    value={schedType}
+                    onChange={e => setSchedType(e.target.value)}
+                    className="w-full rounded-[--radius-sm] border border-[--border-default] bg-[--surface-1] px-3 py-2 text-sm text-[--text-primary] outline-none focus:border-[--border-accent]"
+                  >
                     {DOC_TYPES.map(dt => (
                       <option key={dt.id} value={dt.id}>{dt.name}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label style={{ color: '#94a3b8', fontSize: 13, display: 'block', marginBottom: 6 }}>Frequency</label>
-                  <select value={schedFreq} onChange={e => setSchedFreq(e.target.value)} style={{
-                    width: '100%', padding: 10, background: 'rgba(255,255,255,0.06)',
-                    border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#e2e8f0', fontSize: 13,
-                  }}>
+                  <label className="mb-2 block text-sm font-medium text-[--text-secondary]">Frequency</label>
+                  <select
+                    value={schedFreq}
+                    onChange={e => setSchedFreq(e.target.value)}
+                    className="w-full rounded-[--radius-sm] border border-[--border-default] bg-[--surface-1] px-3 py-2 text-sm text-[--text-primary] outline-none focus:border-[--border-accent]"
+                  >
                     <option value="daily">Daily</option>
                     <option value="weekly">Weekly</option>
                     <option value="monthly">Monthly</option>
@@ -430,55 +459,44 @@ export default function DocumentGenerationPage() {
                   </select>
                 </div>
                 <div>
-                  <label style={{ color: '#94a3b8', fontSize: 13, display: 'block', marginBottom: 6 }}>Recipient Emails</label>
-                  <input value={schedEmails} onChange={e => setSchedEmails(e.target.value)}
+                  <Input
+                    label="Recipient Emails"
+                    value={schedEmails}
+                    onChange={e => setSchedEmails(e.target.value)}
                     placeholder="email1@co.com, email2@co.com"
-                    style={{
-                      width: '100%', padding: '10px 16px', background: 'rgba(255,255,255,0.06)',
-                      border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#e2e8f0',
-                      fontSize: 13, outline: 'none',
-                    }} />
+                  />
                 </div>
               </div>
-              <button onClick={scheduleReport} style={{
-                background: 'linear-gradient(135deg, #f59e0b, #d97706)', border: 'none', color: '#fff',
-                padding: '10px 24px', borderRadius: 10, fontWeight: 600, cursor: 'pointer',
-              }}>📅 Schedule Report</button>
-            </div>
+              <Button variant="primary" onClick={scheduleReport}>Schedule Report</Button>
+            </Card>
 
             {/* Existing Schedules */}
             {scheduledReports.length > 0 ? (
-              <div style={{ display: 'grid', gap: 8 }}>
+              <div className="grid gap-3">
                 {scheduledReports.map((sr: any) => (
-                  <div key={sr.id} style={{
-                    background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
-                    borderRadius: 12, padding: '16px 20px', display: 'flex', justifyContent: 'space-between',
-                    alignItems: 'center',
-                  }}>
+                  <div
+                    key={sr.id}
+                    className="flex flex-wrap items-center justify-between gap-4 rounded-[--radius-md] border border-[--border-default] bg-[--surface-1] p-4"
+                  >
                     <div>
-                      <div style={{ fontWeight: 600, color: '#e2e8f0' }}>
+                      <div className="font-semibold text-[--text-primary]">
                         {sr.report_type?.replace('_', ' ').replace(/(^|\s)\S/g, (t: string) => t.toUpperCase())}
                       </div>
-                      <div style={{ fontSize: 12, color: '#64748b' }}>
+                      <div className="text-xs text-[--text-secondary]">
                         {sr.frequency} · Next: {sr.next_run?.slice(0, 10)} · ID: {sr.id}
                       </div>
                     </div>
-                    <span style={{
-                      background: sr.enabled ? '#10b98122' : '#ef444422',
-                      color: sr.enabled ? '#34d399' : '#f87171',
-                      padding: '3px 12px', borderRadius: 8, fontSize: 11, fontWeight: 600,
-                    }}>{sr.enabled ? 'ACTIVE' : 'PAUSED'}</span>
+                    <Badge variant={sr.enabled ? 'success' : 'danger'} size="md">
+                      {sr.enabled ? 'Active' : 'Paused'}
+                    </Badge>
                   </div>
                 ))}
               </div>
             ) : (
-              <div style={{
-                textAlign: 'center', padding: 40, color: '#64748b',
-                background: 'rgba(255,255,255,0.02)', borderRadius: 16,
-              }}>
-                <div style={{ fontSize: 40, marginBottom: 8 }}>⏰</div>
-                No scheduled reports yet
-              </div>
+              <Card variant="default" padding="lg" className="text-center">
+                <CalendarClock className="mx-auto mb-2 h-9 w-9 text-[--text-muted]" />
+                <p className="text-[--text-secondary]">No scheduled reports yet</p>
+              </Card>
             )}
           </div>
         )}

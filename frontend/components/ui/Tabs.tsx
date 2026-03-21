@@ -23,7 +23,7 @@ export function Tabs({ defaultValue, value, onValueChange, children, className }
 
 export function TabsList({ children, className }: any) {
   return (
-    <div className={`flex p-1 rounded-xl bg-slate-900 border border-slate-800 ${className}`}>
+    <div className={`flex p-1 rounded-xl bg-[--surface-1] border border-[--border-default] ${className}`}>
       {children}
     </div>
   );
@@ -37,15 +37,15 @@ export function TabsTrigger({ value, children, className }: any) {
     <button
       onClick={() => context?.setActiveTab(value)}
       className={`
-        px-4 py-2 text-sm font-bold rounded-lg transition-all relative
-        ${isActive ? "text-white" : "text-slate-500 hover:text-slate-300"}
+        px-4 py-2 text-sm font-semibold rounded-lg transition-all relative
+        ${isActive ? "text-white" : "text-[--text-muted] hover:text-[--text-secondary]"}
         ${className}
       `}
     >
       {isActive && (
         <motion.div
           layoutId="activeTab"
-          className="absolute inset-0 bg-blue-600 rounded-lg -z-10"
+          className="absolute inset-0 bg-[--primary]/80 rounded-lg -z-10 shadow-[--shadow-sm]"
           transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
         />
       )}

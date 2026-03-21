@@ -197,7 +197,6 @@ def _check_ai_stack() -> CheckResult:
 def _check_strict_mode() -> CheckResult:
     strict_env_ok = (
         _env_true("NEURALBI_STRICT_PRODUCTION", "false")
-        and not _env_true("ENABLE_DEMO_SEED_DATA", "false")
         and not _env_true("ENABLE_LIVE_KPI_SIMULATOR", "false")
     )
 
@@ -217,7 +216,6 @@ def _check_strict_mode() -> CheckResult:
     ]
     strict_markers = [
         "NEURALBI_STRICT_PRODUCTION",
-        "ENABLE_DEMO_SEED_DATA",
         "ENABLE_LIVE_KPI_SIMULATOR",
     ]
     code_blob = "\n".join(
@@ -240,7 +238,8 @@ def _check_strict_mode() -> CheckResult:
 def _check_integrations() -> CheckResult:
     # Not all integrations are mandatory, but at least email OR payment should be configured for full operations.
     smtp_secret = _config_value("SMTP_PASS", "SMTP_PASSWORD")
-    payment_secret = _config_value("RAZORPAY_KEY_SECRET")
+    razorpay_secret = _config_value("RAZORPAY_KEY_SECRET")
+    stripe_secret = _config_value("STRIPE_SECRET_KEY")
 
     has_email = bool(
         _config_value("SMTP_HOST", "SMTP_SERVER")
@@ -248,11 +247,16 @@ def _check_integrations() -> CheckResult:
         and smtp_secret
         and not _looks_placeholder_secret(smtp_secret)
     )
-    has_payment = bool(
+    has_razorpay = bool(
         _config_value("RAZORPAY_KEY_ID")
-        and payment_secret
-        and not _looks_placeholder_secret(payment_secret)
+        and razorpay_secret
+        and not _looks_placeholder_secret(razorpay_secret)
     )
+    has_stripe = bool(
+        stripe_secret
+        and not _looks_placeholder_secret(stripe_secret)
+    )
+    has_payment = has_razorpay or has_stripe
 
     ok = has_email or has_payment
     return CheckResult(

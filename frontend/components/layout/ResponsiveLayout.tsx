@@ -20,14 +20,14 @@ export default function ResponsiveLayout({
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false)
 
   return (
-    <div className="flex h-screen bg-slate-950 text-slate-100">
+    <div className="flex h-screen bg-[--bg-primary] text-[--text-primary]">
       {/* Sidebar - Hidden on mobile, visible on md and up */}
       <div
         className={`
           fixed md:relative md:w-64 lg:w-72 h-full
           transition-all duration-300 z-40
           ${mobileMenuOpen ? "w-64 translate-x-0" : "w-64 -translate-x-full md:translate-x-0"}
-          bg-slate-900 border-r border-slate-800
+          bg-[--surface-1] border-r border-[--border-default]
           overflow-y-auto
         `}
       >
@@ -37,7 +37,7 @@ export default function ResponsiveLayout({
       {/* Mobile overlay */}
       {mobileMenuOpen && (
         <div
-          className="fixed inset-0 bg-slate-950/50 backdrop-blur-sm md:hidden z-30"
+          className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm md:hidden"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
@@ -45,12 +45,12 @@ export default function ResponsiveLayout({
       {/* Main content area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <header className="sticky top-0 z-20 bg-slate-900/80 backdrop-blur-lg border-b border-slate-800">
+        <header className="sticky top-0 z-20 border-b border-[--border-default] bg-[--surface-1]/90 backdrop-blur-lg">
           <div className="flex items-center justify-between px-4 sm:px-6 md:px-8 h-16 sm:h-20">
             {/* Mobile menu button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 hover:bg-slate-800 rounded-lg transition-colors"
+              className="rounded-[--radius-xs] p-2 transition-colors hover:bg-[--surface-2] md:hidden"
             >
               <svg
                 className="w-6 h-6"

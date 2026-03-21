@@ -18,24 +18,18 @@ export default function DashboardLayout({
 }: DashboardLayoutProps) {
   return (
     <div className="flex min-h-screen bg-[--background] text-[--text-primary] relative overflow-hidden">
-      {/* Animated Background blobs */}
-      <div className="blob-container">
-        <div className="blob" style={{ top: '-10%', left: '-10%', background: 'var(--mesh-1)' }} />
-        <div className="blob" style={{ bottom: '-10%', right: '-10%', background: 'var(--mesh-2)', animationDelay: '-5s' }} />
-        <div className="blob" style={{ top: '40%', left: '30%', width: '300px', height: '300px', background: 'var(--mesh-3)', animationDelay: '-10s' }} />
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_0%_0%,rgba(14,165,233,0.12),transparent_40%),radial-gradient(circle_at_100%_100%,rgba(99,102,241,0.12),transparent_42%)]" />
+        <div className="absolute inset-0 opacity-[0.05] bg-[linear-gradient(to_right,white_1px,transparent_1px),linear-gradient(to_bottom,white_1px,transparent_1px)] bg-size-[32px_32px]" />
       </div>
 
-      {/* Sidebar */}
       <Sidebar />
 
-      {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0">
-        {/* Header */}
         <PageHeader title={title} subtitle={subtitle} actions={actions} />
 
-        {/* Page Content */}
         <div className="flex-1 overflow-y-auto scrollbar-pro">
-          <div className="px-6 md:px-12 py-10 max-w-[1600px] mx-auto w-full">
+          <div className="px-5 sm:px-8 lg:px-12 py-8 lg:py-10 max-w-400 mx-auto w-full">
             {children}
           </div>
         </div>

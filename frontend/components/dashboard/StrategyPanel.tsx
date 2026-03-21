@@ -10,15 +10,15 @@ export default function StrategyPanel({ strategy }: { strategy: string[] }) {
                 animate={{ opacity: 1, y: 0 }}
                 className="chart-card"
             >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem" }}>
+                <div className="mb-5 flex items-center justify-between">
                     <div>
-                        <h3 style={{ fontSize: "1rem", fontWeight: 700 }}>AI Strategy Recommendations</h3>
-                        <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "2px" }}>
+                        <h3 className="text-base font-bold text-[--text-primary]">AI Strategy Recommendations</h3>
+                        <p className="mt-0.5 text-xs text-[--text-muted]">
                             Loading strategy recommendations...
                         </p>
                     </div>
                 </div>
-                <div style={{ height: "200px", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)" }}>
+                <div className="flex h-50 items-center justify-center text-[--text-muted]">
                     <div className="animate-pulse">Analyzing dataset...</div>
                 </div>
             </motion.div>
@@ -32,62 +32,31 @@ export default function StrategyPanel({ strategy }: { strategy: string[] }) {
             transition={{ duration: 0.5, delay: 0.3 }}
             className="chart-card"
         >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem" }}>
+            <div className="mb-5 flex items-center justify-between">
                 <div>
-                    <h3 style={{ fontSize: "1rem", fontWeight: 700, letterSpacing: "-0.01em" }}>
+                    <h3 className="text-base font-bold tracking-tight text-[--text-primary]">
                         AI Strategy Recommendations
                     </h3>
-                    <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "2px" }}>
+                    <p className="mt-0.5 text-xs text-[--text-muted]">
                         {strategy.length} recommendations generated
                     </p>
                 </div>
                 <span className="badge badge-success">AI Generated</span>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+            <div className="space-y-3">
                 {strategy.map((s, i) => (
                     <motion.div
                         key={i}
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.4 + i * 0.1 }}
-                        style={{
-                            display: "flex",
-                            gap: "0.75rem",
-                            alignItems: "flex-start",
-                            padding: "0.875rem 1rem",
-                            background: "rgba(255,255,255,0.02)",
-                            borderRadius: "var(--radius-md)",
-                            border: "1px solid var(--border-subtle)",
-                            transition: "all 250ms ease",
-                        }}
-                        onMouseEnter={(e) => {
-                            e.currentTarget.style.borderColor = "rgba(99,102,241,0.3)"
-                            e.currentTarget.style.background = "rgba(99,102,241,0.05)"
-                        }}
-                        onMouseLeave={(e) => {
-                            e.currentTarget.style.borderColor = "var(--border-subtle)"
-                            e.currentTarget.style.background = "rgba(255,255,255,0.02)"
-                        }}
+                        className="flex items-start gap-3 rounded-[--radius-md] border border-[--border-default] bg-[--surface-1] px-4 py-3 transition-colors hover:border-[--border-accent] hover:bg-[--surface-2]"
                     >
-                        <div
-                            style={{
-                                width: "26px",
-                                height: "26px",
-                                borderRadius: "50%",
-                                background: "var(--gradient-primary)",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                fontSize: "0.7rem",
-                                fontWeight: 700,
-                                flexShrink: 0,
-                                marginTop: "1px",
-                            }}
-                        >
+                        <div className="mt-px flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[--primary] text-[10px] font-bold text-white">
                             {i + 1}
                         </div>
-                        <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", lineHeight: 1.6 }}>
+                        <p className="text-sm leading-relaxed text-[--text-secondary]">
                             {s}
                         </p>
                     </motion.div>
