@@ -177,7 +177,7 @@ def init_workspace_db():
             )
         """)
 
-        # 4.5.1 Expenses (Operational Costs)
+        # 4.5.1 Expenses (Operational Costs with GST Compliance)
         conn.execute("""
             CREATE TABLE IF NOT EXISTS expenses (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -187,6 +187,80 @@ def init_workspace_db():
                 amount REAL,
                 description TEXT,
                 payment_method TEXT,
+                hsn_code TEXT,
+                gst_rate REAL DEFAULT 0.0,
+                cgst_amount REAL DEFAULT 0.0,
+                sgst_amount REAL DEFAULT 0.0,
+                igst_amount REAL DEFAULT 0.0,
+                vendor_name TEXT,
+                vendor_gstin TEXT,
+                invoice_number TEXT,
+                expense_type TEXT DEFAULT 'INPUT', -- INPUT (eligible for ITC), NON-INPUT
+                itc_eligible INTEGER DEFAULT 1,
+                bill_attached INTEGER DEFAULT 0,
+                gst_reconciled INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        # GST Compliance Tracking
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS gst_transactions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                company_id TEXT,
+                transaction_date TEXT,
+                transaction_type TEXT, -- 'SALE', 'PURCHASE'
+                invoice_number TEXT,
+                customer_gstin TEXT,
+                customer_name TEXT,
+                hsn_sac_code TEXT,
+                description TEXT,
+                quantity REAL,
+                unit_price REAL,
+                taxable_amount REAL,
+                gst_rate REAL,
+                cgst_amount REAL,
+                sgst_amount REAL,
+                igst_amount REAL,
+                total_amount REAL,
+                place_of_supply TEXT,
+                irn TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        # GST Returns & Filings
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS gst_returns (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                company_id TEXT,
+                return_period TEXT, -- e.g., '01-2026' for Jan 2026
+                return_type TEXT, -- 'GSTR1', 'GSTR2', 'GSTR3B', 'GSTR4'
+                filing_date TEXT,
+                status TEXT DEFAULT 'DRAFT', -- DRAFT, SUBMITTED, ACKNOWLEDGED, REJECTED
+                total_outward_supply REAL,
+                total_tax_payable REAL,
+                total_input_tax_credit REAL,
+                net_tax_payable REAL,
+                notes TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        # GST Reconciliation
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS gst_reconciliation (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                company_id TEXT,
+                month_year TEXT,
+                invoice_count INTEGER,
+                bill_count INTEGER,
+                total_sales REAL,
+                total_purchases REAL,
+                total_output_tax REAL,
+                total_input_tax REAL,
+                discrepancies TEXT,
+                reconciled INTEGER DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
@@ -467,6 +541,19 @@ def init_workspace_db():
             ("deals", "company_id", "TEXT"),
             ("sales_targets", "company_id", "TEXT"),
             ("tasks", "company_id", "TEXT"),
+            # GST Compliance Columns
+            ("expenses", "hsn_code", "TEXT"),
+            ("expenses", "gst_rate", "REAL DEFAULT 0.0"),
+            ("expenses", "cgst_amount", "REAL DEFAULT 0.0"),
+            ("expenses", "sgst_amount", "REAL DEFAULT 0.0"),
+            ("expenses", "igst_amount", "REAL DEFAULT 0.0"),
+            ("expenses", "vendor_name", "TEXT"),
+            ("expenses", "vendor_gstin", "TEXT"),
+            ("expenses", "invoice_number", "TEXT"),
+            ("expenses", "expense_type", "TEXT DEFAULT 'INPUT'"),
+            ("expenses", "itc_eligible", "INTEGER DEFAULT 1"),
+            ("expenses", "bill_attached", "INTEGER DEFAULT 0"),
+            ("expenses", "gst_reconciled", "INTEGER DEFAULT 0"),
         ]
         for tbl, col, ctype in cols_to_add:
             try:
@@ -542,10 +629,15 @@ def get_user_record(email):
             (email,),
         ).fetchone()
         conn.close()
-        return dict(user) if user else None
+        
+        if user:
+            # Return as dict for compatibility
+            return dict(user) if user else None
+        return None
     except Exception as e:
         print(f"Fetch User Error: {e}")
         return None
+
 
 
 def log_activity(user_id, action, module, entity_id=None, details=None):

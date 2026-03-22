@@ -141,6 +141,7 @@ interface AppState {
     // Actions
     setUser: (email: string | null, role: string | null) => void
     setOnboardingComplete: (complete: boolean) => void
+    logout: () => void
     setResults: (results: UploadResults) => void
     setDatasetId: (id: string | null) => void
     setIsUploading: (loading: boolean) => void
@@ -218,6 +219,26 @@ export const useStore = create<AppState>((set) => ({
             localStorage.setItem("onboarding_complete", String(complete))
         }
         set({ onboardingComplete: complete })
+    },
+
+    logout: () => {
+        if (typeof window !== "undefined") {
+            localStorage.removeItem("user_email")
+            localStorage.removeItem("user_role")
+            localStorage.removeItem("auth_token")
+            localStorage.removeItem("onboarding_complete")
+            localStorage.removeItem("nb-enterprise-theme")
+        }
+        set({ 
+            userEmail: null, 
+            userRole: null, 
+            onboardingComplete: false,
+            results: null,
+            datasetId: null,
+            fileName: null,
+            uploadProgress: 0,
+            widgets: []
+        })
     },
 
     setResults: (results) => set({ results, datasetId: results.dataset_id || null }),

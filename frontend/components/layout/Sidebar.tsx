@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { useStore } from "@/store/useStore"
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
@@ -10,11 +10,14 @@ import {
     Bot,
     Briefcase,
     Database,
+    DollarSign,
     FileText,
     FolderSync,
     LayoutDashboard,
     LineChart,
+    LogOut,
     Package,
+    Receipt,
     ShoppingCart,
     Users,
     type LucideIcon,
@@ -51,9 +54,25 @@ const navItems: NavSection[] = [
         items: [
             { href: "/workspace", label: "Workspace", icon: Briefcase, match: ["/workspace"] },
             { href: "/workspace/procurement", label: "Procurement", icon: ShoppingCart },
+            { href: "/workspace/expenses", label: "Expenses", icon: DollarSign },
             { href: "/workspace/sync", label: "Sync Center", icon: FolderSync },
             { href: "/documents", label: "Documents", icon: FileText },
             { href: "/datasets", label: "Datasets", icon: Database },
+        ],
+    },
+    {
+        section: "Finance & Compliance",
+        roles: ["ADMIN", "FINANCE"],
+        items: [
+            { href: "/workspace/accounting/gst-compliance", label: "GST Compliance", icon: Receipt },
+            { href: "/workspace/accounting/invoices", label: "Invoices", icon: FileText },
+        ],
+    },
+    {
+        section: "Human Resources",
+        roles: ["ADMIN", "HR"],
+        items: [
+            { href: "/workspace/hr", label: "HR Management", icon: Users },
         ],
     },
     {
@@ -70,9 +89,31 @@ const navItems: NavSection[] = [
 
 export default function Sidebar() {
     const pathname = usePathname()
-    const { theme, toggleTheme, userRole, userEmail } = useStore()
+    const router = useRouter()
+    const { theme, toggleTheme, userRole, userEmail, logout } = useStore()
     const [mobileOpen, setMobileOpen] = useState(false)
     const [engineId, setEngineId] = useState("CORE-X0-SYST")
+
+    const handleLogout = async () => {
+        try {
+            // Call logout API endpoint
+            const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null
+            if (token) {
+                await fetch("/api/logout", {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${token}`,
+                        "Content-Type": "application/json"
+                    }
+                }).catch(() => {}) // Fail silently if server is unreachable
+            }
+        } catch (error) {
+            console.error("Logout error:", error)
+        } finally {
+            logout()
+            router.push("/login")
+        }
+    }
 
     useEffect(() => {
         setEngineId(`ID: ${Math.random().toString(36).substr(2, 9).toUpperCase()}`)
@@ -184,7 +225,17 @@ export default function Sidebar() {
                     ))}
                 </nav>
 
-                <div className="mt-auto p-5 border-t border-[--border-subtle] bg-[--surface-0]/70">
+                <div className="mt-auto p-5 border-t border-[--border-subtle] bg-[--surface-0]/70 space-y-3">
+                    <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-white/3 border border-[--border-default]">
+                        <div className="w-8 h-8 rounded-lg bg-[--primary]/25 flex items-center justify-center text-sm font-bold text-[--primary]">
+                            {userEmail?.charAt(0).toUpperCase() || "U"}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                            <div className="text-xs font-semibold text-white truncate">{userEmail || "User"}</div>
+                            <div className="text-[10px] text-[--text-muted] uppercase tracking-[0.05em]">{userRole || "ADMIN"}</div>
+                        </div>
+                    </div>
+
                     <button
                         onClick={toggleTheme}
                         className="w-full flex items-center justify-between p-3 rounded-xl bg-white/2 border border-[--border-default] text-white text-xs font-semibold hover:bg-white/4 transition-colors"
@@ -202,6 +253,14 @@ export default function Sidebar() {
                                 className="absolute top-1 left-0 w-4 h-4 bg-white rounded-full shadow-lg"
                             />
                         </div>
+                    </button>
+
+                    <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-semibold bg-red-500/12 text-red-400 border border-red-500/30 hover:bg-red-500/20 hover:border-red-500/50 transition-colors"
+                    >
+                        <LogOut size={16} strokeWidth={2} />
+                        <span>Sign Out</span>
                     </button>
 
                     <div className="flex items-center gap-3 mt-5 px-2">

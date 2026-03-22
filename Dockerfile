@@ -26,6 +26,9 @@ RUN apt-get update && apt-get install -y \
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
+# Set working directory for dependency installation
+WORKDIR /tmp/build
+
 # Install Python dependencies
 COPY backend/requirements.txt .
 RUN pip install --upgrade pip && \

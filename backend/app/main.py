@@ -629,8 +629,12 @@ async def monitoring_middleware(request: Request, call_next):
 
 # --- INCLUDE ROUTERS ---
 from app.routes.missing_routes import router as missing_router
+from app.routes.financial_compliance_routes import router as financial_router
+from app.routes.hr_routes import router as hr_router
 
 app.include_router(missing_router, tags=["missing_routes"])
+app.include_router(financial_router, tags=["financial_compliance"])
+app.include_router(hr_router, tags=["hr_management"])
 app.include_router(monitoring_router, prefix="/api/metrics", tags=["monitoring"])
 
 
@@ -1034,6 +1038,18 @@ async def login(email: str = Body(...), password: str = Body(...)):
         )
         return {"token": token, "role": role}
     return JSONResponse(status_code=401, content={"error": "Invalid email or password"})
+
+
+@app.post("/logout")
+async def logout(current_user: dict = Depends(get_current_user)):
+    """Enterprise Logout: Invalidates session token."""
+    try:
+        user_id = current_user.get("id", 0)
+        company_id = current_user.get("company_id")
+        log_activity(user_id, company_id, "USER_LOGOUT", "SUCCESS", details={"email": current_user.get("email")})
+        return {"message": "Logout successful"}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
 
 # --- DATA UPLOAD & PIPELINE ---

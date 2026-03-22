@@ -3,11 +3,63 @@ Security middleware for NeuralBI platform.
 Provides rate limiting, CORS, and security headers.
 """
 
+import os
 import time
+import jwt
 from typing import Dict, List
 from fastapi import Request, HTTPException
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
+
+# Authentication constants
+SECRET_KEY = os.getenv("SECRET_KEY", "INSECURE_DEV_KEY_CHANGE_IN_PRODUCTION")
+ALGORITHM = "HS256"
+
+
+# --- AUTHENTICATION ---
+
+async def verify_token(request: Request) -> str:
+    """
+    Extract and verify JWT token from Authorization header.
+    Returns the email address from the token payload.
+    """
+    auth_header = request.headers.get("Authorization")
+    
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Authentication token required")
+    
+    try:
+        token = auth_header.split(" ")[1]
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email = payload.get("email")
+        
+        if not email:
+            raise HTTPException(status_code=401, detail="Invalid token: email not found")
+        
+        return email
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token has expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    except Exception as e:
+        raise HTTPException(status_code=401, detail="Authentication failed")
+
+
+def get_user_from_token(user_data: dict):
+    """
+    Helper function to extract user info from database record.
+    Returns a tuple: (user_id, email, role, company_id)
+    """
+    if not user_data:
+        return (None, None, None, None)
+    
+    return (
+        user_data.get('id'),
+        user_data.get('email'),
+        user_data.get('role'),
+        user_data.get('company_id'),
+    )
+
 
 
 class RateLimiter:
