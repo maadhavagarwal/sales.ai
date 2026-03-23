@@ -20,6 +20,7 @@ import {
 import { useStore } from "@/store/useStore"
 import { useRouter } from "next/navigation"
 import { useRoleAccess } from "@/hooks/useRoleAccess"
+import { getEmployees, addEmployee } from "@/services/api"
 
 interface Employee {
     id: number
@@ -125,26 +126,20 @@ export default function HRPage() {
 
         setLoading(true)
         try {
-            const token = localStorage.getItem("auth_token")
-            const response = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL || "/api/backend"}/v1/hr/employees/create`,
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
-                    },
-                    body: JSON.stringify(createForm),
-                }
-            )
+            const response = await addEmployee({
+                email: createForm.email,
+                name: createForm.name,
+                role: createForm.role,
+                department: createForm.department,
+                message: createForm.message,
+                send_email: createForm.send_email,
+            })
 
-            const data = await response.json()
-
-            if (response.ok) {
-                setGeneratedPassword(data.user?.temp_password)
+            if (response) {
+                setGeneratedPassword(response.temp_password || "")
                 setAlert({
                     type: "success",
-                    message: data.message || "Employee created successfully",
+                    message: "Employee created successfully",
                 })
 
                 // Reset form
@@ -162,7 +157,7 @@ export default function HRPage() {
             } else {
                 setAlert({
                     type: "error",
-                    message: data.detail || "Failed to create employee",
+                    message: "Failed to create employee",
                 })
             }
         } catch (error) {

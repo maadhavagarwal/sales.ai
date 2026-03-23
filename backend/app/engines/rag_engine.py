@@ -1,3 +1,4 @@
+import os
 import time
 
 import pandas as pd
@@ -13,18 +14,24 @@ vector_stored_data = {
 _rag_model_cache = None
 _cross_encoder_cache = None
 _rag_load_failed = False
+_lightweight_mode = os.getenv("NEURALBI_LIGHTWEIGHT_MODE", "false").lower() == "true"
 
 
 def _get_rag_model():
+    """Lazy-load RAG model with graceful failure handling"""
     global _rag_model_cache, _rag_load_failed
+    
     if _rag_load_failed:
         return None, None, None, False
+    
+    # Skip in lightweight mode - models will load on demand
+    if _lightweight_mode and _rag_model_cache is None:
+        print("⚡ RAG Engine: Lightweight mode + first request - deferring model load")
 
     try:
         if _rag_model_cache:
             import faiss
             import numpy as np
-
             return _rag_model_cache, faiss, np, True
 
         print("RAG Engine: Loading Bi-Encoder and Cross-Encoder...")
@@ -34,10 +41,17 @@ def _get_rag_model():
 
         # Bi-Encoder for fast retrieval
         _rag_model_cache = SentenceTransformer("all-MiniLM-L6-v2")
+        print("✓ RAG Model loaded successfully")
         return _rag_model_cache, faiss, np, True
+    except ImportError as e:
+        _rag_load_failed = True
+        print(f"⚠️  RAG Engine: Missing dependency - {e}")
+        print("   Install: pip install sentence-transformers faiss-cpu")
+        return None, None, None, False
     except Exception as e:
         _rag_load_failed = True
-        print(f"RAG Engine Critical Load Failure: {e}")
+        print(f"⚠️  RAG Engine Critical Load Failure: {e}")
+        print("   Vector search will be unavailable for this session")
         return None, None, None, False
 
 

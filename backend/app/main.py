@@ -105,6 +105,16 @@ except ImportError:
 
 app = FastAPI(title="NeuralBI Enterprise API", version="3.7.0")
 
+# Memory optimization mode (for Render/low-memory deployments)
+LIGHTWEIGHT_MODE = (
+    os.getenv("NEURALBI_LIGHTWEIGHT_MODE", "false").lower() == "true"
+)
+
+if LIGHTWEIGHT_MODE:
+    print("⚡ LIGHTWEIGHT MODE ENABLED - Heavy ML models will be lazy-loaded on first use")
+    print("   Startup memory: ~180MB")
+    print("   First ML request may take 5-10s to load models")
+
 LIVE_KPI_SIMULATOR_ENABLED = (
     os.getenv("ENABLE_LIVE_KPI_SIMULATOR", "false").lower() == "true"
 )
@@ -624,7 +634,11 @@ async def monitoring_middleware(request: Request, call_next):
         duration_ms = (time.time() - start_time) * 1000
         monitor.record_request(request.url.path, duration_ms)
         monitor.record_error(request.url.path, str(e))
-        raise
+        # Return error response instead of re-raising to prevent middleware chain breakage
+        return JSONResponse(
+            status_code=500,
+            content={"error": "Internal server error", "detail": str(e)}
+        )
 
 
 # --- INCLUDE ROUTERS ---
@@ -1410,9 +1424,11 @@ async def health_check():
     return {
         "status": "healthy",
         "timestamp": time.time(),
+        "memory_mode": "lightweight" if LIGHTWEIGHT_MODE else "full",
         "performance": {
             "response_time_ms": cast(Any, round)(response_time, 2),
             "memory_percent": memory.percent,
+            "memory_used_mb": round(memory.used / (1024 * 1024), 1),
             "cpu_percent": cpu_percent,
             "active_sessions": len(_sessions),
         },

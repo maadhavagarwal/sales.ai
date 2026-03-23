@@ -1,0 +1,61 @@
+# 🚀 NeuralBI - LIGHTWEIGHT RENDER DEPLOYMENT
+# Excludes heavy ML models (torch, sentence-transformers, faiss) to fit 512MB RAM
+# These are lazy-loaded on demand, not at startup
+
+# Core API
+fastapi>=0.104.0
+uvicorn>=0.24.0
+python-multipart>=0.0.6
+pydantic>=2.0.0
+
+# Data Processing (lightweight)
+pandas>=2.0.0
+numpy>=1.24.0
+openpyxl>=3.1.0
+
+# Security
+bcrypt>=4.1.0
+pyjwt>=2.8.0
+requests>=2.31.0
+
+# Database
+psycopg2-binary>=2.9.0
+sqlalchemy>=2.0.0
+alembic>=1.13.0
+
+# Monitoring & Logging
+sentry-sdk>=1.40.0
+prometheus-fastapi-instrumentator>=6.0.0
+python-json-logger>=2.0.0
+structlog>=23.2.0
+psutil>=5.9.0
+
+# ML Stack (OPTIONAL - lazy-loaded)
+# Uncomment ONLY if you have >1GB RAM on Render
+# scikit-learn>=1.3.0
+# torch>=2.0.0
+# sentence-transformers>=2.2.0
+# faiss-cpu>=1.7.4
+# chromadb>=0.4.0
+
+# Async/Task Processing
+websockets>=12.0
+watchfiles>=0.20.0
+
+# API Security
+slowapi>=0.1.9
+
+# Utils
+python-dotenv>=1.0.0
+tenacity>=8.2.0
+httpx>=0.25.0
+diskcache>=5.6.0
+fpdf2>=2.7.0
+
+# PDF/Excel Export
+openpyxl>=3.1.0
+
+# Notes:
+# - Heavy ML models are commented out to save startup memory
+# - They will auto-load on first ML request
+# - For production with ML: upgrade Render to Standard plan (+1GB RAM)

@@ -34,12 +34,33 @@ os.makedirs(VECTOR_DB_PATH, exist_ok=True)
 
 PG_URL = os.environ.get("DATABASE_URL", None)
 
-vector_client = None
-if HAS_CHROMA:
+# Lazy-load vector client to save memory (important for Render)
+_vector_client_cache = None
+_vector_load_attempted = False
+
+def get_vector_client():
+    """Lazy-load chromadb client on first use, not at startup"""
+    global _vector_client_cache, _vector_load_attempted, vector_client
+    
+    if _vector_load_attempted:
+        return _vector_client_cache
+    
+    _vector_load_attempted = True
+    
+    if not HAS_CHROMA:
+        return None
+    
     try:
-        vector_client = chromadb.PersistentClient(path=VECTOR_DB_PATH)
+        _vector_client_cache = chromadb.PersistentClient(path=VECTOR_DB_PATH)
+        vector_client = _vector_client_cache
+        print("✓ ChromaDB Vector Store initialized on first use")
+        return _vector_client_cache
     except Exception as e:
-        print(f"Warning: Failed to initialize ChromaDB Vector Store. {e}")
+        print(f"⚠️ Warning: Failed to initialize ChromaDB Vector Store: {e}")
+        return None
+
+# Keep for backwards compatibility (will be lazy-loaded)
+vector_client = None
 
 
 def get_db_connection():
