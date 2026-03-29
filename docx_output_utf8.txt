@@ -1,0 +1,6 @@
+﻿--- FILE 1 ---
+Project Title:    Abstract Brief description of the problem Proposed solution Key technologies used Expected outcomes and impact
+
+
+--- FILE 2 ---
+General Guidelines Font: Times New Roman Headings 16 Size Sub-Headings 14 Size Text 11 Size Font Size General Instructions: Bullet points under each section are for guidance only; you may choose to include or exclude them based on relevance to your topic. It is strongly recommended to include your deployed solution link in the  Results and Demonstration  section. Upload your Report, Abstract, and Video Demo to your personal Google Drive. Ensure all shared links have open access permissions before submission. Abstract Guidelines: The abstract must be 150û200 words in length. Include only textual content (no images, links, or formatting elements). Video Demonstration Guidelines: Duration must be 2 to 5 minutes. Demonstrate a fully functional, live application (no static screenshots). Cover all key features of your project. Clearly explain features verbally during the demo. Ensure audio is clear and audible throughout. Use a minimum resolution of 1080p. Do not display any sensitive or personal data on screen. End the video with a clear closing summary.

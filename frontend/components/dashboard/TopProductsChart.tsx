@@ -12,7 +12,7 @@ export default function TopProductsChart({ data }: { data: Record<string, number
         tooltip: {
             trigger: "axis",
             axisPointer: { type: "shadow" },
-            backgroundColor: "rgba(10,15,30,0.95)",
+            backgroundColor: "var(--surface-1)",
             borderColor: "rgba(139,92,246,0.3)",
             borderWidth: 1,
             textStyle: { color: "#f9fafb", fontSize: 13, fontFamily: "Inter" },
@@ -20,7 +20,7 @@ export default function TopProductsChart({ data }: { data: Record<string, number
         grid: { left: "3%", right: "8%", bottom: "5%", top: "8%", containLabel: true },
         xAxis: {
             type: "value",
-            splitLine: { lineStyle: { color: "rgba(255,255,255,0.04)" } },
+            splitLine: { lineStyle: { color: "var(--border-subtle)" } },
             axisLabel: {
                 color: "#6b7280",
                 fontSize: 11,
@@ -35,7 +35,7 @@ export default function TopProductsChart({ data }: { data: Record<string, number
         yAxis: {
             type: "category",
             data: entries.map(([k]) => k).reverse(),
-            axisLine: { lineStyle: { color: "rgba(255,255,255,0.06)" } },
+            axisLine: { lineStyle: { color: "var(--border-subtle)" } },
             axisLabel: { color: "#9ca3af", fontSize: 11, fontFamily: "Inter" },
             axisTick: { show: false },
         },
@@ -83,3 +83,4 @@ export default function TopProductsChart({ data }: { data: Record<string, number
         </motion.div>
     )
 }
+

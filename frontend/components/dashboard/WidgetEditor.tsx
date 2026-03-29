@@ -176,7 +176,7 @@ export default function WidgetEditor({
                                         onClick={() => setColor(c)}
                                         className={`
                         w-10 h-10 rounded-full border-4 transition-all
-                        ${color === c ? "border-white scale-110 shadow-lg" : "border-[--surface-3] opacity-60 hover:opacity-100"}
+                        ${color === c ? "border-white scale-110" : "border-[--surface-3] opacity-60 hover:opacity-100"}
                     `}
                                         style={{ background: c }}
                                     />

@@ -14,20 +14,20 @@ const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
     ref
   ) => {
     const baseStyles =
-      "inline-flex items-center font-semibold uppercase tracking-[0.12em] rounded-full transition-all duration-200 relative"
+      "inline-flex items-center font-semibold uppercase tracking-[0.10em] rounded-full transition-all duration-200 relative"
 
     const variants: Record<string, string> = {
-      primary: "bg-[--primary]/10 text-[--primary] border border-[--primary]/20",
-      success: "bg-[--accent-emerald]/10 text-[--accent-emerald] border border-[--accent-emerald]/20",
-      warning: "bg-[--accent-amber]/10 text-[--accent-amber] border border-[--accent-amber]/20",
-      danger: "bg-[--accent-rose]/10 text-[--accent-rose] border border-[--accent-rose]/20",
-      info: "bg-[--accent-cyan]/10 text-[--accent-cyan] border border-[--accent-cyan]/20",
+      primary: "bg-[--primary]/8 text-[--primary] border border-[--primary]/15",
+      success: "bg-[--accent-emerald]/8 text-[--accent-emerald] border border-[--accent-emerald]/15",
+      warning: "bg-[--accent-amber]/8 text-[--accent-amber] border border-[--accent-amber]/15",
+      danger: "bg-[--accent-rose]/8 text-[--accent-rose] border border-[--accent-rose]/15",
+      info: "bg-[--accent-cyan]/8 text-[--accent-cyan] border border-[--accent-cyan]/15",
       outline: "bg-transparent text-[--text-muted] border border-[--border-strong] group-hover:border-[--primary]/50 transition-colors",
-      pro: "bg-gradient-to-r from-[--primary] to-[--primary-dark] text-white border-none shadow-[--shadow-glow]",
+      pro: "bg-[--gradient-primary] text-white border-none shadow-[0_2px_8px_rgba(var(--primary-rgb),0.25)]",
     }
 
     const sizes: Record<string, string> = {
-      xs: "px-2 py-0 text-[8px]",
+      xs: "px-2 py-0.5 text-[8px]",
       sm: "px-2.5 py-0.5 text-[9px]",
       md: "px-3 py-1 text-[10px]",
       lg: "px-4 py-1.5 text-xs",

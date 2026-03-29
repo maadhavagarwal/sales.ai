@@ -1,0 +1,24 @@
+# Project Title
+NeuralBI: Autonomous Enterprise Decision Intelligence & Ledger Integrator
+
+# Abstract (150-200 words)
+Modern enterprises struggle with fragmented data silos across finance, inventory, human resources, and sales, leading to delayed decision-making and manual bookkeeping errors. NeuralBI is an autonomous decision intelligence platform that unifies these critical business modules into a singular, cohesive command center. By utilizing a hybrid Retrieval-Augmented Generation (RAG) pipeline combined with natural language business intelligence (NLBI), NeuralBI allows executives to query complex, cross-departmental data in simple English and receive instantaneous, statistically backed insights alongside dynamic visualizations. The system features a zero-touch, double-entry ledger integration that automatically synchronizes invoices and inventory transactions to the general ledger, preserving the fundamental accounting equation without manual data entry. Furthermore, advanced AI engines, including isolation forests for anomaly detection and time-series forecasting, proactively highlight churn risks, supply chain gaps, and revenue trajectories. NeuralBI dramatically reduces the time-to-insight for strategic operations, ensuring complete statutory compliance and actionable financial intelligence at the speed of decision.
+
+# Brief Description of the Problem
+Corporate data is notoriously segregated. Sales teams use CRMs, finance teams use separate ledger software, and operations use specific inventory managers. This fragmentation results in massive reconciliation efforts, manual bookkeeping errors, and a delayed understanding of the company’s true financial health. Executives are forced to wait for end-of-month reporting rather than having real-time, analytical insight into their operations. 
+
+# Proposed Solution
+NeuralBI serves as a centralized "Nexus" that ingests data from all enterprise silos (Sales, HR, Inventory, General Ledger) simultaneously. Our platform applies a proprietary AI reasoning layer leveraging Hybrid RAG and Text-to-SQL logic, empowering users to ask natural language questions (e.g., "Why did revenue drop this month?") and receive multi-modal responses including explanations, tables, and dynamically generated charts. It also features a self-balancing accounting core that translates operational events directly into statutory-compliant journal entries.
+
+# Key Technologies Used
+- Backend: Python, FastAPI, SQLite (Multi-Tenant Architecture)
+- AI & NLP: Hybrid RAG, FAISS Vector Embeddings, LLMs, Scikit-learn (Isolation Forest), Statsmodels (ARIMA/Prophet)
+- Frontend: Next.js 15, React, Tailwind CSS, Framer Motion (Glassmorphism & Diamond-Grade UI)
+- Security: RBAC, AES-256 Encryption logic, Role-based Field Masking
+- APIs: WebSocket integration for real-time live KPI telemetry
+
+# Expected Outcomes and Impact
+- Elimination of manual reconciliation through autonomous double-entry ledger integration.
+- Accelerated strategic planning via Natural Language Business Intelligence, democratizing data access.
+- Proactive risk mitigation through continuous anomaly detection and predictive forecasting.
+- Streamlined statutory compliance with automated GST/Daybook report generation.

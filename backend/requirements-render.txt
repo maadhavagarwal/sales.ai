@@ -16,6 +16,7 @@ openpyxl>=3.1.0
 # Security
 bcrypt>=4.1.0
 pyjwt>=2.8.0
+python-jose[cryptography]>=3.3.0
 requests>=2.31.0
 
 # Database

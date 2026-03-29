@@ -161,7 +161,7 @@ export default function WorkspaceInventory() {
                     <Card key={i} variant="glass" padding="md" className="group">
                         <div className="flex items-center gap-4">
                             <div
-                                className="w-10 h-10 rounded-[--radius-sm] flex items-center justify-center text-lg shadow-inner"
+                                className="w-10 h-10 rounded-[--radius-sm] flex items-center justify-center text-lg"
                                 style={{ background: `${stat.color}15`, border: `1px solid ${stat.color}20` }}
                             >
                                 {stat.icon}
@@ -422,7 +422,7 @@ export default function WorkspaceInventory() {
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm">
                         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-4xl">
                             {showAdd ? (
-                                <Card variant="bento" padding="lg" className="border-[--primary]/30 bg-black shadow-2xl">
+                                <Card variant="bento" padding="lg" className="border-[--primary]/30 bg-black">
                                     <div className="space-y-10">
                                         <div className="flex justify-between items-center pb-6 border-b border-white/5">
                                             <h3 className="text-xs font-black uppercase tracking-[0.3em] text-[--primary]">
@@ -454,7 +454,7 @@ export default function WorkspaceInventory() {
                                     </div>
                                 </Card>
                             ) : showPO ? (
-                                <Card variant="bento" padding="lg" className="border-[--accent-amber]/30 bg-black shadow-2xl">
+                                <Card variant="bento" padding="lg" className="border-[--accent-amber]/30 bg-black">
                                     <div className="space-y-10">
                                         <h3 className="text-xs font-black uppercase tracking-[0.3em] text-[--accent-amber]">Authorize Multi-Asset Purchase Order</h3>
                                         <div className="space-y-6">
@@ -486,7 +486,7 @@ export default function WorkspaceInventory() {
                                     </div>
                                 </Card>
                             ) : (
-                                <Card variant="bento" padding="lg" className="border-[--accent-violet]/30 bg-black shadow-2xl">
+                                <Card variant="bento" padding="lg" className="border-[--accent-violet]/30 bg-black">
                                     <div className="space-y-10">
                                         <h3 className="text-xs font-black uppercase tracking-[0.3em] text-[--accent-violet]">Inter-Facility Asset Transfer Protocol</h3>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

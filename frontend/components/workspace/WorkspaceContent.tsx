@@ -13,12 +13,20 @@ import WorkspaceFinance from "@/components/workspace/WorkspaceFinance"
 import WorkspaceNexus from "@/components/workspace/WorkspaceNexus"
 import { Card, Button, Badge } from "@/components/ui"
 import { uploadCSV, syncWorkspaceToDashboard, getUserState, saveUserState } from "@/services/api"
+import { getAuthToken } from "@/lib/session"
 import { useStore } from "@/store/useStore"
 import { useToast } from "@/components/ui/Toast"
 
 import { useSearchParams } from "next/navigation"
 
-type SectionId = "nexus" | "billing" | "crm" | "marketing" | "inventory" | "accounts" | "hr" | "finance" | "comm"
+type SectionId = "nexus" | "billing" | "crm" | "marketing" | "inventory" | "accounts" | "hr" | "finance"
+
+const SUPPORTED_SECTIONS: SectionId[] = ["nexus", "billing", "crm", "marketing", "inventory", "accounts", "hr", "finance"]
+
+const isSupportedSection = (section: string | null): section is SectionId => {
+    if (!section) return false
+    return SUPPORTED_SECTIONS.includes(section as SectionId)
+}
 
 interface Section {
     id: SectionId
@@ -30,25 +38,39 @@ interface Section {
 
 function WorkspaceContent() {
     const searchParams = useSearchParams()
-    const initialSection = (searchParams.get("section") as SectionId) || "nexus"
+    const rawInitialSection = searchParams.get("section")
+    const initialSection = isSupportedSection(rawInitialSection) ? rawInitialSection : "nexus"
     const [activeSection, setActiveSection] = useState<SectionId>(initialSection)
+    const [visitedSections, setVisitedSections] = useState<SectionId[]>([initialSection])
 
     // Load persisted section on mount (Backend Sync)
     useEffect(() => {
         const syncState = async () => {
+            const token = getAuthToken()
+            if (!token) {
+                const persistedSection = localStorage.getItem("workspace-active-section") as SectionId
+                if (isSupportedSection(persistedSection)) {
+                    setActiveSection(persistedSection)
+                }
+                return
+            }
             try {
                 const state = await getUserState()
-                if (state && state.activeSection && ["nexus", "billing", "crm", "marketing", "inventory", "accounts", "hr", "finance", "comm"].includes(state.activeSection)) {
+                if (state && isSupportedSection(state.activeSection)) {
                     setActiveSection(state.activeSection as SectionId)
                 } else {
                     // Fallback to localStorage if backend empty
                     const persistedSection = localStorage.getItem("workspace-active-section") as SectionId
-                    if (persistedSection && ["nexus", "billing", "crm", "marketing", "inventory", "accounts", "hr", "finance", "comm"].includes(persistedSection)) {
+                    if (isSupportedSection(persistedSection)) {
                         setActiveSection(persistedSection)
                     }
                 }
-            } catch (err) {
-                console.error("Failed to sync workspace state from backend")
+            } catch (err: any) {
+                // Gracefully fallback to localStorage if backend sync fails (endpoint may not exist)
+                const persistedSection = localStorage.getItem("workspace-active-section") as SectionId
+                if (isSupportedSection(persistedSection)) {
+                    setActiveSection(persistedSection)
+                }
             }
         }
         syncState()
@@ -58,18 +80,24 @@ function WorkspaceContent() {
     useEffect(() => {
         localStorage.setItem("workspace-active-section", activeSection)
         const syncToBackend = async () => {
+             if (!getAuthToken()) return
              try {
                  await saveUserState({ activeSection })
              } catch (err) {
-                 // Silent fail for background sync
+                 // Silent fail - backend endpoint may not exist, localStorage is primary persistence
              }
         }
         syncToBackend()
     }, [activeSection])
 
+    // Lazy keep-alive: mount a section once visited, keep it mounted afterwards.
+    useEffect(() => {
+        setVisitedSections((prev) => (prev.includes(activeSection) ? prev : [...prev, activeSection]))
+    }, [activeSection])
+
     useEffect(() => {
         const section = searchParams.get("section") as SectionId
-        if (section && ["nexus", "billing", "crm", "marketing", "inventory", "accounts", "hr", "finance", "comm"].includes(section)) {
+        if (isSupportedSection(section)) {
             setActiveSection(section)
         }
     }, [searchParams])
@@ -94,6 +122,10 @@ function WorkspaceContent() {
 
     const handleFile = useCallback(async (file: File) => {
         try {
+            if (!getAuthToken()) {
+                showToast("warning", "Authentication Required", "Please login before uploading data.")
+                return
+            }
             setIsSyncing(true)
             const result = await uploadCSV(file)
             setSyncResult({ rows: result.rows, file: file.name })
@@ -111,6 +143,10 @@ function WorkspaceContent() {
 
     const handleSyncFromDataset = useCallback(async () => {
         try {
+            if (!getAuthToken()) {
+                showToast("warning", "Authentication Required", "Please login before syncing workspace.")
+                return
+            }
             setIsSyncing(true)
             const result = await syncWorkspaceToDashboard()
             setSyncResult({ rows: result.rows, file: "Current Dataset" })
@@ -152,7 +188,7 @@ function WorkspaceContent() {
                     onDrop={handleDrop}
                 >
                     {/* Animated gradient accent */}
-                    <div className="absolute inset-0 bg-linear-to-r from-[--primary]/5 via-transparent to-[--accent-cyan]/5 pointer-events-none" />
+                    <div className="absolute inset-0 bg-[--primary]/5 pointer-events-none" />
 
                     <div className="flex items-center gap-5 relative z-10">
                         <div className="w-12 h-12 rounded-xl bg-[--primary]/15 border border-[--primary]/30 flex items-center justify-center text-xl shrink-0">
@@ -199,7 +235,7 @@ function WorkspaceContent() {
                             size="sm"
                             onClick={() => fileRef.current?.click()}
                             loading={isSyncing}
-                            className="tracking-widest text-[10px] shadow-[--shadow-glow]"
+                            className="tracking-widest text-[10px]"
                         >
                             {syncResult ? "RE-IMPORT" : "IMPORT FILE"}
                         </Button>
@@ -253,26 +289,56 @@ function WorkspaceContent() {
                     ))}
                 </div>
 
-                {/* ── Active Section ── */}
-                <AnimatePresence mode="wait">
-                    <motion.section
-                        key={activeSection}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        transition={{ duration: 0.3 }}
-                        className="flex-1"
-                    >
-                        {activeSection === "nexus" && <WorkspaceNexus />}
-                        {activeSection === "billing" && <WorkspaceInvoicing />}
-                        {activeSection === "crm" && <WorkspaceCRM />}
-                        {activeSection === "marketing" && <WorkspaceMarketing />}
-                        {activeSection === "inventory" && <WorkspaceInventory />}
-                        {activeSection === "accounts" && <WorkspaceAccounts />}
-                        {activeSection === "hr" && <WorkspaceHR />}
-                        {activeSection === "finance" && <WorkspaceFinance />}
-                    </motion.section>
-                </AnimatePresence>
+                {/* ── Active Section ──
+                    Keep panels mounted so per-tab local state survives switching.
+                */}
+                <motion.section
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="flex-1"
+                >
+                    {visitedSections.includes("nexus") && (
+                        <div className={activeSection === "nexus" ? "block" : "hidden"}>
+                            <WorkspaceNexus />
+                        </div>
+                    )}
+                    {visitedSections.includes("billing") && (
+                        <div className={activeSection === "billing" ? "block" : "hidden"}>
+                            <WorkspaceInvoicing />
+                        </div>
+                    )}
+                    {visitedSections.includes("crm") && (
+                        <div className={activeSection === "crm" ? "block" : "hidden"}>
+                            <WorkspaceCRM />
+                        </div>
+                    )}
+                    {visitedSections.includes("marketing") && (
+                        <div className={activeSection === "marketing" ? "block" : "hidden"}>
+                            <WorkspaceMarketing />
+                        </div>
+                    )}
+                    {visitedSections.includes("inventory") && (
+                        <div className={activeSection === "inventory" ? "block" : "hidden"}>
+                            <WorkspaceInventory />
+                        </div>
+                    )}
+                    {visitedSections.includes("accounts") && (
+                        <div className={activeSection === "accounts" ? "block" : "hidden"}>
+                            <WorkspaceAccounts />
+                        </div>
+                    )}
+                    {visitedSections.includes("hr") && (
+                        <div className={activeSection === "hr" ? "block" : "hidden"}>
+                            <WorkspaceHR />
+                        </div>
+                    )}
+                    {visitedSections.includes("finance") && (
+                        <div className={activeSection === "finance" ? "block" : "hidden"}>
+                            <WorkspaceFinance />
+                        </div>
+                    )}
+                </motion.section>
             </div>
         </DashboardLayout>
     )

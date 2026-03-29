@@ -1,0 +1,9 @@
+sku,name,category,quantity,cost_price,sale_price,hsn_code,location
+SKU-9901,ThinkPad T14,Electronics,45,85000.00,110000.00,84713010,Mumbai WH
+SKU-9902,Dell XPS 15,Electronics,22,120000.00,155000.00,84713010,Mumbai WH
+SKU-9903,Herman Miller Aeron,Furniture,15,95000.00,125000.00,94031010,Delhi WH
+SKU-9904,Logitech MX Master 3,Peripherals,120,6500.00,8999.00,84716060,Mumbai WH
+SKU-9905,Keychron K2,Peripherals,85,7200.00,9500.00,84716060,Delhi WH
+SKU-9906,Dell U2720Q Monitor,Electronics,34,45000.00,58000.00,85285200,Mumbai WH
+SKU-9907,Standing Desk Pro,Furniture,8,42000.00,55000.00,94031010,Delhi WH
+SKU-9908,USB-C Hub,Peripherals,210,2500.00,4200.00,85366990,Mumbai WH

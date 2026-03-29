@@ -1,0 +1,16 @@
+customer_id,name,last_purchase_date,days_since_last_purchase,total_orders,total_revenue,avg_order_value,frequency_monthly,recency_score,frequency_score,monetary_score,rfm_total,rfm_segment,churn_probability,churn_risk,predicted_ltv,support_tickets_open,nps_score,payment_delays_count
+CUST001,Rajesh Mehta,2025-02-10,9,24,2850000,118750,1.8,5,5,5,15,Champions,0.04,Low,4200000,0,9,0
+CUST002,Priya Sharma,2025-01-28,22,18,1640000,91111,1.4,4,4,4,12,Loyal,0.11,Low,2800000,1,8,1
+CUST003,Amit Joshi,2024-11-15,98,7,285000,40714,0.5,5,2,2,9,At Risk,0.42,High,320000,2,6,2
+CUST004,Sunita Rao,2025-02-20,0,31,5200000,167742,2.4,5,5,5,15,Champions,0.02,Low,8000000,0,10,0
+CUST005,Vikram Singh,2025-01-05,46,12,980000,81667,1.0,4,3,4,11,Loyal,0.18,Low,1500000,1,7,0
+CUST006,Neha Gupta,2024-10-30,123,4,145000,36250,0.3,3,1,1,5,Lost,0.78,Critical,80000,3,4,4
+CUST007,Suresh Patel,2025-02-15,5,28,4100000,146429,2.2,5,5,5,15,Champions,0.03,Low,6500000,0,9,0
+CUST008,Lakshmi Iyer,2024-09-20,163,5,210000,42000,0.4,2,2,2,6,Lost,0.82,Critical,120000,4,3,5
+CUST009,Rohit Agarwal,2025-01-22,29,14,820000,58571,1.1,4,3,3,10,Potential Loyalist,0.22,Medium,1100000,0,7,1
+CUST010,Kavita Nair,2025-02-05,15,26,4800000,184615,2.0,5,5,5,15,Champions,0.05,Low,7200000,1,8,0
+CUST011,Deepak Kumar,2025-02-18,2,38,9800000,257895,3.0,5,5,5,15,Champions,0.02,Low,15000000,0,10,0
+CUST012,Anita Desai,2024-08-14,200,3,125000,41667,0.2,2,1,1,4,Lost,0.91,Critical,40000,5,2,6
+CUST013,Manoj Tiwari,2024-12-28,54,9,580000,64444,0.7,4,2,3,9,At Risk,0.38,High,720000,2,5,2
+CUST014,Ritu Verma,2024-07-10,235,2,68000,34000,0.1,1,1,1,3,Lost,0.95,Critical,20000,6,1,8
+CUST015,Ganesh Rao,2025-01-30,21,29,6400000,220690,2.2,4,5,5,14,Loyal,0.07,Low,10000000,0,9,0

@@ -66,7 +66,7 @@ export default function WorkspaceIntelligence() {
                      <h3 className="text-3xl font-black text-white italic tracking-tighter uppercase">AI Decision Intelligence</h3>
                      <p className="text-[10px] font-black text-[--primary] uppercase tracking-[0.3em] mt-1">Enterprise-Grade Financial Modeling & Simulation</p>
                 </div>
-                <div className="flex bg-white/[0.03] p-1 rounded-xl border border-white/5">
+                <div className="flex bg-white/3 p-1 rounded-xl border border-white/5">
                     <button 
                         onClick={() => setActiveView("scenarios")}
                         className={`px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${activeView === 'scenarios' ? 'bg-[--primary] text-white shadow-[0_0_20px_rgba(99,102,241,0.4)]' : 'text-slate-500 hover:text-white'}`}
@@ -112,7 +112,7 @@ export default function WorkspaceIntelligence() {
                                 </Card>
                             ) : (
                                 anomalies.map((a, i) => (
-                                    <Card key={i} variant="bento" className="p-8 border-white/5 bg-white/[0.01] hover:border-[--primary]/20 transition-all">
+                                    <Card key={i} variant="bento" className="p-8 border-white/5 bg-white/1 hover:border-[--primary]/20 transition-all">
                                         <div className="flex justify-between items-start mb-6">
                                             <div className="flex items-center gap-3">
                                                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${a.severity === 'CRITICAL' ? 'bg-rose-500/20 text-rose-500' : 'bg-amber-500/20 text-amber-500'}`}>
@@ -159,7 +159,7 @@ export default function WorkspaceIntelligence() {
                                 <h4 className="text-4xl font-black text-white italic tracking-tighter mb-6">{currencySymbol}{s.revenue?.toLocaleString()}</h4>
                                 <div className="space-y-4 pt-6 border-t border-white/5">
                                     <p className="text-xs font-bold text-white/70 leading-relaxed italic">"{s.desc}"</p>
-                                    <div className="p-3 rounded-lg bg-white/[0.02] border border-white/5">
+                                    <div className="p-3 rounded-lg bg-white/2 border border-white/5">
                                         <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">Core Assumption</p>
                                         <p className="text-[10px] font-bold text-white/60">{s.assumptions}</p>
                                     </div>
@@ -211,7 +211,7 @@ export default function WorkspaceIntelligence() {
                             </Card>
 
                             <div className="space-y-6">
-                                <Card variant="bento" padding="md" className="bg-white/[0.02] border-white/5">
+                                <Card variant="bento" padding="md" className="bg-white/2 border-white/5">
                                     <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Current Balance</p>
                                     <p className="text-2xl font-black text-white italic tracking-tighter">{currencySymbol}{cashFlow?.current_balance?.toLocaleString()}</p>
                                 </Card>
@@ -249,7 +249,7 @@ export default function WorkspaceIntelligence() {
                                     Input natural language business constraints to simulate the impact on your forward-looking revenue baseline.
                                 </p>
                                 
-                                <div className="flex gap-4 p-2 bg-white/[0.03] rounded-2xl border border-white/10 group focus-within:border-[--primary]/50 transition-colors">
+                                <div className="flex gap-4 p-2 bg-white/3 rounded-2xl border border-white/10 group focus-within:border-[--primary]/50 transition-colors">
                                     <input 
                                         type="text"
                                         placeholder="e.g. What happens if I lose my top 2 clients next month?"
@@ -258,7 +258,7 @@ export default function WorkspaceIntelligence() {
                                         onKeyDown={(e) => e.key === 'Enter' && handleWhatIfSubmit()}
                                         className="bg-transparent border-none outline-none flex-1 px-4 text-white font-bold h-14"
                                     />
-                                    <Button variant="pro" onClick={handleWhatIfSubmit} loading={loading} className="px-10 h-14 shadow-[--shadow-glow] uppercase tracking-widest text-[10px] font-black">
+                                    <Button variant="pro" onClick={handleWhatIfSubmit} loading={loading} className="px-10 h-14 uppercase tracking-widest text-[10px] font-black">
                                         Execute Simulation
                                     </Button>
                                 </div>
@@ -291,12 +291,12 @@ export default function WorkspaceIntelligence() {
                                             <motion.div 
                                                 initial={{ width: "100%" }}
                                                 animate={{ width: `${(whatIfResult.hypothetical_revenue / whatIfResult.baseline_revenue) * 100}%` }}
-                                                className="h-full bg-gradient-to-r from-rose-500 to-[--primary]"
+                                                className="h-full"
                                             />
                                          </div>
                                     </Card>
 
-                                    <Card variant="bento" padding="lg" className="lg:col-span-2 bg-gradient-to-br from-[--primary]/10 to-transparent border-[--primary]/20">
+                                    <Card variant="bento" padding="lg" className="lg:col-span-2 border-[--primary]/20">
                                          <div className="flex gap-6 items-start">
                                             <div className="w-12 h-12 rounded-2xl bg-[--primary]/20 flex items-center justify-center shrink-0">
                                                 <AlertCircle className="w-6 h-6 text-[--primary]" />

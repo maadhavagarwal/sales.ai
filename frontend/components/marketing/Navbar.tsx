@@ -1,48 +1,88 @@
 "use client"
 
 import Link from "next/link"
-import { motion } from "framer-motion"
 import { Button, Container } from "@/components/ui"
+import { ArrowRight } from "lucide-react"
 
-function NavItem({ href, children }: { href: string; children: React.ReactNode }) {
+function NavItem({
+  href,
+  children,
+  dark,
+}: {
+  href: string
+  children: React.ReactNode
+  dark?: boolean
+}) {
   return (
     <Link
       href={href}
-      className="text-sm font-bold text-[--text-secondary] hover:text-white transition-colors relative group tracking-wide"
+      className={`text-[13px] font-semibold transition-colors relative group ${
+        dark
+          ? "text-zinc-400 hover:text-white"
+          : "text-[--text-secondary] hover:text-[--text-primary]"
+      }`}
     >
       {children}
-      <span className="absolute -bottom-2 left-0 w-0 h-[2px] bg-gradient-to-r from-[--primary] to-[--accent-violet] transition-all duration-300 group-hover:w-full" />
+      <span
+        className={`absolute -bottom-1 left-0 w-0 h-[2px] rounded-full transition-all duration-300 group-hover:w-full ${
+          dark ? "bg-indigo-400" : "bg-[--primary]"
+        }`}
+      />
     </Link>
   )
 }
 
-export default function Navbar() {
+export default function Navbar({ tone = "light" }: { tone?: "light" | "dark" }) {
+  const dark = tone === "dark"
+
   return (
-    <nav className="fixed top-0 w-full z-50 border-b border-white/5 bg-black/50 backdrop-blur-xl">
+    <nav
+      className={`fixed top-0 w-full z-50 border-b backdrop-blur-2xl ${
+        dark ? "border-white/10 bg-zinc-950/75" : "border-[--border-subtle] bg-[--surface-1]/80"
+      }`}
+    >
       <Container>
-        <div className="flex items-center justify-between h-20">
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[--primary] to-[--accent-violet] flex items-center justify-center font-black text-white shadow-[0_0_20px_rgba(99,102,241,0.3)] group-hover:shadow-[0_0_30px_rgba(99,102,241,0.5)] transition-all">
+        <div className="flex items-center justify-between h-16">
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <div className="w-9 h-9 rounded-xl bg-[--gradient-primary] flex items-center justify-center font-bold text-white shadow-[0_4px_16px_rgba(var(--primary-rgb),0.30)] group-hover:shadow-[0_8px_24px_rgba(var(--primary-rgb),0.40)] transition-all group-hover:scale-105">
               N
             </div>
-            <span className="text-2xl font-black tracking-tighter text-white font-jakarta">
+            <span
+              className={`text-xl font-extrabold tracking-tighter ${dark ? "text-white" : "text-[--text-primary]"}`}
+            >
               Neural<span className="text-[--primary]">BI</span>
             </span>
           </Link>
 
-          <div className="hidden md:flex items-center gap-10">
-            <NavItem href="#platform">Platform</NavItem>
-            <NavItem href="#solutions">Solutions</NavItem>
-            <NavItem href="#customers">Customers</NavItem>
-            <NavItem href="#pricing">Pricing</NavItem>
+          <div className="hidden md:flex items-center gap-8">
+            <NavItem href="#platform" dark={dark}>
+              Platform
+            </NavItem>
+            <NavItem href="#solutions" dark={dark}>
+              Solutions
+            </NavItem>
+            <NavItem href="#customers" dark={dark}>
+              Customers
+            </NavItem>
+            <NavItem href="#pricing" dark={dark}>
+              Pricing
+            </NavItem>
           </div>
 
-          <div className="flex items-center gap-6">
-            <Link href="/login" className="hidden sm:block text-sm font-bold text-[--text-secondary] hover:text-white transition-colors">
+          <div className="flex items-center gap-4">
+            <Link
+              href="/login"
+              className={`hidden sm:block text-[13px] font-semibold transition-colors ${
+                dark ? "text-zinc-400 hover:text-white" : "text-[--text-secondary] hover:text-[--text-primary]"
+              }`}
+            >
               Sign In
             </Link>
-            <Link href="/dashboard">
-              <Button variant="pro" size="sm" className="shadow-[0_0_20px_rgba(99,102,241,0.2)]">Start Free Trial</Button>
+            <Link href="/register">
+              <Button variant="pro" size="sm" className="text-[13px] font-semibold px-5">
+                Start Free
+                <ArrowRight size={14} className="ml-0.5" />
+              </Button>
             </Link>
           </div>
         </div>

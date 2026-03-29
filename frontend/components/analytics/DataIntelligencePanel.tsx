@@ -33,7 +33,7 @@ export default function DataIntelligencePanel({ dataQuality, confidence, summary
                         <span style={{ fontSize: "0.85rem", color: "var(--text-muted)", fontWeight: 600 }}>Reliability Score</span>
                     </div>
 
-                    <div style={{ width: "100%", height: "8px", background: "rgba(255,255,255,0.05)", borderRadius: "4px", overflow: "hidden", marginBottom: "1rem" }}>
+                    <div style={{ width: "100%", height: "8px", background: "var(--surface-3)", borderRadius: "4px", overflow: "hidden", marginBottom: "1rem" }}>
                         <motion.div
                             initial={{ width: 0 }}
                             animate={{ width: `${confidence * 100}%` }}
@@ -62,7 +62,7 @@ export default function DataIntelligencePanel({ dataQuality, confidence, summary
                         <span style={{ fontSize: "0.85rem", color: "var(--text-muted)", fontWeight: 600 }}>Cleaning Grade</span>
                     </div>
 
-                    <div style={{ width: "100%", height: "8px", background: "rgba(255,255,255,0.05)", borderRadius: "4px", overflow: "hidden", marginBottom: "1rem" }}>
+                    <div style={{ width: "100%", height: "8px", background: "var(--surface-3)", borderRadius: "4px", overflow: "hidden", marginBottom: "1rem" }}>
                         <motion.div
                             initial={{ width: 0 }}
                             animate={{ width: `${dataQuality * 100}%` }}
@@ -89,7 +89,7 @@ export default function DataIntelligencePanel({ dataQuality, confidence, summary
                 </div>
 
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
-                    <div style={{ padding: "1rem", background: "rgba(0,0,0,0.2)", borderRadius: "12px", border: "1px solid var(--border-subtle)" }}>
+                    <div style={{ padding: "1rem", background: "var(--surface-2)", borderRadius: "12px", border: "1px solid var(--border-subtle)" }}>
                         <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase" }}>Schema Complexity</p>
                         <p style={{ fontSize: "1.25rem", fontWeight: 700 }}>{summary.total_columns} Columns</p>
                         <div style={{ marginTop: "0.5rem", display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
@@ -98,13 +98,13 @@ export default function DataIntelligencePanel({ dataQuality, confidence, summary
                         </div>
                     </div>
 
-                    <div style={{ padding: "1rem", background: "rgba(0,0,0,0.2)", borderRadius: "12px", border: "1px solid var(--border-subtle)" }}>
+                    <div style={{ padding: "1rem", background: "var(--surface-2)", borderRadius: "12px", border: "1px solid var(--border-subtle)" }}>
                         <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase" }}>Cleaning Operations</p>
                         <p style={{ fontSize: "1.25rem", fontWeight: 700 }}>{Object.keys(summary.missing_values || {}).length} Fixed</p>
                         <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: "0.25rem" }}>Auto-imputed missing cells</p>
                     </div>
 
-                    <div style={{ padding: "1rem", background: "rgba(0,0,0,0.2)", borderRadius: "12px", border: "1px solid var(--border-subtle)" }}>
+                    <div style={{ padding: "1rem", background: "var(--surface-2)", borderRadius: "12px", border: "1px solid var(--border-subtle)" }}>
                         <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase" }}>Scan Depth</p>
                         <p style={{ fontSize: "1.25rem", fontWeight: 700 }}>{(summary.total_rows || 0).toLocaleString()} Rows</p>
                         <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: "0.25rem" }}>Processed in {((summary.total_rows || 0) / 10000).toFixed(2)}ms</p>

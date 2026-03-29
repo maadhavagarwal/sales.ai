@@ -14,10 +14,10 @@ export default function ClusteringPanel({ data }: ClusteringProps) {
         backgroundColor: "transparent",
         tooltip: {
             trigger: "item",
-            backgroundColor: "rgba(10,15,30,0.95)",
-            borderColor: "rgba(139,92,246,0.3)",
+            backgroundColor: "var(--surface-1)",
+            borderColor: "var(--border-default)",
             borderWidth: 1,
-            textStyle: { color: "#f9fafb" }
+            textStyle: { color: "var(--text-primary)" }
         },
         series: [
             {
@@ -27,7 +27,7 @@ export default function ClusteringPanel({ data }: ClusteringProps) {
                 avoidLabelOverlap: false,
                 itemStyle: {
                     borderRadius: 10,
-                    borderColor: "#0a0f1e",
+                    borderColor: "var(--surface-1)",
                     borderWidth: 2
                 },
                 label: {
@@ -39,7 +39,7 @@ export default function ClusteringPanel({ data }: ClusteringProps) {
                         show: true,
                         fontSize: 16,
                         fontWeight: "bold",
-                        color: "#fff"
+                        color: "var(--text-primary)"
                     }
                 },
                 labelLine: {
@@ -72,7 +72,7 @@ export default function ClusteringPanel({ data }: ClusteringProps) {
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
                     {Object.entries(data).map(([tier, details], i) => (
-                        <div key={tier} style={{ padding: "0.75rem", background: "rgba(255,255,255,0.02)", borderRadius: "10px", border: "1px solid var(--border-subtle)" }}>
+                        <div key={tier} style={{ padding: "0.75rem", background: "var(--surface-2)", borderRadius: "10px", border: "1px solid var(--border-subtle)" }}>
                             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.25rem" }}>
                                 <span style={{ fontSize: "0.75rem", fontWeight: 700, color: i === 0 ? "#6366f1" : i === 1 ? "#8b5cf6" : "#a855f7" }}>{tier}</span>
                                 <span style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>{details.count} items</span>

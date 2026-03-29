@@ -4,10 +4,12 @@ import { useState, useEffect, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { createInvoice, getInvoices, updateInvoice, deleteInvoice, exportWorkspaceData, sendInvoiceReminder, getCustomers, getInventory, generateEInvoice, generatePaymentLink, sendWhatsAppReminder, getCrossSellRecommendations } from "@/services/api"
 import { useStore } from "@/store/useStore"
+import { useToast } from "@/components/ui/Toast"
 import { Card, Button, Badge, Modal } from "@/components/ui"
 
 export default function WorkspaceInvoicing() {
     const { currencySymbol, workspaceSyncCount } = useStore()
+    const { showToast } = useToast()
     const [invoices, setInvoices] = useState<any[]>([])
     const [customers, setCustomers] = useState<any[]>([])
     const [inventory, setInventory] = useState<any[]>([])
@@ -37,8 +39,10 @@ export default function WorkspaceInvoicing() {
             setInvoices(invRes || [])
             setCustomers(custRes || [])
             setInventory(stockRes || [])
-        } catch (e) {
-            console.error(e)
+        } catch (e: any) {
+            const errMsg = e?.message || "Failed to load invoice data"
+            console.error(errMsg)
+            showToast("error", `❌ ${errMsg}`)
         }
     }
 
@@ -199,8 +203,11 @@ export default function WorkspaceInvoicing() {
                 payment_terms: getPaymentTermsLabel(),
             }
             setViewingInvoice(newInvoice)
-        } catch (e) {
-            console.error(e)
+            showToast("success", "✅ Invoice created successfully")
+        } catch (e: any) {
+            const errMsg = e?.message || "Failed to create invoice"
+            console.error(errMsg)
+            showToast("error", `❌ ${errMsg}`)
         } finally {
             setLoading(false)
         }
@@ -230,8 +237,11 @@ export default function WorkspaceInvoicing() {
             })
             setEditingInvoice(null)
             refreshData()
-        } catch (e) {
-            console.error(e)
+            showToast("success", "✅ Invoice updated successfully")
+        } catch (e: any) {
+            const errMsg = e?.message || "Failed to update invoice"
+            console.error(errMsg)
+            showToast("error", `❌ ${errMsg}`)
         } finally {
             setLoading(false)
         }
@@ -362,7 +372,7 @@ export default function WorkspaceInvoicing() {
                     <Card key={i} variant="glass" padding="md" className="group">
                         <div className="flex items-center gap-5">
                             <div
-                                className="w-12 h-12 rounded-[--radius-sm] flex items-center justify-center text-xl shadow-inner transition-all group-hover:scale-110"
+                                className="w-12 h-12 rounded-[--radius-sm] flex items-center justify-center text-xl transition-all group-hover:scale-110"
                                 style={{ background: `${stat.color}15`, border: `1px solid ${stat.color}20` }}
                             >
                                 {stat.icon}
@@ -519,17 +529,17 @@ export default function WorkspaceInvoicing() {
                                         {items.map((item, i) => (
                                             <div key={i} className="grid grid-cols-1 md:grid-cols-[1.5fr_2fr_1fr_0.8fr_1fr_1.2fr] gap-4 items-center">
                                                 <select
-                                                    value={item.inventory_id}
+                                                    value={item.inventory_id || ""}
                                                     onChange={(e) => updateItem(i, 'inventory_id', e.target.value)}
                                                     className="input-pro text-[11px] bg-black/40"
                                                 >
                                                     <option value="">Custom Item</option>
-                                                    {inventory.map(stock => <option key={stock.sku} value={stock.sku}>{stock.sku} - {stock.name}</option>)}
+                                                    {inventory.map((stock, idx) => <option key={`${stock.sku}-${idx}`} value={stock.sku}>{stock.sku} - {stock.name}</option>)}
                                                 </select>
-                                                <input placeholder="Service/Product Desc" value={item.desc} onChange={(e) => updateItem(i, 'desc', e.target.value)} className="input-pro bg-black/40" />
-                                                <input placeholder="HSN" value={item.hsn} onChange={(e) => updateItem(i, 'hsn', e.target.value)} className="input-pro bg-black/40" />
-                                                <input type="number" value={item.qty} onChange={(e) => updateItem(i, 'qty', parseInt(e.target.value) || 0)} className="input-pro bg-black/40" />
-                                                <input type="number" value={item.price} onChange={(e) => updateItem(i, 'price', parseFloat(e.target.value) || 0)} className="input-pro bg-black/40" />
+                                                <input placeholder="Service/Product Desc" value={item.desc || ""} onChange={(e) => updateItem(i, 'desc', e.target.value)} className="input-pro bg-black/40" />
+                                                <input placeholder="HSN" value={item.hsn || ""} onChange={(e) => updateItem(i, 'hsn', e.target.value)} className="input-pro bg-black/40" />
+                                                <input type="number" value={item.qty || 0} onChange={(e) => updateItem(i, 'qty', parseInt(e.target.value) || 0)} className="input-pro bg-black/40" />
+                                                <input type="number" value={item.price || 0} onChange={(e) => updateItem(i, 'price', parseFloat(e.target.value) || 0)} className="input-pro bg-black/40" />
                                                 <div className="text-right text-sm font-black text-white px-2">
                                                     {currencySymbol}{((item.qty || 0) * (item.price || 0)).toLocaleString()}
                                                 </div>
@@ -630,7 +640,7 @@ export default function WorkspaceInvoicing() {
                                 </div>
 
                                 <div className="flex flex-col sm:flex-row gap-4 mt-16 pt-10 border-t border-white/5">
-                                    <Button variant="pro" size="lg" onClick={handleCreate} loading={loading} className="flex-2 h-16 shadow-[--shadow-glow]">
+                                    <Button variant="pro" size="lg" onClick={handleCreate} loading={loading} className="flex-2 h-16">
                                         Authorize & Seal Tax Invoice
                                     </Button>
                                     <Button variant="outline" size="lg" onClick={() => setShowCreate(false)} className="flex-1 h-16 opacity-60">

@@ -27,7 +27,7 @@ export default function AnomalyAlertPanel({ anomalies }: { anomalies: string[] }
                         whileHover={{ x: 5 }}
                         style={{
                             padding: "1rem",
-                            background: "rgba(0,0,0,0.2)",
+                            background: "var(--surface-2)",
                             borderRadius: "10px",
                             border: "1px solid rgba(244,63,94,0.1)",
                             fontSize: "0.85rem",

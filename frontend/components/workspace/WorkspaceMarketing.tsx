@@ -4,10 +4,12 @@ import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { createMarketingCampaign, getMarketingCampaigns, updateMarketingCampaign, deleteMarketingCampaign, exportWorkspaceData } from "@/services/api"
 import { useStore } from "@/store/useStore"
+import { useToast } from "@/components/ui/Toast"
 import { Card, Button, Badge } from "@/components/ui"
 
 export default function WorkspaceMarketing() {
     const { currencySymbol, results, workspaceSyncCount } = useStore()
+    const { showToast } = useToast()
     const [campaigns, setCampaigns] = useState<any[]>([])
     const [showCreate, setShowCreate] = useState(false)
     const [loading, setLoading] = useState(false)
@@ -25,9 +27,11 @@ export default function WorkspaceMarketing() {
     const refreshData = async () => {
         try {
             const res = await getMarketingCampaigns()
-            setCampaigns(res)
-        } catch (e) {
-            console.error(e)
+            setCampaigns(res || [])
+        } catch (e: any) {
+            const errMsg = e?.message || "Failed to load campaigns"
+            console.error(errMsg)
+            showToast("error", `❌ ${errMsg}`)
         }
     }
 
@@ -37,15 +41,19 @@ export default function WorkspaceMarketing() {
         try {
             if (editingId) {
                 await updateMarketingCampaign(editingId, formData)
+                showToast("success", "✅ Campaign updated successfully")
             } else {
                 await createMarketingCampaign(formData)
+                showToast("success", "✅ Campaign created successfully")
             }
             setShowCreate(false)
             setEditingId(null)
             setFormData({ name: "", channel: "Meta", spend: 0, conversions: 0, revenue_generated: 0 })
             refreshData()
-        } catch (e) {
-            console.error(e)
+        } catch (e: any) {
+            const errMsg = e?.message || "Failed to save campaign"
+            console.error(errMsg)
+            showToast("error", `❌ ${errMsg}`)
         } finally {
             setLoading(false)
         }
@@ -79,7 +87,7 @@ export default function WorkspaceMarketing() {
                     <Card key={i} variant="glass" padding="md" className="group">
                         <div className="flex items-center gap-4">
                             <div
-                                className="w-10 h-10 rounded-[--radius-sm] flex items-center justify-center text-lg shadow-inner"
+                                className="w-10 h-10 rounded-[--radius-sm] flex items-center justify-center text-lg"
                                 style={{ background: `${stat.color}15`, border: `1px solid ${stat.color}20` }}
                             >
                                 {stat.icon}
@@ -96,10 +104,10 @@ export default function WorkspaceMarketing() {
             </div>
 
             {/* AI Growth Directive */}
-            <Card variant="bento" padding="lg" className="border-[--primary]/30 bg-gradient-to-br from-[--primary]/5 to-transparent relative overflow-hidden">
-                <div className="absolute -right-12 -top-12 w-64 h-64 bg-[--primary]/10 blur-[100px] rounded-full" />
+            <Card variant="bento" padding="lg" className="border-[--primary]/30/5 relative overflow-hidden">
+                <div className="absolute -right-12 -top-12 w-64 h-64 bg-[--primary]/10 rounded-full" />
                 <div className="relative z-10 flex flex-col md:flex-row gap-8 items-center">
-                    <div className="w-16 h-16 rounded-2xl bg-[--primary]/20 flex items-center justify-center text-3xl shadow-[--shadow-glow]">
+                    <div className="w-16 h-16 rounded-2xl bg-[--primary]/20 flex items-center justify-center text-3xl">
                         🤖
                     </div>
                     <div className="flex-1 text-center md:text-left">
@@ -251,7 +259,7 @@ export default function WorkspaceMarketing() {
                                 <motion.div
                                     initial={{ width: 0 }}
                                     animate={{ width: `${Math.min((camp.revenue_generated / (camp.spend || 1)) * 20, 100)}%` }}
-                                    className="h-full bg-gradient-to-r from-[--primary] to-[--accent-cyan]"
+                                    className="h-full"
                                 />
                             </div>
                         </div>

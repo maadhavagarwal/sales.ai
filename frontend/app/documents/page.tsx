@@ -197,7 +197,7 @@ export default function DocumentGenerationPage() {
       {/* Notification */}
       {notification && (
         <div
-          className={`fixed right-5 top-5 z-50 rounded-[--radius-sm] border px-4 py-3 text-sm font-semibold shadow-[--shadow-md] backdrop-blur-xl ${
+          className={`fixed right-5 top-5 z-50 rounded-[--radius-sm] border px-4 py-3 text-sm font-semibold backdrop-blur-xl ${
             notification.type === 'success'
               ? 'border-[--accent-emerald]/40 bg-[--accent-emerald]/15 text-[--accent-emerald]'
               : 'border-[--accent-rose]/40 bg-[--accent-rose]/15 text-[--accent-rose]'
@@ -212,7 +212,7 @@ export default function DocumentGenerationPage() {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="space-y-1">
             <p className="text-rhythm-label">Document Operations</p>
-            <h1 className="text-rhythm-h1 text-white">Document Generation</h1>
+            <h1 className="text-rhythm-h1 text-[--text-primary]">Document Generation</h1>
             <p className="text-sm text-[--text-secondary]">AI reports, templates, export, and scheduled delivery</p>
           </div>
           <Button variant="outline" icon={<ArrowLeft size={16} />} onClick={() => window.history.back()}>
@@ -230,7 +230,7 @@ export default function DocumentGenerationPage() {
             className={`inline-flex items-center gap-2 rounded-[--radius-sm] px-4 py-2 text-sm font-semibold transition-all ${
               activeTab === t.id
                 ? 'bg-[--primary]/15 text-[--primary] border border-[--primary]/30'
-                : 'text-[--text-secondary] border border-transparent hover:text-[--text-primary] hover:bg-white/4'
+                : 'text-[--text-secondary] border border-transparent hover:text-[--text-primary] hover:bg-[--surface-2]'
             }`}
           >
             <t.icon size={16} />
@@ -260,7 +260,7 @@ export default function DocumentGenerationPage() {
                   onClick={() => setSelectedDocType(dt.id)}
                   className={`rounded-[--radius-md] border p-5 text-left transition-all ${
                     selectedDocType === dt.id
-                      ? `${dt.tone} shadow-[--shadow-glow]`
+                      ? `${dt.tone}`
                       : 'border-[--border-default] bg-[--surface-1] hover:border-[--border-accent]'
                   }`}
                 >

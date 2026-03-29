@@ -56,7 +56,7 @@ export default function InsightsPanel({ insights }: { insights: string[] }) {
                             gap: "0.75rem",
                             alignItems: "center",
                             padding: "0.75rem 1rem",
-                            background: "rgba(255,255,255,0.02)",
+                            background: "var(--surface-2)",
                             borderRadius: "var(--radius-md)",
                             border: "1px solid var(--border-subtle)",
                             transition: "all 200ms ease",
@@ -67,7 +67,7 @@ export default function InsightsPanel({ insights }: { insights: string[] }) {
                         }}
                         onMouseLeave={(e) => {
                             e.currentTarget.style.borderColor = "var(--border-subtle)"
-                            e.currentTarget.style.background = "rgba(255,255,255,0.02)"
+                            e.currentTarget.style.background = "var(--surface-2)"
                         }}
                     >
                         <span style={{ fontSize: "1.15rem" }}>{icons[i % icons.length]}</span>
@@ -78,3 +78,4 @@ export default function InsightsPanel({ insights }: { insights: string[] }) {
         </motion.div>
     )
 }
+

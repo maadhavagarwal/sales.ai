@@ -12,6 +12,7 @@ import {
     downloadGSTR1Json
 } from "@/services/api"
 import { useStore } from "@/store/useStore"
+import { useToast } from "@/components/ui/Toast"
 import { Card, Button, Badge } from "@/components/ui"
 import GreeksPanel from "./GreeksPanel"
 import WorkspaceIntelligence from "./WorkspaceIntelligence"
@@ -20,6 +21,7 @@ type TabType = "gateway" | "voucher" | "daybook" | "trial-balance" | "pl" | "bs"
 
 export default function WorkspaceAccounts() {
     const { currencySymbol, workspaceSyncCount } = useStore()
+    const { showToast } = useToast()
     const [activeTab, setActiveTab] = useState<TabType>("gateway")
     const [daybook, setDaybook] = useState<any[]>([])
     const [trialBalance, setTrialBalance] = useState<any[]>([])
@@ -94,8 +96,10 @@ export default function WorkspaceAccounts() {
                 const clData = await getCustomerLedger(selectedCustomer)
                 setCustomerLedger(clData)
             }
-        } catch (e) {
-            console.error("Accounting Sync Error:", e)
+        } catch (e: any) {
+            const errMsg = e?.message || "Failed to load accounting data"
+            console.error("Accounting Sync Error:", errMsg)
+            showToast("error", `❌ ${errMsg}`)
         } finally {
             setLoading(false)
         }
@@ -190,7 +194,7 @@ export default function WorkspaceAccounts() {
             {/* Professional Breadcrumb / Tally Header */}
             <div className="flex justify-between items-end border-b border-white/5 pb-6">
                 <div>
-                    <h2 className="text-4xl font-black text-white tracking-tighter uppercase italic bg-gradient-to-r from-white to-white/40 bg-clip-text text-transparent">
+                    <h2 className="text-4xl font-black text-white tracking-tighter uppercase italic/40 bg-clip-text text-transparent">
                         Gateway of Enterprise
                     </h2>
                     <p className="text-[10px] font-black tracking-[0.4em] text-[--primary] uppercase mt-1">
@@ -257,7 +261,7 @@ export default function WorkspaceAccounts() {
                         </div>
 
                         <Card variant="bento" padding="lg" className="border-[--primary]/20 bg-black/40 relative overflow-hidden h-[360px]">
-                            <div className="absolute right-0 top-0 w-64 h-64 bg-[--primary]/5 blur-[100px]" />
+                            <div className="absolute right-0 top-0 w-64 h-64 bg-[--primary]/5" />
                             <h4 className="text-xs font-black uppercase tracking-widest text-white mb-8">Recent Statutory Movements</h4>
                             <div className="space-y-4">
                                 {daybook.slice(0, 5).map((v, i) => (
@@ -453,7 +457,7 @@ function MenuButton({ label, sub, icon, active, onClick }: any) {
             className={`
                 w-full text-left p-4 rounded-xl border transition-all group relative overflow-hidden
                 ${active
-                    ? "bg-[--primary]/10 border-[--primary]/40 shadow-[--shadow-glow]"
+                    ? "bg-[--primary]/10 border-[--primary]/40"
                     : "bg-black/20 border-white/5 hover:border-white/20"}
             `}
         >
@@ -502,7 +506,7 @@ function VoucherEntryForm({ type, setType, no, setNo, date, setDate, entries, se
                     <select
                         value={type}
                         onChange={(e) => setType(e.target.value)}
-                        className="bg-[--primary] text-white text-[10px] font-black uppercase tracking-widest px-6 py-2 rounded-lg border-none outline-none shadow-[--shadow-glow]"
+                        className="bg-[--primary] text-white text-[10px] font-black uppercase tracking-widest px-6 py-2 rounded-lg border-none outline-none"
                     >
                         <option>Payment</option>
                         <option>Receipt</option>
@@ -606,7 +610,7 @@ function VoucherEntryForm({ type, setType, no, setNo, date, setDate, entries, se
                     + Add New Entry Line
                 </Button>
                 <div className="flex gap-4">
-                    <Button variant="pro" size="lg" onClick={onSubmit} loading={loading} className="px-12 uppercase text-[10px] tracking-widest shadow-[--shadow-glow]">
+                    <Button variant="pro" size="lg" onClick={onSubmit} loading={loading} className="px-12 uppercase text-[10px] tracking-widest">
                         Finalize & Accept Voucher
                     </Button>
                 </div>
@@ -1243,7 +1247,7 @@ function ComplianceView({ data }: any) {
                         </div>
                         <div className="pt-4 border-t-2 border-[--primary] flex justify-between items-center">
                             <span className="text-xs font-black text-white uppercase italic">Net GST Payable</span>
-                            <span className="text-2xl font-black text-white shadow-sm">{currencySymbol}{data.gstr3b.net_gst_payable.toLocaleString()}</span>
+                            <span className="text-2xl font-black text-white">{currencySymbol}{data.gstr3b.net_gst_payable.toLocaleString()}</span>
                         </div>
                     </div>
                 </Card>
@@ -1338,7 +1342,7 @@ function CustomerLedgerView({ customers, selectedId, setSelectedId, ledger, onRe
                             <Button variant="outline" size="sm" onClick={onExport} className="uppercase text-[10px] tracking-widest">
                                 Export CSV
                             </Button>
-                            <Button variant="pro" size="sm" onClick={() => setShowPayment(true)} className="uppercase text-[10px] tracking-widest shadow-[--shadow-glow]">
+                            <Button variant="pro" size="sm" onClick={() => setShowPayment(true)} className="uppercase text-[10px] tracking-widest">
                                 Record Collection / Payment
                             </Button>
                         </div>

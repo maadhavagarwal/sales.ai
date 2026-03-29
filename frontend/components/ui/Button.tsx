@@ -29,28 +29,28 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     ref
   ) => {
     const baseStyles =
-      "relative font-semibold rounded-[--radius-sm] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden group border"
+      "relative font-semibold rounded-[--radius-md] transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden group border cursor-pointer select-none"
 
     const variants: Record<string, string> = {
       primary:
-        "bg-[--primary] text-white border-[--primary] hover:brightness-105 shadow-[--shadow-glow]",
+        "bg-[--gradient-primary] text-white border-transparent shadow-[0_4px_20px_-6px_rgba(var(--primary-rgb),0.5)] hover:shadow-[0_8px_30px_-8px_rgba(var(--primary-rgb),0.6)] hover:-translate-y-0.5 active:translate-y-0",
       secondary:
-        "bg-[--surface-2] text-[--text-primary] border-[--border-default] hover:bg-[--surface-3] hover:border-[--border-strong]",
+        "bg-[--surface-2] text-[--text-primary] border-[--border-default] hover:bg-[--surface-3] hover:border-[--border-strong] hover:shadow-[var(--shadow-sm)]",
       outline:
-        "bg-transparent border-[--border-strong] text-[--text-primary] hover:border-[--border-accent] hover:bg-white/3",
+        "bg-transparent border-[--border-strong] text-[--text-primary] hover:border-[--border-accent] hover:bg-[--primary]/5 hover:shadow-[var(--shadow-glow)]",
       ghost:
-        "text-[--text-secondary] border-transparent hover:text-[--text-primary] hover:bg-white/3",
+        "text-[--text-secondary] border-transparent hover:text-[--text-primary] hover:bg-[--surface-2]",
       danger:
-        "bg-[--accent-rose] text-white border-[--accent-rose] hover:brightness-105 shadow-[0_8px_22px_-14px_rgba(244,63,94,0.7)]",
+        "bg-[--accent-rose] text-white border-[--accent-rose] hover:brightness-110 shadow-[0_4px_16px_-4px_rgba(244,63,94,0.4)]",
       pro: "btn-pro-primary border-transparent",
     }
 
     const sizes: Record<string, string> = {
-      xs: "px-2.5 py-1.5 text-xs",
+      xs: "px-3 py-1.5 text-xs",
       sm: "px-4 py-2 text-sm",
-      md: "px-6 py-2.5 text-base",
-      lg: "px-8 py-3.5 text-lg",
-      xl: "px-10 py-5 text-xl",
+      md: "px-6 py-2.5 text-sm",
+      lg: "px-8 py-3.5 text-base",
+      xl: "px-10 py-5 text-lg",
     }
 
     const className = `${baseStyles} ${variants[variant]} ${sizes[size]} ${fullWidth ? "w-full" : ""
@@ -60,12 +60,13 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       <motion.button
         ref={ref}
         whileHover={!disabled && !loading ? { y: -1 } : undefined}
-        whileTap={!disabled && !loading ? { scale: 0.98, y: 0 } : undefined}
+        whileTap={!disabled && !loading ? { scale: 0.97, y: 0 } : undefined}
         disabled={disabled || loading}
         className={className}
         {...(props as any)}
       >
-        <div className="absolute inset-0 bg-white/8 opacity-0 group-hover:opacity-100 transition-opacity" />
+        {/* Shimmer effect on hover */}
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity -translate-x-full group-hover:translate-x-full duration-700" />
 
         {loading && (
           <svg

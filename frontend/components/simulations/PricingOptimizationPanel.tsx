@@ -39,7 +39,7 @@ export default function PricingOptimizationPanel() {
         backgroundColor: "transparent",
         grid: { top: 10, right: 10, bottom: 20, left: 40 },
         xAxis: { type: "category", show: false },
-        yAxis: { type: "value", splitLine: { lineStyle: { color: "rgba(255,255,255,0.05)" } } },
+        yAxis: { type: "value", splitLine: { lineStyle: { color: "var(--border-subtle)" } } },
         series: [{
             data: trainingHistory,
             type: "line",
@@ -120,7 +120,7 @@ export default function PricingOptimizationPanel() {
                     </div>
 
                     <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                        <div className="chart-card" style={{ padding: "1rem", background: "rgba(0,0,0,0.2)" }}>
+                        <div className="chart-card" style={{ padding: "1rem", background: "var(--surface-2)" }}>
                             <p style={{ fontSize: "0.85rem", fontWeight: 700, marginBottom: "0.75rem", color: "var(--text-primary)" }}>Neural Parameters</p>
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
                                 <Metric label="Agent Model" value={result.engine || "Deep Q-Learning (DQN)"} />
@@ -149,7 +149,7 @@ export default function PricingOptimizationPanel() {
                         transition={{ duration: 0.4 }}
                         style={{ marginTop: "2rem", overflow: "hidden" }}
                     >
-                        <div style={{ borderTop: "1px dashed rgba(255,255,255,0.1)", paddingTop: "2rem" }}>
+                        <div style={{ borderTop: "1px dashed var(--border-subtle)", paddingTop: "2rem" }}>
                             <h3 style={{ fontSize: "1.25rem", fontWeight: 800, color: "var(--text-primary)", marginBottom: "1.5rem" }}>
                                 Core Financial & Go-to-Market Strategy Generated
                             </h3>

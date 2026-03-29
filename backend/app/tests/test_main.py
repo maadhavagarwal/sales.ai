@@ -18,9 +18,8 @@ def test_health_check():
 
 
 def test_modules_status():
-    # This might require auth depending on implementation
-    # But let's test if the endpoint exists
-    response = client.get("/api/modules-status")
+    # Mounted under api v1 + legacy "/api/..." prefix (see missing_routes)
+    response = client.get("/api/v1/api/modules-status")
     if response.status_code == 200:
         assert isinstance(response.json(), list)
     else:

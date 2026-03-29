@@ -1,0 +1,4 @@
+SKU,ItemName,Stock,CostPrice,SalePrice,Category
+SKU-101,Enterprise Server,50,2000,3500,Hardware
+SKU-102,Workstation Pro,20,1500,2500,Hardware
+SKU-103,Cloud Gateway,100,500,900,Networking

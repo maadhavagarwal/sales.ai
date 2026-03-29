@@ -12,30 +12,50 @@ import {
   getInvoices,
   getCustomers,
   getInventory,
-  getLedger,
   getLeadScoring,
   getChurnRisk,
   getFraudAlerts,
   getInventoryDemandForecast
 } from "@/services/api"
+import { 
+  FileText, Target, AlertTriangle, Package, ArrowRight, 
+  Bot, TrendingUp, TrendingDown, Activity, Sparkles 
+} from "lucide-react"
 
 interface UserMetric {
   label: string
   value: string | number
-  icon: string
+  icon: React.ReactNode
   trend?: 'up' | 'down'
   color: string
+  trendLabel: string
 }
 
 interface QuickAction {
   id: string
   title: string
-  icon: string
+  icon: React.ReactNode
   path: string
   badge?: string | number
   description: string
-  color: string
-  priority: 'urgent' | 'high' | 'normal'
+  gradient: string
+}
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.08 }
+  }
+}
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 16 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] as const },
+  },
 }
 
 export default function UserQuickAccessDashboard() {
@@ -53,19 +73,17 @@ export default function UserQuickAccessDashboard() {
     try {
       setIsLoading(true)
 
-      const [kpis, invoices, customers, inventory, ledger, leads, churn, fraud, forecast] = await Promise.allSettled([
+      const [kpis, invoices, customers, inventory, leads, churn, fraud, forecast] = await Promise.allSettled([
         getLiveKPIs(),
         getInvoices(),
         getCustomers(),
         getInventory(),
-        getLedger(),
         getLeadScoring(),
         getChurnRisk(),
         getFraudAlerts(),
         getInventoryDemandForecast()
       ])
 
-      // Extract data
       const invoiceData = invoices.status === 'fulfilled' ? invoices.value : []
       const leadData = leads.status === 'fulfilled' ? leads.value : []
       const churnData = churn.status === 'fulfilled' ? churn.value : []
@@ -75,189 +93,45 @@ export default function UserQuickAccessDashboard() {
       const pendingInvoices = invoiceData?.filter((inv: any) => inv.status === 'pending').length || 0
       const lowStockItems = forecastData?.filter((f: any) => f.days_to_stockout <= 7).length || 0
 
-      // User-focused quick metrics
       const userMetrics: UserMetric[] = [
-        {
-          label: "Pending Invoices",
-          value: pendingInvoices,
-          icon: "📤",
-          trend: pendingInvoices > 5 ? 'up' : 'down',
-          color: "text-blue-400"
-        },
-        {
-          label: "New Leads",
-          value: leadData?.length || 0,
-          icon: "🎯",
-          trend: 'up',
-          color: "text-green-400"
-        },
-        {
-          label: "At-Risk Customers",
-          value: churnData?.length || 0,
-          icon: "⚠️",
-          trend: 'down',
-          color: "text-red-400"
-        },
-        {
-          label: "Low Stock Items",
-          value: lowStockItems,
-          icon: "📦",
-          trend: lowStockItems > 3 ? 'up' : 'down',
-          color: "text-orange-400"
-        }
+        { label: "Pending Invoices", value: pendingInvoices, icon: <FileText size={20} />, trend: pendingInvoices > 5 ? 'up' : 'down', color: "text-blue-500", trendLabel: "Requires attention" },
+        { label: "Sales Pipeline", value: leadData?.length || 0, icon: <Target size={20} />, trend: 'up', color: "text-emerald-500", trendLabel: "Active leads" },
+        { label: "Risk Exposure", value: churnData?.length || 0, icon: <AlertTriangle size={20} />, trend: 'down', color: "text-rose-500", trendLabel: "Customers at risk" },
+        { label: "Inventory Gaps", value: lowStockItems, icon: <Package size={20} />, trend: lowStockItems > 3 ? 'up' : 'down', color: "text-amber-500", trendLabel: "Items low stock" }
       ]
 
-      // Quick action shortcuts
       const quickActions: QuickAction[] = [
-        {
-          id: 'create_invoice',
-          title: 'Create Invoice',
-          icon: '📝',
-          path: '/workspace',
-          description: 'Generate new invoice quickly',
-          color: 'from-blue-500/10 to-transparent border-blue-500/20',
-          priority: 'high',
-          badge: pendingInvoices > 0 ? pendingInvoices : undefined
-        },
-        {
-          id: 'manage_leads',
-          title: 'Sales Pipeline',
-          icon: '🎯',
-          path: '/crm',
-          description: 'Manage and follow up on leads',
-          color: 'from-green-500/10 to-transparent border-green-500/20',
-          priority: leadData?.length > 0 ? 'urgent' : 'normal',
-          badge: leadData?.length > 0 ? leadData.length : undefined
-        },
-        {
-          id: 'inventory_check',
-          title: 'Stock Check',
-          icon: '📦',
-          path: '/workspace',
-          description: 'Review low-stock alerts',
-          color: 'from-orange-500/10 to-transparent border-orange-500/20',
-          priority: lowStockItems > 0 ? 'urgent' : 'normal',
-          badge: lowStockItems > 0 ? lowStockItems : undefined
-        },
-        {
-          id: 'customer_health',
-          title: 'Customer Health',
-          icon: '❤️',
-          path: '/crm',
-          description: 'Check churn risks and customers at risk',
-          color: 'from-red-500/10 to-transparent border-red-500/20',
-          priority: churnData?.length > 0 ? 'urgent' : 'normal',
-          badge: churnData?.length > 0 ? churnData.length : undefined
-        },
-        {
-          id: 'view_reports',
-          title: 'Reports',
-          icon: '📊',
-          path: '/analytics',
-          description: 'Access business intelligence & analytics',
-          color: 'from-purple-500/10 to-transparent border-purple-500/20',
-          priority: 'normal'
-        },
-        {
-          id: 'ai_copilot',
-          title: 'AI Assistant',
-          icon: '🤖',
-          path: '/copilot',
-          description: 'Ask questions and get insights',
-          color: 'from-indigo-500/10 to-transparent border-indigo-500/20',
-          priority: 'normal'
-        },
-        {
-          id: 'upload_data',
-          title: 'Upload Data',
-          icon: '📤',
-          path: '/onboarding',
-          description: 'Import CSV files & datasets',
-          color: 'from-cyan-500/10 to-transparent border-cyan-500/20',
-          priority: 'normal'
-        },
-        {
-          id: 'forecast',
-          title: 'Forecasts',
-          icon: '📈',
-          path: '/analytics',
-          description: 'View AI predictions & forecasts',
-          color: 'from-pink-500/10 to-transparent border-pink-500/20',
-          priority: 'normal'
-        }
+        { id: 'create_invoice', title: 'New Invoice', icon: <FileText size={24} />, path: '/workspace', description: 'Generate accounts receivable entries', gradient: 'from-blue-500/10 to-blue-500/5', badge: pendingInvoices > 0 ? pendingInvoices : undefined },
+        { id: 'manage_leads', title: 'Sales Intel', icon: <Target size={24} />, path: '/crm', description: 'AI-powered lead scoring engine', gradient: 'from-emerald-500/10 to-emerald-500/5', badge: leadData?.length > 0 ? leadData.length : undefined },
+        { id: 'inventory_check', title: 'Supply Chain', icon: <Package size={24} />, path: '/workspace', description: 'Monitor and optimize stock levels', gradient: 'from-amber-500/10 to-amber-500/5', badge: lowStockItems > 0 ? lowStockItems : undefined },
+        { id: 'ai_copilot', title: 'Neural Copilot', icon: <Bot size={24} />, path: '/copilot', description: 'Strategic AI advisory engine', gradient: 'from-indigo-500/10 to-indigo-500/5' }
       ]
 
-      // Combine all alerts for alert list
       const allAlerts = [
-        ...churnData?.slice(0, 2).map((c: any) => ({
-          type: 'churn',
-          icon: '⚠️',
-          title: `${c.name} at churn risk`,
-          severity: 'high',
-          action: 'Review customer'
-        })) || [],
-        ...fraudData?.slice(0, 2).map((f: any) => ({
-          type: 'fraud',
-          icon: '🛡️',
-          title: `Fraud detected: ${f.reason}`,
-          severity: 'critical',
-          action: 'Investigate now'
-        })) || [],
-        ...forecastData?.filter((f: any) => f.risk === 'CRITICAL')?.slice(0, 2).map((f: any) => ({
-          type: 'stock',
-          icon: '📦',
-          title: `${f.sku} out of stock in ${f.days_to_stockout} days`,
-          severity: 'high',
-          action: 'Reorder now'
-        })) || []
+        ...churnData?.slice(0, 2).map((c: any) => ({ type: 'churn', icon: <AlertTriangle size={18} />, title: `${c.name} Churn Risk`, severity: 'high' })),
+        ...fraudData?.slice(0, 1).map((f: any) => ({ type: 'fraud', icon: <AlertTriangle size={18} />, title: `Anomaly: ${f.reason}`, severity: 'critical' })),
+        ...forecastData?.filter((f: any) => f.risk === 'CRITICAL')?.slice(0, 1).map((f: any) => ({ type: 'stock', icon: <Package size={18} />, title: `Stockout: ${f.sku}`, severity: 'high' }))
       ]
 
       setMetrics(userMetrics)
       setActions(quickActions)
       setAlerts(allAlerts)
     } catch (error) {
-      console.error("Failed to fetch dashboard data:", error)
-      showToast("error", "Data Fetch Failed", "Could not load your dashboard")
+      showToast("error", "Connection Error", "Recalibrating data streams...")
     } finally {
       setIsLoading(false)
     }
   }
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'urgent': return 'from-red-500/20 border-red-500/30'
-      case 'high': return 'from-orange-500/20 border-orange-500/30'
-      default: return 'from-gray-500/20 border-gray-500/30'
-    }
-  }
-
-  const getSeverityBadge = (severity: string) => {
-    switch (severity) {
-      case 'critical':
-        return <Badge className="bg-red-500/20 text-red-300 border-red-500/30">CRITICAL</Badge>
-      case 'high':
-        return <Badge className="bg-orange-500/20 text-orange-300 border-orange-500/30">WARNING</Badge>
-      default:
-        return <Badge className="bg-blue-500/20 text-blue-300 border-blue-500/30">INFO</Badge>
-    }
-  }
-
   if (isLoading) {
     return (
-      <DashboardLayout
-        title="Your Dashboard"
-        subtitle="Quick access to your business operations"
-      >
+      <DashboardLayout title="Strategic Command" subtitle="Loading intelligence...">
         <div className="space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} height={100} className="rounded-xl" />
-            ))}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+            {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} height={130} className="rounded-2xl" />)}
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} height={150} className="rounded-xl" />
-            ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} height={160} className="rounded-2xl" />)}
           </div>
         </div>
       </DashboardLayout>
@@ -265,129 +139,102 @@ export default function UserQuickAccessDashboard() {
   }
 
   return (
-    <DashboardLayout
-      title="Your Dashboard"
-      subtitle="Quick access to your business operations"
+    <DashboardLayout 
+      title="Strategic Command" 
+      subtitle="Enterprise overview & real-time directives"
     >
-      <div className="space-y-8 pb-20">
-        {/* KEY METRICS - What You Need to Know Today */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+      <motion.div 
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="space-y-8 pb-16"
+      >
+        {/* KPI CARDS */}
+        <motion.div 
+          variants={containerVariants}
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
         >
           {metrics.map((metric, idx) => (
-            <motion.div
-              key={metric.label}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.05 }}
-            >
-              <Card className="p-6 relative overflow-hidden group hover:border-white/20 transition-all">
-                <div className="absolute top-0 right-0 w-20 h-20 bg-white/5 rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-300" />
-                
-                <div className="relative z-10">
-                  <div className="text-3xl mb-2">{metric.icon}</div>
-                  <div className={`text-3xl font-black ${metric.color} mb-1`}>
-                    {metric.value}
+            <motion.div key={idx} variants={itemVariants}>
+              <Card variant="default" className="relative group overflow-hidden p-5 hover:shadow-[var(--shadow-md)] hover:border-[--border-default] transition-all">
+                <div className="flex items-start justify-between mb-4">
+                  <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${metric.color === 'text-blue-500' ? 'from-blue-500/15 to-blue-500/5' : metric.color === 'text-emerald-500' ? 'from-emerald-500/15 to-emerald-500/5' : metric.color === 'text-rose-500' ? 'from-rose-500/15 to-rose-500/5' : 'from-amber-500/15 to-amber-500/5'} flex items-center justify-center ${metric.color} transition-transform group-hover:scale-110`}>
+                    {metric.icon}
                   </div>
-                  <div className="text-xs text-white/60 font-medium">
-                    {metric.label}
+                  <div className={`flex items-center gap-1.5 text-[11px] font-medium ${metric.trend === 'up' ? 'text-rose-500' : 'text-emerald-500'}`}>
+                    {metric.trend === 'up' ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
                   </div>
-                  {metric.trend && (
-                    <div className="mt-2 text-[10px] font-bold">
-                      {metric.trend === 'up' ? (
-                        <span className="text-red-400">↑ Needs attention</span>
-                      ) : (
-                        <span className="text-green-400">↓ On track</span>
-                      )}
-                    </div>
-                  )}
+                </div>
+                <div className="text-3xl font-extrabold text-[--text-primary] tracking-tighter mb-1.5">{metric.value}</div>
+                <div className="text-[12px] font-semibold text-[--text-secondary] mb-0.5">{metric.label}</div>
+                <div className="flex items-center gap-1.5 mt-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[--accent-emerald] animate-pulse" />
+                  <span className="text-[10px] font-medium text-[--text-muted]">{metric.trendLabel}</span>
                 </div>
               </Card>
             </motion.div>
           ))}
         </motion.div>
 
-        {/* CRITICAL ALERTS */}
+        {/* ALERTS */}
         <AnimatePresence>
           {alerts.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="space-y-3"
-            >
-              <div className="flex items-center gap-2 mb-4">
-                <span className="text-lg font-black text-red-400">🚨 Active Alerts</span>
-                <Badge className="bg-red-500/20 text-red-300">{alerts.length} alert{alerts.length !== 1 ? 's' : ''}</Badge>
-              </div>
-              
-              {alerts.map((alert, idx) => (
-                <motion.div
-                  key={idx}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: idx * 0.1 }}
-                >
-                  <Card className={`p-4 bg-gradient-to-r ${getPriorityColor(alert.severity)} border`}>
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start gap-3 flex-1">
-                        <span className="text-xl mt-1">{alert.icon}</span>
-                        <div>
-                          <div className="font-bold text-white text-sm">{alert.title}</div>
-                          <div className="text-xs text-white/70 mt-1">Action required: {alert.action}</div>
-                        </div>
-                      </div>
-                      <Button size="xs" variant="primary" className="whitespace-nowrap ml-2">
-                        Review
-                      </Button>
-                    </div>
-                  </Card>
-                </motion.div>
-              ))}
+            <motion.div variants={itemVariants} className="space-y-3">
+               <div className="flex items-center gap-2.5">
+                 <div className="w-1 h-5 bg-[--accent-rose] rounded-full" />
+                 <h3 className="text-xs font-bold uppercase tracking-[0.15em] text-[--accent-rose]">Active Alerts</h3>
+                 <Badge variant="danger" size="xs">{alerts.length}</Badge>
+               </div>
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                 {alerts.map((alert, idx) => (
+                   <Card key={idx} variant="default" className="p-4 border-[--accent-rose]/10 bg-[--accent-rose]/3 group hover:border-[--accent-rose]/20 transition-all">
+                     <div className="flex items-center justify-between">
+                       <div className="flex items-center gap-3">
+                         <div className="w-8 h-8 rounded-lg bg-[--accent-rose]/10 flex items-center justify-center text-[--accent-rose]">
+                           {alert.icon}
+                         </div>
+                         <span className="text-sm font-semibold text-[--text-primary]">{alert.title}</span>
+                       </div>
+                       <Button size="xs" variant="ghost" className="text-[--accent-rose] text-[11px] font-semibold">
+                         Resolve
+                         <ArrowRight size={12} />
+                       </Button>
+                     </div>
+                   </Card>
+                 ))}
+               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* QUICK ACTION BUTTONS - What You Can Do */}
-        <div>
-          <h2 className="text-xl font-black text-white mb-4 flex items-center gap-2">
-            ⚡ Quick Actions
-            <span className="text-xs font-normal text-white/50">Get things done fast</span>
-          </h2>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* QUICK ACTIONS */}
+        <motion.div variants={itemVariants} className="space-y-4">
+          <div className="flex items-center gap-2.5">
+              <div className="w-1 h-5 bg-[--primary] rounded-full" />
+              <h2 className="text-xs font-bold uppercase tracking-[0.15em] text-[--primary]">Quick Actions</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {actions.map((action, idx) => (
-              <motion.div
-                key={action.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.05 }}
-              >
+              <motion.div key={idx} variants={itemVariants}>
                 <Link href={action.path}>
-                  <Card 
-                    className={`p-6 h-full bg-gradient-to-br ${action.color} hover:border-white/40 hover:shadow-lg hover:shadow-white/5 transition-all duration-300 cursor-pointer group relative overflow-hidden`}
-                  >
-                    <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-20 transition-opacity">
-                      <span className="text-6xl">{action.icon}</span>
-                    </div>
+                  <Card variant="default" interactive className="p-6 h-full group relative overflow-hidden">
+                    {/* Background gradient */}
+                    <div className={`absolute inset-0 bg-gradient-to-br ${action.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
                     
                     <div className="relative z-10">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="text-3xl">{action.icon}</div>
-                        {action.badge ? (
-                          <Badge className={`${action.priority === 'urgent' ? 'bg-red-500/20 text-red-300' : 'bg-white/10 text-white'} animate-pulse`}>
-                            {action.badge}
-                          </Badge>
-                        ) : null}
+                      <div className="flex justify-between items-start mb-5">
+                         <div className="w-11 h-11 rounded-xl bg-[--surface-2] border border-[--border-subtle] flex items-center justify-center text-[--text-muted] group-hover:text-[--primary] group-hover:border-[--primary]/20 transition-all">
+                           {action.icon}
+                         </div>
+                         {action.badge && (
+                           <Badge variant="primary" size="sm" pulse>{action.badge}</Badge>
+                         )}
                       </div>
+                      <h4 className="text-base font-bold text-[--text-primary] tracking-tight mb-1.5">{action.title}</h4>
+                      <p className="text-[12px] font-medium text-[--text-muted] leading-relaxed">{action.description}</p>
                       
-                      <h3 className="font-bold text-white mb-1 text-sm">{action.title}</h3>
-                      <p className="text-[12px] text-white/60 leading-relaxed">{action.description}</p>
-                      
-                      <div className="mt-3 flex items-center text-[10px] text-white/40 group-hover:text-white/60 transition-colors">
-                        Open → 
+                      <div className="mt-4 flex items-center gap-1.5 text-[11px] font-semibold text-[--primary] opacity-0 group-hover:opacity-100 transition-opacity">
+                        Open <ArrowRight size={12} />
                       </div>
                     </div>
                   </Card>
@@ -395,29 +242,37 @@ export default function UserQuickAccessDashboard() {
               </motion.div>
             ))}
           </div>
-        </div>
-
-        {/* TIPS & SHORTCUTS */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 rounded-2xl p-6"
-        >
-          <div className="flex items-start gap-4">
-            <span className="text-3xl">💡</span>
-            <div>
-              <h3 className="font-black text-white mb-2">Pro Tips</h3>
-              <ul className="text-sm text-white/70 space-y-1">
-                <li>✓ Use <span className="text-indigo-300 font-semibold">AI Assistant</span> to ask questions about your data</li>
-                <li>✓ Go to <span className="text-indigo-300 font-semibold">Customer Health</span> weekly to prevent churn</li>
-                <li>✓ Check <span className="text-indigo-300 font-semibold">Stock Check</span> before inventory runs low</li>
-                <li>✓ Upload new data via <span className="text-indigo-300 font-semibold">Data Nexus</span> to keep systems synced</li>
-              </ul>
-            </div>
-          </div>
         </motion.div>
-      </div>
+
+        {/* SYSTEM STATUS */}
+        <motion.div variants={itemVariants}>
+          <Card variant="default" className="p-6 border-[--accent-emerald]/10 bg-gradient-to-r from-[--accent-emerald]/3 to-transparent">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex items-center gap-5">
+                <div className="w-12 h-12 rounded-2xl bg-[--accent-emerald]/10 border border-[--accent-emerald]/15 flex items-center justify-center">
+                   <Activity size={22} className="text-[--accent-emerald]" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <h4 className="text-sm font-bold text-[--text-primary]">All Systems Operational</h4>
+                    <div className="w-2 h-2 rounded-full bg-[--accent-emerald] animate-pulse" />
+                  </div>
+                  <p className="text-[12px] font-medium text-[--text-muted]">
+                    Latency: 22ms &bull; Throughput: 14.8 GB/s &bull; 24 active models
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                 <Button variant="ghost" size="sm" className="text-[12px]">View Logs</Button>
+                 <Button variant="outline" size="sm" className="text-[12px]">
+                   <Sparkles size={14} />
+                   Run Diagnostics
+                 </Button>
+              </div>
+            </div>
+          </Card>
+        </motion.div>
+      </motion.div>
     </DashboardLayout>
   )
 }

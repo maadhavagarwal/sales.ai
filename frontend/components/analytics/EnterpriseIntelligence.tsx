@@ -9,6 +9,7 @@ import {
     getRevenueScenarios, 
     getSalesLeaderboard 
 } from "@/services/api"
+import { useToast } from "@/components/ui/Toast"
 import { Card, Badge, Button, Input } from "@/components/ui"
 import { useStore } from "@/store/useStore"
 import { 
@@ -25,6 +26,7 @@ import {
 
 export default function EnterpriseIntelligence() {
     const { currencySymbol, intelligenceData, setIntelligenceData } = useStore()
+    const { showToast } = useToast()
     
     // Local derived state from store
     const scenarios = intelligenceData?.scenarios || []
@@ -58,8 +60,10 @@ export default function EnterpriseIntelligence() {
                     anomalies: aRes.alerts || [],
                     cashFlow: cRes
                 })
-            } catch (e) {
-                console.error(e)
+            } catch (e: any) {
+                const errMsg = e?.message || "Failed to load intelligence data"
+                console.error(errMsg)
+                showToast("error", `❌ ${errMsg}`)
             } finally {
                 setLoading(false)
             }
@@ -73,8 +77,15 @@ export default function EnterpriseIntelligence() {
         try {
             const res = await simulateWhatIf(whatIfQuery)
             setWhatIfResult(res)
-        } catch (e) {
-            console.error(e)
+            if (res.error) {
+                showToast("warning", `⚠️ ${res.error}`)
+            } else {
+                showToast("success", "✅ What-if simulation completed")
+            }
+        } catch (e: any) {
+            const errMsg = e?.message || "Simulation failed"
+            console.error(errMsg)
+            showToast("error", `❌ ${errMsg}`)
         } finally {
             setSimulating(false)
         }
@@ -112,7 +123,7 @@ export default function EnterpriseIntelligence() {
                                     </div>
                                     <h3 className="text-lg font-black text-white mb-2">{a.metric} Anomaly</h3>
                                     <p className="text-sm text-white/70 leading-relaxed mb-4">{a.insight}</p>
-                                    <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5 flex gap-3 items-center">
+                                    <div className="bg-white/3 rounded-xl p-4 border border-white/5 flex gap-3 items-center">
                                         <ShieldCheck className="w-4 h-4 text-[--accent-emerald]" />
                                         <div>
                                             <p className="text-[10px] font-black text-[--accent-emerald] uppercase tracking-widest">Neural Recommendation</p>
@@ -141,7 +152,7 @@ export default function EnterpriseIntelligence() {
                     <p className="text-[10px] font-black text-[--accent-cyan] uppercase tracking-widest mt-4">Scenario Synthesis • Multi-Variate Impact Mapping</p>
                 </div>
 
-                <Card variant="bento" className="relative shadow-2xl shadow-[--accent-cyan]/10 group">
+                <Card variant="bento" className="relative group">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 p-2">
                         <div className="space-y-8">
                             <div>
@@ -153,12 +164,12 @@ export default function EnterpriseIntelligence() {
                                     placeholder="e.g. 'What if I lose Raj Traders next month?'"
                                     value={whatIfQuery}
                                     onChange={(e) => setWhatIfQuery(e.target.value)}
-                                    className="h-16 bg-white/[0.03] border-white/10 px-6 text-lg font-bold rounded-2xl focus:border-[--accent-cyan] transition-all"
+                                    className="h-16 bg-white/3 border-white/10 px-6 text-lg font-bold rounded-2xl focus:border-[--accent-cyan] transition-all"
                                 />
                                 <Button 
                                     onClick={handleSimulate}
                                     disabled={simulating || !whatIfQuery}
-                                    className="absolute right-2 top-2 h-12 px-8 bg-[--accent-cyan] hover:bg-[--accent-cyan]/80 text-black font-black uppercase tracking-widest rounded-xl transition-all shadow-lg"
+                                    className="absolute right-2 top-2 h-12 px-8 bg-[--accent-cyan] hover:bg-[--accent-cyan]/80 text-black font-black uppercase tracking-widest rounded-xl transition-all"
                                 >
                                     {simulating ? <Activity className="w-5 h-5 animate-spin" /> : <><PlayCircle className="w-5 h-5 mr-2" /> Simulate</>}
                                 </Button>
@@ -176,7 +187,7 @@ export default function EnterpriseIntelligence() {
                             </div>
                         </div>
 
-                        <div className="relative min-h-[300px] flex items-center justify-center">
+                        <div className="relative min-h-75 flex items-center justify-center">
                             <AnimatePresence mode="wait">
                                 {simulating ? (
                                     <motion.div 
@@ -209,7 +220,7 @@ export default function EnterpriseIntelligence() {
                                                 </p>
                                             </div>
                                         </div>
-                                        <Card variant="glass" className="bg-white/[0.02] border-white/5 p-6">
+                                        <Card variant="glass" className="bg-white/2 border-white/5 p-6">
                                             <div className="flex gap-4">
                                                 <MessageSquare className="w-5 h-5 text-[--accent-cyan] shrink-0" />
                                                 <div>
@@ -228,7 +239,7 @@ export default function EnterpriseIntelligence() {
                                         className="flex flex-col items-center text-center opacity-20 group-hover:opacity-40 transition-opacity"
                                     >
                                         <Zap className="w-16 h-16 text-white mb-6" />
-                                        <p className="text-[10px] font-black uppercase tracking-[0.4em] max-w-[200px]">Waiting for scenario parameters</p>
+                                        <p className="text-[10px] font-black uppercase tracking-[0.4em] max-w-50">Waiting for scenario parameters</p>
                                     </motion.div>
                                 )}
                             </AnimatePresence>
@@ -252,13 +263,13 @@ export default function EnterpriseIntelligence() {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                    <Card className="lg:col-span-1 bg-gradient-to-br from-[--accent-amber]/10 to-transparent border-[--accent-amber]/20 p-8 flex flex-col justify-between overflow-hidden relative">
+                    <Card className="lg:col-span-1 border-[--accent-amber]/20 p-8 flex flex-col justify-between overflow-hidden relative">
                         <div>
                             <p className="text-[10px] font-black text-[--accent-amber] uppercase tracking-[0.2em] mb-4">Cash Position</p>
                             <h3 className="text-4xl font-black text-white tracking-tighter">
                                 {currencySymbol}{cashFlow?.current_balance?.toLocaleString() || '0'}
                             </h3>
-                            <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest mt-1">Real-time Bank/Ledger</p>
+                            <p className="text-[10px] font-bold text-[--text-dim] uppercase tracking-widest mt-1">Real-time Bank/Ledger</p>
                         </div>
                         <div className="mt-12 space-y-4">
                             <div className="flex justify-between items-center text-[10px] font-black text-white/50 uppercase tracking-widest">
@@ -275,7 +286,7 @@ export default function EnterpriseIntelligence() {
                                 />
                             </div>
                         </div>
-                        <Activity className="absolute -right-6 -top-6 w-32 h-32 text-white/[0.02] -rotate-12" />
+                        <Activity className="absolute -right-6 -top-6 w-32 h-32 text-white/2 -rotate-12" />
                     </Card>
 
                     <Card variant="glass" className="lg:col-span-3 p-8">
@@ -299,19 +310,19 @@ export default function EnterpriseIntelligence() {
                                         <motion.div 
                                             initial={{ height: 0 }}
                                             animate={{ height: `${Math.min(100, (f.projected_cash / (cashFlow.current_balance + 100000)) * 100)}%` }}
-                                            className={`w-full max-w-[24px] rounded-t-lg transition-colors ${f.is_gap ? 'bg-[--accent-rose]' : 'bg-[--accent-amber]/40 group-hover:bg-[--accent-amber]'}`}
+                                            className={`w-full max-w-6 rounded-t-lg transition-colors ${f.is_gap ? 'bg-[--accent-rose]' : 'bg-[--accent-amber]/40 group-hover:bg-[--accent-amber]'}`}
                                         />
                                         {/* Tooltip */}
                                         <div className="absolute -top-12 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 bg-white text-black text-[9px] font-black px-2 py-1 rounded-md whitespace-nowrap transition-opacity z-50">
                                             {currencySymbol}{f.projected_cash.toLocaleString()}
                                         </div>
                                     </div>
-                                    <span className="text-[8px] font-black text-white/30 uppercase mt-4">{new Date(f.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+                                    <span className="text-[8px] font-black text-[--text-dim] uppercase mt-4">{new Date(f.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
                                 </div>
                             ))}
                         </div>
                         
-                        <div className="mt-12 bg-white/[0.03] border border-white/5 rounded-2xl p-6 flex gap-6 items-center">
+                        <div className="mt-12 bg-white/3 border border-white/5 rounded-2xl p-6 flex gap-6 items-center">
                             <TrendingDown className="w-8 h-8 text-[--accent-rose] opacity-50" />
                             <div>
                                 <p className="text-xs font-black text-white/80 tracking-tight">Diagnostic Note</p>

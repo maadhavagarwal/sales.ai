@@ -42,7 +42,7 @@ export default function NLBIChart() {
             backgroundColor: "transparent",
             tooltip: {
                 trigger: "axis",
-                backgroundColor: "rgba(10,15,30,0.95)",
+                backgroundColor: "var(--surface-1)",
                 borderColor: "rgba(99,102,241,0.3)",
                 borderWidth: 1,
                 textStyle: { color: "#f9fafb", fontSize: 13, fontFamily: "Inter" },
@@ -51,13 +51,13 @@ export default function NLBIChart() {
             xAxis: {
                 type: "category",
                 data: chartData.data.map((d: any) => d[chartData.x]),
-                axisLine: { lineStyle: { color: "rgba(255,255,255,0.06)" } },
+                axisLine: { lineStyle: { color: "var(--border-subtle)" } },
                 axisLabel: { color: "#9ca3af", fontSize: 11, fontFamily: "Inter" },
                 axisTick: { show: false },
             },
             yAxis: {
                 type: "value",
-                splitLine: { lineStyle: { color: "rgba(255,255,255,0.04)" } },
+                splitLine: { lineStyle: { color: "var(--border-subtle)" } },
                 axisLabel: { color: "#6b7280", fontSize: 11, fontFamily: "Inter" },
             },
             animationEasing: "elasticOut",
@@ -112,7 +112,7 @@ export default function NLBIChart() {
             backgroundColor: "transparent",
             tooltip: {
                 trigger: "item",
-                backgroundColor: "rgba(10,15,30,0.95)",
+                backgroundColor: "var(--surface-1)",
                 borderColor: "rgba(99,102,241,0.3)",
                 borderWidth: 1,
                 textStyle: { color: "#f9fafb", fontSize: 13, fontFamily: "Inter" },
@@ -190,7 +190,7 @@ export default function NLBIChart() {
                                 padding: "0.35rem 0.65rem",
                                 borderRadius: "9999px",
                                 border: "1px solid var(--border-default)",
-                                background: "rgba(255,255,255,0.03)",
+                                background: "var(--surface-2)",
                                 color: "var(--text-muted)",
                                 cursor: "pointer",
                                 transition: "all 200ms",
@@ -256,3 +256,4 @@ export default function NLBIChart() {
         </div>
     )
 }
+

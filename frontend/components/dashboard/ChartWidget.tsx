@@ -115,8 +115,8 @@ export default function ChartWidget({
                     borderColor: "#1e293b",
                     textStyle: { color: "#f8fafc" }
                 },
-                xAxis: { type: "value", name: xColumn, nameTextStyle: baseTextStyle, axisLabel: baseTextStyle, splitLine: { lineStyle: { color: "rgba(255,255,255,0.03)" } } },
-                yAxis: { type: "value", name: yColumn, nameTextStyle: baseTextStyle, axisLabel: baseTextStyle, splitLine: { lineStyle: { color: "rgba(255,255,255,0.03)" } } },
+                xAxis: { type: "value", name: xColumn, nameTextStyle: baseTextStyle, axisLabel: baseTextStyle, splitLine: { lineStyle: { color: "var(--surface-2)" } } },
+                yAxis: { type: "value", name: yColumn, nameTextStyle: baseTextStyle, axisLabel: baseTextStyle, splitLine: { lineStyle: { color: "var(--surface-2)" } } },
                 series: [{ type: "scatter", data: scatterData, symbolSize: 8, itemStyle: { color: color || "#6366f1", opacity: 0.8 } }],
             }
         }
@@ -135,7 +135,7 @@ export default function ChartWidget({
                 type: "category",
                 data: categories,
                 axisLabel: { ...baseTextStyle, fontSize: 10, rotate: categories.length > 8 ? 35 : 0, fontWeight: 500 },
-                axisLine: { lineStyle: { color: "rgba(255,255,255,0.1)" } },
+                axisLine: { lineStyle: { color: "var(--surface-3)" } },
                 axisTick: { show: false }
             },
             yAxis: {
@@ -146,7 +146,7 @@ export default function ChartWidget({
                     fontWeight: 600,
                     formatter: (v: number) => v >= 1000000 ? `${currencySymbol}${(v / 1000000).toFixed(1)}M` : v >= 1000 ? `${currencySymbol}${(v / 1000).toFixed(0)}K` : v.toString()
                 },
-                splitLine: { lineStyle: { color: "rgba(255,255,255,0.03)" } },
+                splitLine: { lineStyle: { color: "var(--surface-2)" } },
                 axisLine: { show: false }
             },
             series: [{
@@ -248,3 +248,4 @@ export default function ChartWidget({
         </motion.div>
     )
 }
+

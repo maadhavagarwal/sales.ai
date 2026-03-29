@@ -207,6 +207,42 @@ class ExpenseService:
                     expense.get("bill_attached", 0),
                     0,  # gst_reconciled
                 ))
+                
+                # Create Ledger Entries for the expense
+                v_id = f"VCH-{uuid.uuid4().hex[:8].upper()}"
+                v_date = expense["date"]
+                category = expense["category"]
+                desc = expense["description"]
+                total_tax = sum([expense.get("cgst_amount", 0), expense.get("sgst_amount", 0), expense.get("igst_amount", 0)])
+                base_amount = expense["amount"] - total_tax if expense["amount"] > total_tax else expense["amount"]
+                total_payment = base_amount + total_tax
+                itc = expense.get("itc_eligible", 1)
+                c_id = expense["company_id"]
+                
+                # Direct Expense
+                cursor.execute("""
+                    INSERT INTO ledger (account_name, type, amount, description, date, voucher_id, voucher_type, company_id)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """, (f"Direct Expense - {category}", "EXPENSE", base_amount, desc, v_date, v_id, "Payment", c_id))
+                
+                # GST Input Credit
+                if total_tax > 0 and itc:
+                    cursor.execute("""
+                        INSERT INTO ledger (account_name, type, amount, description, date, voucher_id, voucher_type, company_id)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    """, ("GST Input Credit", "ASSET", total_tax, f"ITC for {category}", v_date, v_id, "Payment", c_id))
+                elif total_tax > 0 and not itc:
+                    cursor.execute("""
+                        INSERT INTO ledger (account_name, type, amount, description, date, voucher_id, voucher_type, company_id)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    """, (f"Direct Expense - {category} (Tax Portion)", "EXPENSE", total_tax, f"Non-ITC for {category}", v_date, v_id, "Payment", c_id))
+                    
+                # Bank Operations
+                cursor.execute("""
+                    INSERT INTO ledger (account_name, type, amount, description, date, voucher_id, voucher_type, company_id)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """, ("Bank Operations Account", "ASSET", -total_payment, f"Payment for {category}", v_date, v_id, "Payment", c_id))
+
                 inserted_count += 1
 
             conn.commit()

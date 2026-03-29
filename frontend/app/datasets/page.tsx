@@ -27,11 +27,11 @@ export default function DatasetsPage() {
                 <div className="page-body">
                     {!results ? (
                         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center">
-                            <div className="w-18 h-18 rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600 border border-slate-600 flex items-center justify-center text-2xl">
+                            <div className="w-18 h-18 rounded-2xl border border-[--border-default] flex items-center justify-center text-2xl">
                                 💡
                             </div>
-                            <p className="font-semibold text-slate-200">No data loaded</p>
-                            <p className="text-sm text-slate-400">
+                            <p className="font-semibold text-[--text-primary]">No data loaded</p>
+                            <p className="text-sm text-[--text-dim]">
                                 Upload a CSV from the Dashboard to generate NLBI charts
                             </p>
                         </div>

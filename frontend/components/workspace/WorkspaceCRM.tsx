@@ -135,7 +135,7 @@ export default function WorkspaceCRM() {
                     >
                         <Card variant="bento" padding="lg" className="border-[--primary]/30 bg-[--primary]/5 shadow-[0_0_50px_rgba(99,102,241,0.1)]">
                             <div className="flex items-center gap-4 mb-10 pb-6 border-b border-white/5">
-                                <div className="w-10 h-10 rounded-xl bg-[--primary]/20 flex items-center justify-center text-xl shadow-inner">{editingId ? "✏️" : "🏢"}</div>
+                                <div className="w-10 h-10 rounded-xl bg-[--primary]/20 flex items-center justify-center text-xl">{editingId ? "✏️" : "🏢"}</div>
                                 <h3 className="text-xs font-black uppercase tracking-[0.3em] text-white">
                                     {editingId ? "Update Entity Parameters" : "Strategic Onboarding Protocol"}
                                 </h3>
@@ -200,7 +200,7 @@ export default function WorkspaceCRM() {
                             </div>
 
                             <div className="flex flex-col sm:flex-row gap-5 pt-8 border-t border-white/5">
-                                <Button variant="pro" size="lg" onClick={handleSave} loading={loading} className="flex-1 h-14 tracking-widest text-xs shadow-[--shadow-glow]">
+                                <Button variant="pro" size="lg" onClick={handleSave} loading={loading} className="flex-1 h-14 tracking-widest text-xs">
                                     {editingId ? "COMMIT CHANGES" : "INITIALIZE ENTITY PROFILE"}
                                 </Button>
                                 <Button variant="outline" size="lg" onClick={() => { setShowAdd(false); setEditingId(null); }} className="px-12 h-14 tracking-widest text-xs">
@@ -221,7 +221,7 @@ export default function WorkspaceCRM() {
                             className="md:col-span-2 xl:col-span-3"
                         >
                             <Card variant="glass" padding="lg" className="py-40 text-center border-dashed border-2 border-white/5 bg-white/[0.01]">
-                                <div className="w-24 h-24 bg-gradient-to-br from-[--primary]/10 to-transparent rounded-full flex items-center justify-center mx-auto mb-8 text-4xl opacity-40 shadow-inner">
+                                <div className="w-24 h-24/10 rounded-full flex items-center justify-center mx-auto mb-8 text-4xl opacity-40">
                                     🧬
                                 </div>
                                 <h4 className="text-xs font-black text-white uppercase tracking-[0.4em]">Corporate Registry Vacant</h4>
@@ -239,8 +239,8 @@ export default function WorkspaceCRM() {
                                 exit={{ opacity: 0, scale: 0.95 }}
                                 transition={{ delay: i * 0.05, duration: 0.5 }}
                             >
-                                <Card variant="glass" padding="lg" className="group hover:border-[--primary]/40 transition-all duration-700 bg-black/40 shadow-2xl overflow-hidden relative">
-                                    <div className="absolute top-0 right-0 w-32 h-32 bg-[--primary]/5 blur-3xl rounded-full -translate-y-16 translate-x-16 group-hover:bg-[--primary]/10 transition-colors" />
+                                <Card variant="glass" padding="lg" className="group hover:border-[--primary]/40 transition-all duration-700 bg-black/40 overflow-hidden relative">
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-[--primary]/5 rounded-full -translate-y-16 translate-x-16 group-hover:bg-[--primary]/10 transition-colors" />
 
                                     <div className="flex justify-between items-start mb-8 relative z-10">
                                         <div className="space-y-2">
@@ -258,7 +258,7 @@ export default function WorkspaceCRM() {
                                                 )}
                                             </div>
                                         </div>
-                                        <div className="w-12 h-12 bg-white/[0.03] border border-white/5 rounded-2xl flex items-center justify-center text-xl grayscale group-hover:grayscale-0 group-hover:scale-110 transition-all duration-500 shadow-inner">
+                                        <div className="w-12 h-12 bg-white/[0.03] border border-white/5 rounded-2xl flex items-center justify-center text-xl grayscale group-hover:grayscale-0 group-hover:scale-110 transition-all duration-500">
                                             💎
                                         </div>
                                     </div>

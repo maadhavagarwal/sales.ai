@@ -1,0 +1,82 @@
+NeuralBI SaaS Launch Program (90 Days)
+Date: 2026-03-26
+Owner: Platform Team
+Status Legend: [DONE] [IN_PROGRESS] [PENDING] [BLOCKED]
+
+==================================================
+PHASE 1 (Weeks 1-3): Tenant, Security, Governance
+==================================================
+[DONE] Enterprise tenant/session bootstrap on login/register
+[DONE] Team management APIs (users, roles, invites)
+[DONE] Invite acceptance flow (id-based and token-based)
+[DONE] Invite token expiry + revoke flow
+[DONE] Role-based admin guardrails in Enterprise Control UI
+[DONE] Per-user security controls (idle timeout, allowed IPs, MFA flag)
+[DONE] Org security policies (require MFA, IP allowlist toggle)
+[DONE] IP allowlist enforcement in auth verification
+[DONE] Admin activity feed + tamper-evident event hash
+[DONE] Activity CSV export endpoint and UI action
+[IN_PROGRESS] MFA enforcement rollout validation across all protected routes
+[DONE] One-time-use invite token invalidation hardening
+[DONE] Security event alerting (failed auth/IP blocks to admin stream)
+
+==================================================
+PHASE 2 (Weeks 4-6): Billing & Entitlements
+==================================================
+[DONE] Billing checkout audit events (success/failed)
+[DONE] Billing history panel with filters + JSON export
+[DONE] Full subscription lifecycle states (trial/past_due/grace)
+[DONE] Billing webhooks (renewal/payment_failed/cancel/update)
+[DONE] Seat-based billing and entitlement controls
+[DONE] Plan change/proration/refund workflows
+[DONE] Tax-compliant invoice generation for billing events
+
+==================================================
+PHASE 3 (Weeks 7-9): Reliability, Data, Operations
+==================================================
+[DONE] Background job queue for heavy analytics tasks
+[DONE] Redis cache for dashboard and repeated expensive queries
+[DONE] Observability stack (logs, metrics, traces, alerts)
+[DONE] Incident runbooks + operational dashboard
+[DONE] Backup/restore scheduled automation with drill evidence
+[DONE] Data lineage + model version tracking
+
+==================================================
+PHASE 4 (Weeks 10-12): Productization & Go-Live
+==================================================
+[DONE] Guided onboarding with hard launch gates
+[DONE] Workspace templates by business profile
+[DONE] RBAC UI coverage audit for every module/page/action
+[DONE] API versioning + deprecation policy documentation
+[DONE] CI/CD quality gates (integration + e2e + load smoke)
+[DONE] Canary/rollback deployment workflow
+[DONE] Launch readiness final review and production cutover
+
+==================================================
+CURRENT SPRINT (STARTED)
+==================================================
+Sprint Goal: Complete security/governance hardening and close Phase 1.
+
+Task 1: MFA rollout validation
+- Verify all critical endpoints correctly enforce org require_mfa policy.
+- Ensure admin remediation endpoints remain accessible.
+Status: [IN_PROGRESS]
+
+Task 2: Invite token hardening
+- Convert token flow to explicit one-time-use invalidation at accept.
+- Add audit detail for token replay attempts.
+Status: [DONE]
+
+Task 3: Security incident stream
+- Add backend event log entries for IP allowlist blocks and MFA blocks.
+- Show in Admin Activity Feed with severity labels.
+Status: [DONE]
+
+==================================================
+DEFINITION OF SAAS-LAUNCH-READY (TARGET)
+==================================================
+1) Tenant safety: no cross-tenant data leakage paths
+2) Security: MFA/IP/session policy enforced and auditable
+3) Billing: webhook-driven subscription truth with entitlement sync
+4) Reliability: monitored, recoverable, scalable core services
+5) Operations: role-based admin controls with immutable audit evidence

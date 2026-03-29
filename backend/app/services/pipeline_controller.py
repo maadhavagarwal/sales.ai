@@ -242,6 +242,18 @@ def run_pipeline(df):
         elif "profit" in df.columns:
             analytics["total_profit"] = float(df["profit"].sum())
 
+    # Sanity: mixed schemas (e.g. ledger profit vs invoice revenue) produce absurd margins
+    tr = float(analytics.get("total_revenue") or 0)
+    if "total_profit" in analytics and tr > 0:
+        tp = float(analytics["total_profit"])
+        if abs(tp) > abs(tr) * 50:
+            if "cost" in df.columns and "revenue" in df.columns:
+                df["_nbi_profit"] = df["revenue"].astype(float) - df["cost"].astype(float)
+                analytics["total_profit"] = float(df["_nbi_profit"].sum())
+            else:
+                analytics.pop("total_profit", None)
+                analytics["profit_note"] = "Profit omitted: inconsistent with revenue aggregate"
+
     # Calculate margin if profit and revenue exist
     if "total_profit" in analytics and analytics.get("total_revenue", 0) > 0:
         analytics["average_margin"] = (

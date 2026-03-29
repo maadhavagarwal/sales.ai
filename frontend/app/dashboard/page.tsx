@@ -1,27 +1,25 @@
 "use client"
 
-import { useState, useMemo, useCallback, useEffect } from "react"
+import { useState, useMemo, useEffect, useCallback } from "react"
 import DashboardLayout from "@/components/layout/DashboardLayout"
 import CSVUploader from "@/components/upload/CSVUploader"
-import AdditionalCSVUploader from "@/components/upload/AdditionalCSVUploader"
 import MetricsCards from "@/components/dashboard/MetricsCards"
 import StrategyPanel from "@/components/dashboard/StrategyPanel"
 import InsightsPanel from "@/components/dashboard/InsightsPanel"
-import ExplanationsPanel from "@/components/dashboard/ExplanationsPanel"
-import NLBIChartGenerator from "@/components/ai/NLBIChartGenerator"
 import TradingIntelligencePanel from "@/components/analytics/TradingIntelligencePanel"
 import ChartWidget from "@/components/dashboard/ChartWidget"
 import WidgetEditor from "@/components/dashboard/WidgetEditor"
 import DataTable from "@/components/dashboard/DataTable"
 import AnomalyPanel from "@/components/dashboard/AnomalyPanel"
 import LiquidityForecast from "@/components/dashboard/LiquidityForecast"
-import DebugPanel from "@/components/DebugPanel"
 import { useToast } from "@/components/ui/Toast"
-import { useStore, CHART_COLORS, DashboardWidget } from "@/store/useStore"
-import { getDashboardConfig, downloadStrategicPlanPDF, reprocessDataset, getCopilotResponse, getLiveKPIs } from "@/services/api"
+import { useStore, CHART_COLORS } from "@/store/useStore"
+import { getDashboardConfig, downloadStrategicPlanPDF, getLiveKPIs, syncWorkspaceToDashboard } from "@/services/api"
 import { motion, AnimatePresence } from "framer-motion"
 import MarkdownRenderer from "@/components/ai/MarkdownRenderer"
 import { Button, Card, Badge } from "@/components/ui"
+import { getAuthToken } from "@/lib/session"
+import { Sparkles, Rocket, PlugZap, ShieldCheck, LineChart } from "lucide-react"
 
 export default function Dashboard() {
   const { 
@@ -36,76 +34,79 @@ export default function Dashboard() {
     setResults, 
     setFileName,
     setDatasetId,
-    onboardingComplete,
-    userRole
+    onboardingComplete
   } = useStore()
   const [showEditor, setShowEditor] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<"dashboard" | "data" | "ai">("dashboard")
   const [isGenerating, setIsGenerating] = useState(false)
   const [isSyncing, setIsSyncing] = useState(false)
-  const [selectedSheet, setSelectedSheet] = useState<string>("0")
   const [liveKPIs, setLiveKPIs] = useState<any>(null)
-  const [kpiUpdateTime, setKpiUpdateTime] = useState<string | null>(null)
   const [autoSyncAttempted, setAutoSyncAttempted] = useState(false)
 
   const { showToast } = useToast()
 
-  // Fetch live KPIs via WebSockets
+  const refreshLiveKpis = useCallback(async () => {
+    try {
+      const data = await getLiveKPIs()
+      if (data?.kpis && typeof data.kpis === "object") {
+        setLiveKPIs(data.kpis)
+      }
+    } catch {
+      /* backend optional */
+    }
+  }, [])
+
+  // HTTP KPI snapshot (WS auth is easy to misconfigure; polling keeps UI alive)
   useEffect(() => {
-    let ws: WebSocket;
-    
-    const connectWebSocket = () => {
-      const API_URL = (process.env.NEXT_PUBLIC_API_URL || "").trim();
-      if (!/^https?:\/\//i.test(API_URL)) {
-        return;
-      }
-      // Convert http(s):// to ws(s)://
-      const wsUrl = API_URL.replace(/^http/, "ws") + "/api/ws/live-kpis";
-      
-      ws = new WebSocket(wsUrl);
+    if (!results) return
+    refreshLiveKpis()
+    const id = window.setInterval(refreshLiveKpis, 25000)
+    return () => window.clearInterval(id)
+  }, [results, refreshLiveKpis])
 
-      ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          if (data && data.kpis) {
-            setLiveKPIs(data.kpis);
-            setKpiUpdateTime(data.last_updated);
-          }
-        } catch (err) {
-          console.warn("Failed to parse live KPI data:", err);
-        }
-      };
+  // Live KPI WebSocket — correct path + JWT query (browser cannot send Authorization header)
+  useEffect(() => {
+    let ws: WebSocket | undefined
+    let cancelled = false
+    const connect = () => {
+      const token = typeof window !== "undefined" ? getAuthToken() : null
+      if (!token) return
 
-      ws.onerror = (error) => {
-        console.warn("WebSocket error for live KPIs:", error);
-      };
-
-      ws.onclose = () => {
-        // Reconnect after 5 seconds if connection drops
-        setTimeout(connectWebSocket, 5000);
-      };
-    };
-
-    // Initial HTTP fetch just in case WS is slow to connect
-    const fetchInitialKPIs = async () => {
+      const rawApiBase = (process.env.NEXT_PUBLIC_API_URL || "").trim()
+      const backendBase =
+        /^https?:\/\//i.test(rawApiBase)
+          ? rawApiBase
+              .replace(/\/api\/backend\/api\/v1\/?$/i, "")
+              .replace(/\/api\/v1\/?$/i, "")
+              .replace(/\/$/, "")
+          : "http://127.0.0.1:8000"
+      const proto = backendBase.startsWith("https") ? "wss" : "ws"
+      const host = backendBase.replace(/^https?:\/\//, "")
+      const qs = token ? `?token=${encodeURIComponent(token)}` : ""
+      const wsUrl = `${proto}://${host}/api/v1/analytics/ws/live-kpis${qs}`
       try {
-        const data = await getLiveKPIs();
-        if (data && data.kpis) {
-          setLiveKPIs(data.kpis);
-          setKpiUpdateTime(data.last_updated);
-        }
-      } catch (err) {
-        console.warn("Failed to fetch initial live KPIs:", err);
+        ws = new WebSocket(wsUrl)
+      } catch {
+        return
       }
-    };
-    
-    fetchInitialKPIs();
-    connectWebSocket();
-
+      ws.onmessage = (e) => {
+        try {
+          const d = JSON.parse(e.data)
+          if (d.kpis) setLiveKPIs(d.kpis)
+        } catch {
+          /* ignore */
+        }
+      }
+      ws.onclose = () => {
+        if (!cancelled) window.setTimeout(connect, 6000)
+      }
+    }
+    connect()
     return () => {
-      if (ws) ws.close();
-    };
+      cancelled = true
+      ws?.close()
+    }
   }, [])
 
   const numericCols = useMemo(() => results?.numeric_columns || [], [results?.numeric_columns])
@@ -113,520 +114,254 @@ export default function Dashboard() {
   const rawData = results?.raw_data || []
   const allCols = results?.columns || []
 
+  // Default charts when the user has not run Autonomous Gen yet
+  useEffect(() => {
+    if (!results?.dataset_id || !rawData.length || widgets.length > 0) return
+    const pickY =
+      numericCols.find((c) => /revenue|amount|sales|total|qty|quantity|price|value/i.test(c)) || numericCols[0]
+    const pickX =
+      catCols.find((c) => /product|region|category|customer|vendor|name|sku|month/i.test(c)) || catCols[0]
+    if (!pickX || !pickY) return
+    addWidget({
+      id: `default-bar-${pickX}-${pickY}`,
+      type: "bar",
+      title: `${pickY} by ${pickX}`,
+      xColumn: pickX,
+      yColumn: pickY,
+      aggregation: "sum",
+      width: "half",
+      color: CHART_COLORS[0],
+    })
+    const altY = numericCols.find((c) => c !== pickY)
+    if (altY) {
+      addWidget({
+        id: `default-line-${pickX}-${altY}`,
+        type: "line",
+        title: `${altY} by ${pickX}`,
+        xColumn: pickX,
+        yColumn: altY,
+        aggregation: "mean",
+        width: "half",
+        color: CHART_COLORS[1],
+      })
+    }
+  }, [results?.dataset_id, rawData.length, widgets.length, numericCols, catCols, addWidget])
+
   // Business Logic
-  const handleLiveSync = async () => {
+  const handleSync = useCallback(async () => {
     setIsSyncing(true)
     try {
-      const { syncWorkspaceToDashboard, getCashFlowForecast } = await import("@/services/api")
+      const token = getAuthToken()
+      if (!token) return
+
       const data = await syncWorkspaceToDashboard()
-      
-      // Fetch Cash Flow Gap independently if not in sync payload
-      if (!data.predictive_liquidity) {
-          try {
-              const cf = await getCashFlowForecast()
-              data.predictive_liquidity = cf
-          } catch {}
-      }
-      
       setResults(data)
       setDatasetId(data.dataset_id)
-      setFileName("Live Enterprise Stream")
-      setWidgets([]) // Reset widgets for new dataset logic
-      showToast("success", "Live Sync Successful", "Workspace data synchronized.")
-    } catch (err: any) {
-      console.error("Live Sync Failed:", err)
-      // Handle specific error cases
-      if (err.statusCode === 400 || err.response?.status === 400) {
-        // No data available - ask user to upload
-        showToast(
-          "warning",
-          "No Data Available",
-          "Please upload invoices first to sync your workspace data."
-        )
-      } else {
-        showToast("error", "Live Sync Failed", err.message || "An error occurred during sync.")
-      }
+      setFileName("Strategic Live Stream")
+      showToast("success", "Sync Established", "Neural link with workspace active.")
+    } catch {
+      showToast("warning", "Sync Interrupted", "Ensure data is uploaded in the Workspace.")
     } finally {
       setIsSyncing(false)
     }
-  }
+  }, [showToast, setResults, setDatasetId, setFileName])
 
-  // Auto-Sync for Enterprise Users if no data is present
   useEffect(() => {
-    if (!results && onboardingComplete && !isSyncing && !autoSyncAttempted) {
+    const token = getAuthToken()
+    if (!results && token && onboardingComplete && !isSyncing && !autoSyncAttempted) {
       setAutoSyncAttempted(true)
-      handleLiveSync()
+      handleSync()
     }
-  }, [onboardingComplete, autoSyncAttempted])
+  }, [onboardingComplete, autoSyncAttempted, results, isSyncing, handleSync])
 
-  const generateAIDashboard = async () => {
+  const generateAI = async () => {
     if (!datasetId) return
     setIsGenerating(true)
     try {
       const config = await getDashboardConfig(datasetId)
       if (config.charts) {
-        const newWidgets: DashboardWidget[] = config.charts.map((c: any, idx: number) => ({
-          id: `ai_${Date.now()}_${idx}`,
-          type: c.chart_type === "histogram" ? "bar" : c.chart_type,
-          title: c.title,
-          xColumn: c.x || c.category || c.column,
-          yColumn: c.y || c.value || c.column,
-          aggregation: "sum",
-          width: "half",
-          color: CHART_COLORS[idx % CHART_COLORS.length]
-        }))
-        setWidgets(newWidgets)
+        setWidgets(config.charts.map((c: any, i: number) => ({
+          id: `ai_${i}`, type: c.chart_type === "histogram" ? "bar" : c.chart_type,
+          title: c.title, xColumn: c.x || c.column, yColumn: c.y || c.column,
+          aggregation: "sum", width: "half", color: CHART_COLORS[i % CHART_COLORS.length]
+        })))
       }
-    } catch (err) {
-      console.error("Dashboard generation failed:", err)
-    } finally {
-      setIsGenerating(false)
-    }
+    } finally { setIsGenerating(false) }
   }
 
-  const handleSheetChange = async (sheet: string) => {
-    if (!datasetId) return
-    setSelectedSheet(sheet)
-    try {
-      const newResults = await reprocessDataset(datasetId, sheet === "ALL" ? "ALL_SHEETS" : sheet)
-      console.log("Reprocess results:", newResults) // Debug
-      setResults(newResults)
-      setWidgets([])
-    } catch (err: any) {
-      console.error("Sheet reprocessing failed:", err)
-      showToast("error", "Sheet Processing Failed", err?.message || "Unable to reprocess dataset")
-    }
-  }
-
-  const autoGenerateWidgets = useCallback(() => {
-    if (!results || widgets.length > 0) return
-    const auto: DashboardWidget[] = []
-    if (results.analytics?.region_sales) {
-      auto.push({ id: "auto_region", type: "bar", title: "Revenue by Region", xColumn: "region", yColumn: "revenue", aggregation: "sum", width: "half", color: "#6366f1" })
-    }
-    if (results.analytics?.top_products) {
-      auto.push({ id: "auto_products", type: "bar", title: "Top Products", xColumn: "product", yColumn: "revenue", aggregation: "sum", width: "half", color: "#8b5cf6" })
-    }
-    if (catCols.length > 0 && numericCols.length > 0 && auto.length < 2) {
-      auto.push({ id: "auto_1", type: "bar", title: `${numericCols[0]} by ${catCols[0]}`, xColumn: catCols[0], yColumn: numericCols[0], aggregation: "sum", width: "half", color: "#06b6d4" })
-    }
-    if (catCols.length > 0 && numericCols.length > 0) {
-      auto.push({ id: "auto_pie", type: "pie", title: `${numericCols[0]} Distribution`, xColumn: catCols[0], yColumn: numericCols[0], aggregation: "sum", width: "half", color: "#10b981" })
-    }
-    if (auto.length > 0) setWidgets(auto)
-  }, [results, widgets.length, catCols, numericCols, setWidgets])
-
-  useEffect(() => {
-    if (results && widgets.length === 0) autoGenerateWidgets()
-  }, [results, widgets.length, autoGenerateWidgets])
-
-  const editingWidget = editingId ? widgets.find((w) => w.id === editingId) : null
-
-  const handleSave = (widget: DashboardWidget) => {
-    if (editingId) updateWidget(widget.id, widget)
-    else addWidget(widget)
-    setShowEditor(false)
-    setEditingId(null)
-  }
-
-  const headerActions = (
+  const actions = (
     <div className="flex items-center gap-4">
-      {results?.available_sheets && results.available_sheets.length > 1 && (
-        <div className="flex items-center gap-3 bg-black/40 px-4 py-2 rounded-2xl border border-white/10 shadow-inner">
-          <span className="text-[10px] font-black tracking-widest text-[--text-muted]">ENGINE BOOK:</span>
-          <select
-            value={selectedSheet}
-            onChange={(e) => handleSheetChange(e.target.value)}
-            className="bg-transparent border-none text-xs font-black text-[--primary] outline-none cursor-pointer uppercase tracking-tight"
-          >
-            {results.available_sheets.map((s: string) => (
-              <option key={s} value={s} className="bg-slate-900">{s}</option>
-            ))}
-            <option value="ALL" className="bg-slate-900 text-[--accent-amber]">Combined Master</option>
-          </select>
-        </div>
-      )}
-      <Button variant="outline" size="sm" onClick={handleLiveSync} loading={isSyncing} icon={<span>⚡</span>} className="hidden sm:flex tracking-widest text-[10px]">COGNITIVE SYNC</Button>
-      <Button variant="pro" size="sm" onClick={generateAIDashboard} loading={isGenerating} icon={<span>✨</span>} className="shadow-[--shadow-glow] tracking-widest text-[10px]">AI AUTONOMOUS</Button>
-      <Button variant="primary" size="sm" onClick={() => { setEditingId(null); setShowEditor(true) }} icon={<span>+</span>} className="tracking-widest text-[10px]">VISUALIZE</Button>
+      <Button variant="outline" size="sm" onClick={handleSync} loading={isSyncing} className="hidden lg:flex text-[9px] tracking-widest uppercase font-black">SYNC REAL-TIME</Button>
+      <Button variant="pro" size="sm" onClick={generateAI} loading={isGenerating} className="text-[9px] tracking-widest uppercase font-black shadow-indigo-500/20">AUTONOMOUS GEN</Button>
+      <Button variant="primary" size="sm" onClick={() => { setEditingId(null); setShowEditor(true) }} className="text-[9px] tracking-widest uppercase font-black">MANUAL INJECT</Button>
     </div>
   )
 
   return (
-    <DashboardLayout
-      title="Executive Nexus"
-      subtitle={fileName ? (
-        <div className="flex items-center gap-2">
-          <span className={fileName.includes("Live") ? "text-[--accent-cyan]" : "text-[--primary]"}>{fileName.includes("Live") ? "LIVE STREAM ACTIVE:" : "Vector Stream Active:"}</span>
-          <span>{fileName}</span>
-          {fileName.includes("Live") && <Badge variant="pro" pulse size="xs">SYNCHRONIZED</Badge>}
-        </div>
-      ) : "Awaiting autonomous data ingestion..."}
-      actions={results ? headerActions : null}
+    <DashboardLayout 
+      title="Command Center" 
+      subtitle={fileName ? `Live Data Stream: ${fileName}` : "Connect your data to activate the intelligence layer"}
+      actions={results ? actions : null}
     >
-      <div className="page-rhythm">
+      <div className="space-y-10">
         {!results ? (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="max-w-3xl mx-auto text-center py-10 sm:py-16"
-          >
-            <Card variant="glass" padding="lg" className="border-dashed border-white/10 bg-white/1">
-              <div className="w-24 h-24 bg-linear-to-br from-[--primary]/20 to-[--accent-violet]/20 rounded-[40px] flex items-center justify-center mx-auto mb-10 shadow-[--shadow-glow] border border-white/10 relative overflow-hidden group">
-                <div className="absolute inset-0 bg-[--primary]/10 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
-                <span className="text-4xl relative z-10 transition-transform group-hover:scale-110">🚀</span>
-              </div>
-              <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tighter mb-4 font-jakarta">
-                Initialize Neural Analysis
-              </h2>
-              <p className="text-md text-[--text-muted] font-medium max-w-lg mx-auto leading-relaxed mb-12 italic">
-                Inject enterprise datasets or synchronize with live Workspace operations to activate autonomous intelligence.
-              </p>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-                <div className="p-8 bg-black/40 rounded-3xl border border-white/5 shadow-2xl flex flex-col items-center">
-                  <CSVUploader />
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-4xl mx-auto py-20">
+             <Card variant="glass" className="p-12 text-center border-[--border-subtle] bg-[--surface-1] aurora-ring">
+                <div className="w-24 h-24 bg-indigo-500/10 rounded-[40px] border border-indigo-500/20 flex items-center justify-center mx-auto mb-10 neural-pulse-glow">
+                   <Rocket size={42} className="text-[--primary]" />
                 </div>
-                <div className="p-8 bg-black/40 rounded-3xl border border-white/5 shadow-2xl flex flex-col items-center justify-center gap-6 group hover:border-[--primary]/30 transition-all">
-                  <div className="w-16 h-16 rounded-2xl bg-[--primary]/10 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">⚡</div>
-                  <div className="text-center">
-                    <h4 className="text-sm font-black text-white uppercase tracking-widest">Workspace Live Sync</h4>
-                    <p className="text-[10px] text-[--text-muted] font-bold mt-2 uppercase tracking-tight">Sync directly with Bills, Expenses & Ledgers.</p>
-                  </div>
-                  <Button variant="pro" size="lg" onClick={handleLiveSync} loading={isSyncing} className="w-full shadow-[--shadow-glow]">
-                    SYNC LIVE ERP
-                  </Button>
+                <h1 className="text-4xl font-black text-[--text-primary] tracking-tighter mb-4">Neural Link Inactive</h1>
+                <p className="text-sm text-[--text-muted] font-medium max-w-lg mx-auto leading-relaxed mb-12 uppercase tracking-wide">
+                  Inject datasets to activate the autonomous strategic layer.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                   <div className="p-10 bg-[--surface-2] rounded-3xl border border-[--border-subtle] hover:border-[--border-default] transition-all"><CSVUploader /></div>
+                   <div className="p-10 bg-indigo-500/5 rounded-3xl border border-indigo-500/10 flex flex-col items-center justify-center gap-6 group cursor-pointer hover:bg-indigo-500/10 transition-all" onClick={handleSync}>
+                      <PlugZap size={30} className="text-[--primary] group-hover:scale-110 transition-transform" />
+                      <div>
+                        <h4 className="text-xs font-black uppercase tracking-widest text-[--text-primary]">Live Workspace Sync</h4>
+                        <p className="text-[10px] text-[--text-muted] font-bold mt-2 uppercase">Direct ERP Data Extraction</p>
+                      </div>
+                      <Button variant="pro" size="lg" loading={isSyncing} className="w-full">SYNCHRONIZE NOW</Button>
+                   </div>
                 </div>
-              </div>
-
-              <div className="mt-12 flex items-center justify-center gap-8 grayscale opacity-40">
-                <span className="text-[10px] font-black uppercase tracking-[0.3em]">TensorFlow Engine</span>
-                <span className="text-[10px] font-black uppercase tracking-[0.3em]">PyTorch Core</span>
-                <span className="text-[10px] font-black uppercase tracking-[0.3em]">LLM Strategic Layer</span>
-              </div>
-            </Card>
+             </Card>
           </motion.div>
         ) : (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="page-rhythm">
-            {/* Top Bar Status */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pb-5 border-b border-white/5">
-              <div className="flex bg-black/40 p-1.5 rounded-2xl border border-white/10 shadow-inner overflow-hidden">
-                {(["dashboard", "data", "ai"] as const).map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={`
-                                    relative px-4 sm:px-8 py-2 sm:py-2.5 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] sm:tracking-[0.3em] transition-all duration-500
-                                    ${activeTab === tab
-                        ? "text-white"
-                        : "text-[--text-muted] hover:text-white"}
-                                `}
-                  >
-                    {tab}
-                    {activeTab === tab && (
-                      <motion.div
-                        layoutId="navTab"
-                        className="absolute inset-0 bg-linear-to-br from-[--primary] to-[--primary-dark] shadow-[--shadow-glow] z-[-1] rounded-xl"
-                      />
-                    )}
-                  </button>
-                ))}
-              </div>
-              <div className="flex gap-4">
-                <Badge variant="pro" pulse size="lg" className="border-white/10 bg-black/40 font-geist tracking-[0.2em]">
-                  {results.rows?.toLocaleString()} DATAPOINTS AGGREGATED
-                </Badge>
-              </div>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-12">
+            {/* TAB NAV */}
+            <div className="flex items-center justify-between gap-4 pb-6 border-b border-[--border-subtle]">
+                <div className="flex p-1 rounded-2xl bg-[--surface-1] border border-[--border-subtle]">
+                  {(["dashboard", "data", "ai"] as const).map(t => (
+                    <button key={t} onClick={() => setActiveTab(t)} className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.3em] transition-all ${activeTab === t ? "bg-indigo-500/20 text-indigo-400" : "text-[--text-muted] hover:text-[--text-primary]"}`}>
+                      {t}
+                    </button>
+                  ))}
+                </div>
+                <Badge variant="pro" pulse size="lg" className="bg-[--surface-2] border-[--border-default] font-geist tracking-widest">{results.rows?.toLocaleString()} DATA-POINTS AGGREGATED</Badge>
             </div>
 
             <AnimatePresence mode="wait">
               {activeTab === "dashboard" && (
-                <motion.div
-                  key="dashboard"
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 10 }}
-                  className="page-stack"
-                >
-                  <NLBIChartGenerator />
+                <motion.div key="dash" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} className="space-y-10">
+                   {results.analytics && <MetricsCards analytics={results.analytics} />}
 
-                  {/* Live KPI Stream */}
-                  {liveKPIs && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4"
-                    >
-                      {Object.entries(liveKPIs).map(([key, value]: [string, any]) => (
-                        <Card key={key} variant="glass" padding="md" className="text-center border-white/10 bg-black/20">
-                          <div className="text-[10px] font-black uppercase tracking-widest text-[--text-muted] mb-2">
-                            {key.replace(/_/g, ' ')}
-                          </div>
-                          <div className="text-lg font-black text-white">
-                            {typeof value === 'number' ? (
-                              key.includes('revenue') || key.includes('cash') ? 
-                                `₹${value.toLocaleString('en-IN', { maximumFractionDigits: 0 })}` :
-                              key.includes('growth') || key.includes('margin') ?
-                                `${value.toFixed(1)}%` :
-                                value.toLocaleString()
-                            ) : value}
+                   {liveKPIs && (
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.25em] text-[--text-muted] mb-3">Live stream</p>
+                        <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
+                         {Object.entries(liveKPIs).slice(0, 6).map(([k, v]: [string, any]) => (
+                           <Card key={k} variant="glass" className="p-1 border-[--border-subtle] bg-[--surface-1] text-center hover:border-indigo-500/30 transition-all">
+                              <div className="p-5">
+                                <div className="text-[9px] font-black text-indigo-500/70 uppercase tracking-widest mb-2">{k.replace(/_/g, " ")}</div>
+                                <div className="text-xl font-black text-[--text-primary] tracking-tighter">
+                                  {typeof v === "number" ? (String(k).includes("revenue") ? `₹${(v/1000).toFixed(1)}k` : v.toFixed(1)) : v}
+                                </div>
+                              </div>
+                           </Card>
+                         ))}
+                        </div>
+                      </div>
+                   )}
+
+                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {(results?.anomalies && results.anomalies.length > 0) ? (
+                        <AnomalyPanel anomalies={results.anomalies} />
+                      ) : (
+                        <Card variant="glass" className="p-6 border-[--border-subtle] bg-[--surface-1]/80">
+                          <div className="flex gap-4 items-start">
+                            <div className="w-11 h-11 rounded-xl bg-[--accent-emerald]/15 flex items-center justify-center shrink-0">
+                              <ShieldCheck className="w-5 h-5 text-[--accent-emerald]" />
+                            </div>
+                            <div>
+                              <h3 className="text-sm font-black uppercase tracking-wide text-[--text-primary]">Anomaly scan</h3>
+                              <p className="text-sm text-[--text-muted] mt-1 leading-relaxed">
+                                No anomaly flags in this snapshot. Upload richer time series or run sync after new workspace activity to refresh.
+                              </p>
+                            </div>
                           </div>
                         </Card>
-                      ))}
-                      <Card variant="glass" padding="md" className="text-center border-[--primary]/30 bg-[--primary]/5 col-span-full md:col-span-1">
-                        <div className="text-[10px] font-black uppercase tracking-widest text-[--primary] mb-2">
-                          Last Update
-                        </div>
-                        <div className="text-xs font-bold text-[--primary]">
-                          {kpiUpdateTime ? new Date(kpiUpdateTime).toLocaleTimeString() : '—'}
-                        </div>
-                      </Card>
-                    </motion.div>
-                  )}
+                      )}
+                      {results?.predictive_liquidity ? (
+                        <LiquidityForecast data={results.predictive_liquidity} />
+                      ) : (
+                        <Card variant="glass" className="p-6 border-[--border-subtle] bg-[--surface-1]/80">
+                          <div className="flex gap-4 items-start">
+                            <div className="w-11 h-11 rounded-xl bg-[--primary]/12 flex items-center justify-center shrink-0">
+                              <LineChart className="w-5 h-5 text-[--primary]" />
+                            </div>
+                            <div>
+                              <h3 className="text-sm font-black uppercase tracking-wide text-[--text-primary]">Liquidity outlook</h3>
+                              <p className="text-sm text-[--text-muted] mt-1 leading-relaxed">
+                                Forecast curves appear when the pipeline produces a liquidity projection. Try Autonomous Gen or enrich expense / ledger columns.
+                              </p>
+                            </div>
+                          </div>
+                        </Card>
+                      )}
+                   </div>
 
-                  {results.predictive_liquidity && (
-                      <LiquidityForecast data={results.predictive_liquidity} />
-                  )}
+                   {Array.isArray(results.insights) && results.insights.length > 0 && (
+                     <Card variant="glass" className="p-6 border-[--border-default] bg-[--surface-1]">
+                       <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[--primary] mb-3">Signals</p>
+                       <ul className="grid sm:grid-cols-2 gap-3">
+                         {results.insights.slice(0, 6).map((line, i) => (
+                           <li key={i} className="text-sm text-[--text-secondary] leading-snug border-l-2 border-[--primary]/25 pl-3">
+                             {line}
+                           </li>
+                         ))}
+                       </ul>
+                     </Card>
+                   )}
 
-                  {results.anomalies && results.anomalies.length > 0 && (
-                      <AnomalyPanel anomalies={results.anomalies} />
-                  )}
-
-                  {results.analytics && <MetricsCards analytics={results.analytics} />}
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                    <AnimatePresence>
-                      {widgets.map((w) => (
-                        <div key={w.id} className={w.width === "full" ? "md:col-span-2" : ""}>
-                          <ChartWidget
-                            widget={w}
-                            rawData={rawData}
-                            onEdit={() => { setEditingId(w.id); setShowEditor(true) }}
-                            onRemove={() => removeWidget(w.id)}
-                          />
-                        </div>
-                      ))}
-                    </AnimatePresence>
-                  </div>
-
-                  {widgets.length < 8 && (
-                    <button
-                      onClick={() => { setEditingId(null); setShowEditor(true) }}
-                      className="w-full py-14 sm:py-24 rounded-3xl border-2 border-dashed border-white/5 text-[--text-muted] hover:border-[--primary]/50 hover:text-white hover:bg-[--primary]/5 transition-all group relative overflow-hidden"
-                    >
-                      <div className="relative z-10 flex flex-col items-center gap-4">
-                        <span className="text-3xl group-hover:scale-125 group-hover:rotate-12 transition-transform opacity-40 group-hover:opacity-100">📡</span>
-                        <span className="text-[10px] font-black uppercase tracking-[0.4em] transition-all group-hover:tracking-[0.6em]">Integrate Synthetic Perspective</span>
-                      </div>
-                      <div className="absolute inset-0 bg-linear-to-b from-transparent to-[--primary]/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </button>
-                  )}
+                   <div>
+                     <div className="flex items-center justify-between gap-3 mb-4">
+                       <p className="text-[10px] font-black uppercase tracking-[0.25em] text-[--text-muted]">Visualizations</p>
+                       {widgets.length === 0 && (
+                         <span className="text-[11px] text-[--text-dim]">Generating defaults from your columns…</span>
+                       )}
+                     </div>
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {widgets.map(w => <ChartWidget key={w.id} widget={w} rawData={rawData} onEdit={() => {setEditingId(w.id); setShowEditor(true)}} onRemove={() => removeWidget(w.id)} />)}
+                     </div>
+                   </div>
                 </motion.div>
               )}
 
               {activeTab === "data" && (
-                <motion.div
-                  key="data"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="page-stack"
-                >
-                  <Card variant="bento" padding="lg">
-                    <DataTable data={rawData} columns={allCols} />
-                  </Card>
+                <motion.div key="data" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
+                   <Card variant="bento" className="bg-[--surface-1] border-[--border-subtle]"><DataTable data={rawData} columns={allCols} /></Card>
                 </motion.div>
               )}
 
               {activeTab === "ai" && (
-                <motion.div
-                  key="ai"
-                  initial={{ opacity: 0, scale: 0.99 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.99 }}
-                  className="page-stack"
-                >
-                  {results.dataset_type === "market_dataset" && results.market_intelligence && (
-                    <div className="mb-12">
-                      <Badge variant="pro" className="mb-6 tracking-[0.2em]">FINANCIAL RISK ENGINE ACTIVE</Badge>
-                      <TradingIntelligencePanel
-                        marketIntelligence={results.market_intelligence}
-                        report={results.analyst_report?.report || ""}
-                      />
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                    {results.strategy?.length > 0 && <StrategyPanel strategy={results.strategy} />}
-                    {results.insights?.length > 0 && <InsightsPanel insights={results.insights} />}
-                  </div>
-                  {results.explanations?.length > 0 && <ExplanationsPanel explanations={results.explanations} />}
-
-                  {results.analyst_report?.report && (
-                    <Card variant="glass" padding="lg">
-                      <div className="flex items-center gap-4 mb-10 pb-6 border-b border-white/5">
-                        <div className="w-10 h-10 rounded-xl bg-[--primary]/20 flex items-center justify-center text-xl">📋</div>
-                        <h3 className="text-xs font-black uppercase tracking-[0.3em] text-white">Autonomous Board Executive Directive</h3>
-                      </div>
-                      <div className="prose prose-invert max-w-none prose-p:font-medium prose-headings:font-black prose-headings:tracking-tighter">
-                        <MarkdownRenderer text={results.analyst_report.report} />
-                      </div>
-                    </Card>
-                  )}
-
-                  {results.strategic_plan && (
-                    <Card variant="bento" padding="lg" className="border-[--primary]/30 bg-linear-to-br from-[--primary]/5 to-transparent">
-                      <div className="flex flex-col md:flex-row justify-between gap-8 mb-12">
-                        <div>
-                          <Badge variant="pro" className="mb-4">Top Secret Intelligence</Badge>
-                          <h3 className="text-3xl font-black text-white tracking-tighter leading-none font-jakarta">Quantum Strategic Roadmap</h3>
-                          <p className="text-xs font-bold text-[--text-muted] mt-3 opacity-60 uppercase tracking-widest leading-relaxed">Synthesized Multi-horizon Autonomous Execution Architecture.</p>
-                        </div>
-                        <div className="flex gap-4 items-start">
-                          <Button variant="pro" size="md" onClick={() => datasetId && downloadStrategicPlanPDF(datasetId)} className="shadow-[--shadow-glow]">
-                            EXPORT MASTER INTEL
-                          </Button>
-                        </div>
-                      </div>
-                      <div className="prose prose-invert max-w-none bg-black/20 p-8 rounded-2xl border border-white/5 shadow-inner">
-                        <MarkdownRenderer text={results.strategic_plan} />
-                      </div>
-                    </Card>
-                  )}
+                <motion.div key="ai" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="space-y-12">
+                   {results.dataset_type === "market_dataset" && results.market_intelligence && <TradingIntelligencePanel marketIntelligence={results.market_intelligence} report={results.analyst_report?.report || ""} />}
+                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                      {results.strategy?.length > 0 && <StrategyPanel strategy={results.strategy} />}
+                      {results.insights?.length > 0 && <InsightsPanel insights={results.insights} />}
+                   </div>
+                   {results.strategic_plan && (
+                      <Card variant="glass" className="p-10 bg-indigo-500/5 border-indigo-500/20">
+                         <div className="flex flex-col md:flex-row justify-between gap-8 mb-12">
+                            <div><Badge variant="pro" className="mb-4"><Sparkles size={12} className="mr-1" />EXECUTIVE BRIEF</Badge><h1 className="text-4xl font-black text-[--text-primary] tracking-tighter leading-none">Strategic Execution Roadmap</h1></div>
+                            <Button variant="pro" size="md" onClick={() => datasetId && downloadStrategicPlanPDF(datasetId)}>EXPORT MASTER PERSPECTIVE</Button>
+                         </div>
+                         <div className="prose prose-invert max-w-none"><MarkdownRenderer text={results.strategic_plan} /></div>
+                      </Card>
+                   )}
                 </motion.div>
               )}
             </AnimatePresence>
-
-            <div className="pt-12 border-t border-white/5 page-stack">
-              <div className="flex items-center gap-4 mb-10">
-                <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">📥</div>
-                <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-[--text-muted]">Ingestion Stream Aggregator</h4>
-              </div>
-              <Card variant="glass" padding="lg" className="bg-white/1">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <h5 className="text-sm font-semibold text-white mb-4">Initial Data Upload</h5>
-                    <CSVUploader />
-                  </div>
-                  <div>
-                    <h5 className="text-sm font-semibold text-white mb-4">Additional Data Upload</h5>
-                    <AdditionalCSVUploader />
-                  </div>
-                </div>
-              </Card>
-            </div>
           </motion.div>
         )}
       </div>
 
       <AnimatePresence>
-        {showEditor && (
-          <WidgetEditor
-            existingWidget={editingWidget}
-            numericColumns={numericCols}
-            categoricalColumns={catCols}
-            onSave={handleSave}
-            onClose={() => { setShowEditor(false); setEditingId(null) }}
-          />
-        )}
+        {showEditor && <WidgetEditor existingWidget={editingId ? widgets.find(w => w.id === editingId) : null} numericColumns={numericCols} categoricalColumns={catCols} onSave={(w) => { if(editingId) updateWidget(w.id, w); else addWidget(w); setShowEditor(false); }} onClose={() => setShowEditor(false)} />}
       </AnimatePresence>
-
-      <CopilotFloating datasetId={datasetId || undefined} />
     </DashboardLayout>
   )
 }
 
-function CopilotFloating({ datasetId }: { datasetId?: string }) {
-  const [isOpen, setIsOpen] = useState(false)
-  const [query, setQuery] = useState("")
-  const [history, setHistory] = useState<Array<{ type: "user" | "ai"; text: string }>>([])
-  const [loading, setLoading] = useState(false)
 
-  const handleSend = async () => {
-    if (!query) return
-    setLoading(true)
-    const currentQuery = query
-    setQuery("")
-    setHistory((prev) => [...prev, { type: "user", text: currentQuery }])
-
-    try {
-      const res = await getCopilotResponse(currentQuery, datasetId)
-      setHistory(h => [...h, { type: "ai", text: res.response }])
-    } catch {
-      setHistory(h => [...h, { type: "ai", text: "Neural Link Error: System recalibrating..." }])
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  return (
-    <div className="fixed bottom-4 right-4 sm:bottom-8 sm:right-8 z-100">
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="mb-4 bg-black/80 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden max-w-lg max-h-96"
-          >
-            <div className="p-4 bg-[--primary]/10 border-b border-white/5 flex justify-between items-center">
-              <div>
-                <Badge variant="primary" size="xs">COPILOT v2</Badge>
-                <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mt-1">Autonomous Business Intelligence</p>
-              </div>
-              <button onClick={() => setIsOpen(false)} className="text-white/40 hover:text-white transition-colors">✕</button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 scroll-pro">
-              {history.length === 0 && (
-                <div className="h-full flex flex-col items-center justify-center text-center p-8">
-                  <span className="text-4xl mb-4">🧠</span>
-                  <p className="text-xs font-bold text-white uppercase tracking-widest">Neural Link Active</p>
-                  <p className="text-[10px] text-white/40 mt-2 leading-relaxed italic">
-                    "Ask me about your sales, inventory risk, or financial health. I analyze live data streams."
-                  </p>
-                </div>
-              )}
-              {history.map((msg, i) => (
-                <div key={i} className={`flex ${msg.type === "user" ? "justify-end" : "justify-start"}`}>
-                  <div className={`max-w-[85%] p-3 rounded-xl text-xs font-bold ${msg.type === "user" ? "bg-[--primary] text-white shadow-[0_0_20px_rgba(99,102,241,0.3)]" : "bg-white/5 text-white/80 border border-white/5"}`}>
-                    <MarkdownRenderer text={msg.text} />
-                  </div>
-                </div>
-              ))}
-              {loading && <div className="text-[10px] font-black text-[--primary] animate-pulse italic">Neural reasoning in progress...</div>}
-            </div>
-
-            <div className="p-4 bg-white/2 border-t border-white/5">
-              <div className="relative">
-                <input
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                  placeholder="Query your enterprise data..."
-                  className="input-pro w-full pr-12 text-xs py-3"
-                />
-                <button
-                  onClick={handleSend}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-[--primary]/20 text-[--primary] flex items-center justify-center hover:bg-[--primary] hover:text-white transition-all"
-                >
-                  ↑
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-16 h-16 rounded-full bg-[--primary] shadow-[0_0_30px_rgba(99,102,241,0.5)] flex items-center justify-center text-2xl relative group"
-      >
-        <div className="absolute inset-0 rounded-full border-4 border-white/20 animate-ping group-hover:hidden" />
-        🧠
-      </motion.button>
-    </div>
-  )
-}

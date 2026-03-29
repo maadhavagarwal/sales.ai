@@ -293,6 +293,33 @@ class WorkspaceEngine:
                     ),
                 )
 
+            # GST Transactions Log for GSTR Reports
+            for item in sanitized_items:
+                qty = float(item.get("quantity", 0))
+                price = float(item.get("price", 0))
+                taxable = qty * price
+                gst_rate = float(item.get("gst", 0))
+                cgst = float(item.get("cgst", 0))
+                sgst = float(item.get("sgst", 0))
+                igst = float(item.get("igst", 0))
+                
+                if cgst > 0 or sgst > 0 or igst > 0 or gst_rate > 0:
+                    conn.execute(
+                        """
+                        INSERT INTO gst_transactions (
+                            company_id, transaction_date, transaction_type, invoice_number, 
+                            customer_gstin, customer_name, hsn_sac_code, description, 
+                            quantity, unit_price, taxable_amount, gst_rate, 
+                            cgst_amount, sgst_amount, igst_amount, total_amount
+                        ) VALUES (?, ?, 'SALE', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            company_id, v_date, invoice_id, data.get("client_gstin", ""), 
+                            data.get("customer_id", ""), item.get("hsn", ""), item.get("name", "Sale Item"),
+                            qty, price, taxable, gst_rate, cgst, sgst, igst, taxable + cgst + sgst + igst
+                        )
+                    )
+
             # 3. Inventory Deduction & COGS Calculation
             for item in items:
                 sku = item.get("inventory_id")
@@ -780,73 +807,143 @@ class WorkspaceEngine:
             conn.close()
 
     @staticmethod
-    def add_expense(data: dict):
+    def add_expense(data: dict, user_id: int = 1, company_id: str = "DEFAULT"):
         conn = sqlite3.connect(DB_PATH)
         try:
-            amount = data.get("amount", 0)
+            company_id = data.get("company_id") or company_id
+            amount = float(data.get("amount", 0))
+            category = data.get("category", "General Expense")
+            description = data.get("description", "")
+            date = data.get("date") or datetime.now().strftime("%Y-%m-%d")
+            
+            gst_rate = float(data.get("gst_rate", 0))
+            cgst = float(data.get("cgst_amount", 0))
+            sgst = float(data.get("sgst_amount", 0))
+            igst = float(data.get("igst_amount", 0))
+            total_tax = cgst + sgst + igst
+            
+            if total_tax == 0 and gst_rate > 0:
+                 cgst = (amount * (gst_rate / 100)) / 2
+                 sgst = (amount * (gst_rate / 100)) / 2
+                 total_tax = cgst + sgst
+            
+            base_amount = amount
+            total_payment = base_amount + total_tax
+            
+            vendor_name = data.get("vendor_name", "")
+            vendor_gstin = data.get("vendor_gstin", "")
+            invoice_number = data.get("invoice_number", "")
+            itc_eligible = int(data.get("itc_eligible", 1))
+
             conn.execute(
                 """
-                INSERT INTO expenses (category, amount, description, date)
-                VALUES (?, ?, ?, ?)
+                INSERT INTO expenses (
+                    company_id, category, amount, description, date,
+                    gst_rate, cgst_amount, sgst_amount, igst_amount,
+                    vendor_name, vendor_gstin, invoice_number, itc_eligible
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
                 (
-                    data.get("category"),
-                    amount,
-                    data.get("description"),
-                    datetime.now().strftime("%Y-%m-%d"),
+                    company_id, category, base_amount, description, date,
+                    gst_rate, cgst, sgst, igst,
+                    vendor_name, vendor_gstin, invoice_number, itc_eligible
                 ),
             )
 
             v_id = f"VCH-{uuid.uuid4().hex[:8].upper()}"
-            v_date = datetime.now().strftime("%Y-%m-%d")
-
+            
             conn.execute(
                 """
-                INSERT INTO ledger (account_name, type, amount, description, date, voucher_id, voucher_type)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO ledger (account_name, type, amount, description, date, voucher_id, voucher_type, company_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
                 (
-                    f"Direct Expense - {data.get('category')}",
+                    f"Direct Expense - {category}",
                     "EXPENSE",
-                    amount,
-                    data.get("description"),
-                    v_date,
+                    base_amount,
+                    description,
+                    date,
                     v_id,
                     "Payment",
+                    company_id
                 ),
             )
 
+            if total_tax > 0 and itc_eligible:
+                conn.execute(
+                    """
+                    INSERT INTO ledger (account_name, type, amount, description, date, voucher_id, voucher_type, company_id)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                    (
+                        "GST Input Credit",
+                        "ASSET", 
+                        total_tax,
+                        f"ITC for {category}",
+                        date,
+                        v_id,
+                        "Payment",
+                        company_id
+                    ),
+                )
+            elif total_tax > 0 and not itc_eligible:
+                 conn.execute(
+                     """
+                     INSERT INTO ledger (account_name, type, amount, description, date, voucher_id, voucher_type, company_id)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                 """,
+                     (
+                         f"Direct Expense - {category} (Tax Portion)",
+                         "EXPENSE",
+                         total_tax,
+                         f"Non-ITC Tax for {category}",
+                         date,
+                         v_id,
+                         "Payment",
+                         company_id
+                     ),
+                 )
+
             conn.execute(
                 """
-                INSERT INTO ledger (account_name, type, amount, description, date, voucher_id, voucher_type)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO ledger (account_name, type, amount, description, date, voucher_id, voucher_type, company_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
                 (
-                    f"Bank Operations Account",
+                    "Bank Operations Account",
                     "ASSET",
-                    -amount,
-                    f"Ref: {data.get('category')}",
-                    v_date,
+                    -total_payment,
+                    f"Payment for {category}",
+                    date,
                     v_id,
                     "Payment",
+                    company_id
                 ),
             )
 
             conn.commit()
             return {"status": "success"}
+        except Exception as e:
+            conn.rollback()
+            return {"status": "error", "message": str(e)}
         finally:
             conn.close()
 
     @staticmethod
-    def get_expenses():
+    def get_expenses(company_id: str = None):
         conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row
         try:
             cursor = conn.cursor()
-            cursor.execute("SELECT * FROM expenses ORDER BY date DESC")
+            if company_id:
+                cursor.execute("SELECT * FROM expenses WHERE company_id = ? ORDER BY date DESC", (company_id,))
+            else:
+                cursor.execute("SELECT * FROM expenses ORDER BY date DESC")
             return [dict(row) for row in cursor.fetchall()]
         finally:
             conn.close()
+
 
     @staticmethod
     def update_expense(expense_id: int, data: dict):
@@ -1827,21 +1924,33 @@ class WorkspaceEngine:
             conn.close()
 
     @staticmethod
-    def get_inventory_health():
+    def get_inventory_health(company_id: str = None):
         conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row
         try:
             cursor = conn.cursor()
-            cursor.execute("SELECT sku, name, quantity, sale_price FROM inventory")
+            if company_id:
+                cursor.execute(
+                    "SELECT sku, name, quantity, sale_price FROM inventory WHERE company_id = ?",
+                    (company_id,),
+                )
+            else:
+                cursor.execute("SELECT sku, name, quantity, sale_price FROM inventory")
             inventory = [dict(row) for row in cursor.fetchall()]
 
             health_reports = []
             for item in inventory:
                 sku = item["sku"]
-                cursor.execute(
-                    "SELECT COUNT(*) FROM ledger WHERE description LIKE ?",
-                    (f"%Ref: %{sku}%",),
-                )
+                if company_id:
+                    cursor.execute(
+                        "SELECT COUNT(*) FROM ledger WHERE company_id = ? AND description LIKE ?",
+                        (company_id, f"%Ref: %{sku}%"),
+                    )
+                else:
+                    cursor.execute(
+                        "SELECT COUNT(*) FROM ledger WHERE description LIKE ?",
+                        (f"%Ref: %{sku}%",),
+                    )
                 velocity_count = cursor.fetchone()[0] or 0
                 avg_daily_velocity = (velocity_count + 0.1) / 30.0
 
@@ -3087,7 +3196,7 @@ class WorkspaceEngine:
                         df = pd.read_excel(io.BytesIO(content))
                     record_count = 0
                     category = WorkspaceEngine.identify_and_segregate_data(df)
-                    with open("debug_universal.log", "a") as f_log:
+                    with open("debug_universal.log", "a", encoding="utf-8") as f_log:
                         f_log.write(f"DEBUG: Processing file {fname}, detected category: {category}, rows: {len(df)}\n")
                         f_log.write(f"DEBUG: Data Columns: {list(df.columns)}\n")
                         f_log.write(f"DEBUG: Sample Row: {df.iloc[0].to_dict()}\n")

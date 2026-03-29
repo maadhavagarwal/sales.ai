@@ -6,17 +6,47 @@ Provides rate limiting, CORS, and security headers.
 import os
 import time
 import jwt
+import json
+import sqlite3
 from typing import Dict, List
 from fastapi import Request, HTTPException
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
+from app.core.database_manager import get_user_record, DB_PATH
 
 # Authentication constants
-SECRET_KEY = os.getenv("SECRET_KEY", "INSECURE_DEV_KEY_CHANGE_IN_PRODUCTION")
+# Align default with app.api.v1.deps so Bearer tokens validate across routers
+SECRET_KEY = os.getenv("SECRET_KEY", "9f4e2b8a6d1c3f7e5a9b2d4c6e8f0a1b7c9d2e4f6a8b0c3d")
 ALGORITHM = "HS256"
 
 
 # --- AUTHENTICATION ---
+
+def _log_security_incident(
+    user_id: int | None,
+    company_id: str | None,
+    action: str,
+    details: dict,
+) -> None:
+    conn = sqlite3.connect(DB_PATH)
+    try:
+        conn.execute(
+            """
+            INSERT INTO audit_logs (user_id, company_id, action, module, entity_id, details)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (
+                int(user_id or 0),
+                company_id or "DEFAULT",
+                action,
+                "SECURITY_AUTH",
+                None,
+                json.dumps(details),
+            ),
+        )
+        conn.commit()
+    finally:
+        conn.close()
 
 async def verify_token(request: Request) -> str:
     """
@@ -35,6 +65,80 @@ async def verify_token(request: Request) -> str:
         
         if not email:
             raise HTTPException(status_code=401, detail="Invalid token: email not found")
+
+        # Enforce per-user IP allowlist when configured.
+        user = get_user_record(email)
+        if user:
+            allowed_ips_raw = user.get("allowed_ips")
+            if allowed_ips_raw:
+                allowed_ips: List[str] = []
+                try:
+                    parsed = json.loads(allowed_ips_raw)
+                    if isinstance(parsed, list):
+                        allowed_ips = [str(ip).strip() for ip in parsed if str(ip).strip()]
+                except Exception:
+                    allowed_ips = [s.strip() for s in str(allowed_ips_raw).split(",") if s.strip()]
+                client_ip = request.client.host if request.client else ""
+                if allowed_ips and client_ip not in allowed_ips:
+                    _log_security_incident(
+                        user_id=user.get("id"),
+                        company_id=user.get("company_id"),
+                        action="SECURITY_IP_BLOCK",
+                        details={
+                            "severity": "high",
+                            "email": email,
+                            "client_ip": client_ip,
+                            "allowed_ips_count": len(allowed_ips),
+                        },
+                    )
+                    raise HTTPException(status_code=403, detail="IP address is not allowed for this account")
+
+            # Enforce organization MFA policy when enabled.
+            # Allow system admin endpoints so admins can remediate lockouts.
+            path = request.url.path or ""
+            mfa_bypass_prefixes = (
+                "/api/v1/system/organization/settings",
+                "/api/v1/system/organization/users",
+                "/api/v1/system/organization/invites",
+                "/api/v1/system/entitlements",
+                "/health",
+                "/ready",
+            )
+            if not path.startswith(mfa_bypass_prefixes):
+                company_id = user.get("company_id")
+                if company_id:
+                    conn = sqlite3.connect(DB_PATH)
+                    try:
+                        row = conn.execute(
+                            "SELECT details_json FROM company_profiles WHERE id = ?",
+                            (company_id,),
+                        ).fetchone()
+                    finally:
+                        conn.close()
+
+                    require_mfa = False
+                    if row and row[0]:
+                        try:
+                            details = json.loads(row[0])
+                            require_mfa = bool(details.get("require_mfa", False))
+                        except Exception:
+                            require_mfa = False
+
+                    if require_mfa and int(user.get("mfa_enabled") or 0) != 1:
+                        _log_security_incident(
+                            user_id=user.get("id"),
+                            company_id=company_id,
+                            action="SECURITY_MFA_BLOCK",
+                            details={
+                                "severity": "high",
+                                "email": email,
+                                "path": path,
+                            },
+                        )
+                        raise HTTPException(
+                            status_code=403,
+                            detail="MFA is required for this organization. Contact an admin to enable MFA on your account.",
+                        )
         
         return email
     except jwt.ExpiredSignatureError:
@@ -96,6 +200,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     
     def __init__(self, app, requests_per_minute: int = 60):
         super().__init__(app)
+        self.requests_per_minute = requests_per_minute
         self.limiter = RateLimiter(requests_per_minute)
     
     async def dispatch(self, request: Request, call_next):
@@ -107,15 +212,15 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             if not self.limiter.is_allowed(client_ip):
                 raise HTTPException(
                     status_code=429,
-                    detail="Too many requests. Maximum 60 requests per minute allowed."
+                    detail=f"Too many requests. Maximum {self.requests_per_minute} requests per minute allowed."
                 )
         
         response = await call_next(request)
         
         # Add rate limit headers
-        response.headers["X-RateLimit-Limit"] = "60"
+        response.headers["X-RateLimit-Limit"] = str(self.requests_per_minute)
         response.headers["X-RateLimit-Remaining"] = str(
-            60 - len(self.limiter.clients.get(client_ip, []))
+            max(0, self.requests_per_minute - len(self.limiter.clients.get(client_ip, [])))
         )
         
         return response

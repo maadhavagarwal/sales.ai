@@ -10,8 +10,8 @@
  */
 
 import { useEffect, useState, useCallback } from "react"
-import { useSyncStore } from "./useSyncStore"
-import { useStore } from "./useStore"
+import { useSyncStore } from "@/store/useSyncStore"
+import { useStore } from "@/store/useStore"
 
 interface SyncOptions {
   apiBasePath?: string
@@ -74,7 +74,7 @@ export function useSynchronizedData<T>(
       const setter = `set${entity.charAt(0).toUpperCase()}${entity.slice(1)}`
       const setterFunc = syncStore[setter as keyof typeof syncStore]
       if (typeof setterFunc === "function") {
-        setterFunc(fetchedData)
+        ;(setterFunc as any)(fetchedData)
       }
 
       syncStore.updateSyncTime(entity)
@@ -109,7 +109,7 @@ export function useSynchronizedData<T>(
         const adderFunc = `add${entity.charAt(0).toUpperCase()}${entity.slice(1)}`
         const adder = syncStore[adderFunc as keyof typeof syncStore]
         if (typeof adder === "function") {
-          adder(newItem)
+          ;(adder as any)(newItem)
         }
 
         // Notify other pages via increment
@@ -146,7 +146,7 @@ export function useSynchronizedData<T>(
         const updateFunc = `update${entity.charAt(0).toUpperCase()}${entity.slice(1)}`
         const updater = syncStore[updateFunc as keyof typeof syncStore]
         if (typeof updater === "function") {
-          updater(id, updates)
+          ;(updater as any)(id, updates)
         }
 
         // Notify other pages
@@ -179,7 +179,7 @@ export function useSynchronizedData<T>(
         const deleteFunc = `delete${entity.charAt(0).toUpperCase()}${entity.slice(1)}`
         const deleter = syncStore[deleteFunc as keyof typeof syncStore]
         if (typeof deleter === "function") {
-          deleter(id)
+          ;(deleter as any)(id)
         }
 
         // Notify other pages

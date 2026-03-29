@@ -69,7 +69,7 @@ export default function WorkspaceFinance() {
                     />
                 </div>
 
-                <Card variant="bento" className="p-8 border-[--primary]/20 bg-gradient-to-br from-[--primary]/10 to-transparent relative overflow-hidden h-full flex flex-col justify-between">
+                <Card variant="bento" className="p-8 border-[--primary]/20/10 relative overflow-hidden h-full flex flex-col justify-between">
                     <div>
                         <h3 className="text-xl font-black text-white mb-2">Treasury Controls</h3>
                         <p className="text-sm text-white/50 mb-8 leading-relaxed">
@@ -84,7 +84,7 @@ export default function WorkspaceFinance() {
                             Generate Tax Compliance PDF
                         </Button>
                     </div>
-                    <Banknote className="absolute -right-8 -bottom-8 w-48 h-48 text-white/[0.02] rotate-12" />
+                    <Banknote className="absolute -right-8 -bottom-8 w-48 h-48 text-white/2 rotate-12" />
                 </Card>
             </div>
 
@@ -109,7 +109,7 @@ export default function WorkspaceFinance() {
                             <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden mt-4">
                                 <motion.div initial={{ width: 0 }} animate={{ width: "65%" }} className="h-full bg-[--primary]" />
                             </div>
-                            <p className="text-[9px] font-bold text-white/30 mt-2 uppercase tracking-tight">65% Authorized Burn Used</p>
+                            <p className="text-[9px] font-bold text-[--text-dim] mt-2 uppercase tracking-tight">65% Authorized Burn Used</p>
                         </Card>
                     ))}
                 </div>

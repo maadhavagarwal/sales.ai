@@ -12,7 +12,7 @@ export default function RevenueChart({ data }: { data: Record<string, number> })
         backgroundColor: "transparent",
         tooltip: {
             trigger: "axis",
-            backgroundColor: "rgba(10,15,30,0.95)",
+            backgroundColor: "var(--surface-1)",
             borderColor: "rgba(99,102,241,0.3)",
             borderWidth: 1,
             textStyle: { color: "#f9fafb", fontSize: 13, fontFamily: "Inter" },
@@ -26,13 +26,13 @@ export default function RevenueChart({ data }: { data: Record<string, number> })
         xAxis: {
             type: "category",
             data: entries.map(([k]) => k),
-            axisLine: { lineStyle: { color: "rgba(255,255,255,0.06)" } },
+            axisLine: { lineStyle: { color: "var(--border-subtle)" } },
             axisLabel: { color: "#9ca3af", fontSize: 11, fontFamily: "Inter" },
             axisTick: { show: false },
         },
         yAxis: {
             type: "value",
-            splitLine: { lineStyle: { color: "rgba(255,255,255,0.04)" } },
+            splitLine: { lineStyle: { color: "var(--border-subtle)" } },
             axisLabel: {
                 color: "#6b7280",
                 fontSize: 11,

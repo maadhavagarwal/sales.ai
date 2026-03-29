@@ -431,7 +431,7 @@ export default function HRPageSync() {
                             <button
                                 onClick={handleCreateEmployee}
                                 disabled={loadingLocal}
-                                className="w-full py-3 bg-gradient-to-r from-[--primary] to-purple-600 rounded-lg font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+                                className="w-full py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
                             >
                                 {loadingLocal ? (
                                     <>

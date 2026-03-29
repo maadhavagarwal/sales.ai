@@ -19,6 +19,7 @@ import { motion } from "framer-motion"
 import SafeChart from "@/components/SafeChart"
 import { Card, Button, Badge } from "@/components/ui"
 import { Skeleton, SkeletonCard, SkeletonChart } from "@/components/ui/Skeleton"
+import { Bot, Sparkles, Zap, TrendingUp } from "lucide-react"
 
 function MLResultsPanel({ ml }: { ml: Record<string, any> }) {
     if (!ml) return null
@@ -32,11 +33,11 @@ function MLResultsPanel({ ml }: { ml: Record<string, any> }) {
             <Card variant="bento" padding="lg" className="border-[--primary]/20">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
                     <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-[--primary]/20 flex items-center justify-center text-2xl shadow-[--shadow-glow]">
-                            🤖
+                        <div className="w-12 h-12 rounded-2xl bg-[--primary]/20 flex items-center justify-center text-[--primary]">
+                            <Bot className="h-6 w-6" />
                         </div>
                         <div>
-                            <h3 className="text-lg font-black text-white tracking-tight">Enterprise ML Pipeline</h3>
+                            <h3 className="text-lg font-black text-[--text-primary] tracking-tight">Enterprise ML Pipeline</h3>
                             <p className="text-[10px] font-bold text-[--text-muted] uppercase tracking-widest mt-1">
                                 Execution Mode: <span className="text-[--primary]">{ml.mode || "DISTRIBUTED"}</span>
                             </p>
@@ -54,15 +55,15 @@ function MLResultsPanel({ ml }: { ml: Record<string, any> }) {
                             {ml.automl_results.best_model && (
                                 <Card variant="glass" padding="md" className="bg-[--primary]/5 border-[--primary]/10">
                                     <p className="text-[10px] font-black text-[--text-muted] uppercase tracking-[0.2em] mb-2">Optimal Model Architecture</p>
-                                    <p className="text-xl font-black text-white tracking-tight leading-none">{ml.automl_results.best_model}</p>
-                                    <div className="mt-4 pt-4 border-t border-white/5 flex justify-between items-center">
+                                    <p className="text-xl font-black text-[--text-primary] tracking-tight leading-none">{ml.automl_results.best_model}</p>
+                                    <div className="mt-4 pt-4 border-t border-[--border-subtle] flex justify-between items-center">
                                         <span className="text-[9px] font-bold text-[--text-muted]">Validation Accuracy</span>
                                         <span className="text-xs font-black text-[--accent-emerald]">{(ml.automl_results.best_score * 100).toFixed(2)}%</span>
                                     </div>
                                 </Card>
                             )}
 
-                            <div className="p-6 rounded-[--radius-md] bg-black/40 border border-white/5 space-y-4">
+                            <div className="p-6 rounded-[--radius-md] bg-[--surface-2] border border-[--border-default] space-y-4">
                                 <h4 className="text-[10px] font-black uppercase tracking-[0.15em] text-[--text-muted]">Execution Telemetry</h4>
                                 <div className="space-y-3">
                                     <TelemetryLine label="Training Samples" value="124,502" />
@@ -84,7 +85,7 @@ function MLResultsPanel({ ml }: { ml: Record<string, any> }) {
                                         backgroundColor: "transparent",
                                         tooltip: {
                                             trigger: "axis",
-                                            backgroundColor: "rgba(10,15,30,0.95)",
+                                            backgroundColor: "var(--surface-1)",
                                             borderColor: "rgba(99,102,241,0.3)",
                                             borderWidth: 1,
                                             textStyle: { color: "#f9fafb", fontSize: 13, fontFamily: 'var(--font-geist-mono)' },
@@ -93,13 +94,13 @@ function MLResultsPanel({ ml }: { ml: Record<string, any> }) {
                                         xAxis: {
                                             type: "category",
                                             data: Object.keys(ml.automl_results.model_scores),
-                                            axisLine: { lineStyle: { color: "rgba(255,255,255,0.06)" } },
+                                            axisLine: { lineStyle: { color: "var(--border-subtle)" } },
                                             axisLabel: { color: "#9ca3af", fontSize: 10, fontWeight: 700, rotate: 0 },
                                             axisTick: { show: false },
                                         },
                                         yAxis: {
                                             type: "value",
-                                            splitLine: { lineStyle: { color: "rgba(255,255,255,0.03)" } },
+                                            splitLine: { lineStyle: { color: "var(--surface-2)" } },
                                             axisLabel: { color: "#6b7280", fontSize: 10, fontWeight: 700 },
                                         },
                                         series: [{
@@ -134,7 +135,7 @@ function TelemetryLine({ label, value }: { label: string, value: string }) {
     return (
         <div className="flex justify-between items-center">
             <span className="text-[10px] font-medium text-[--text-muted] tracking-tight">{label}</span>
-            <span className="text-[10px] font-black text-white font-mono">{value}</span>
+            <span className="text-[10px] font-black text-[--text-primary] font-mono">{value}</span>
         </div>
     )
 }
@@ -173,8 +174,8 @@ export default function AnalyticsPage() {
 
     return (
         <DashboardLayout
-            title="Intelligence Hub"
-            subtitle="Global synthetic analysis and multi-model insights"
+            title="Predictive Intelligence Core"
+            subtitle="Forecasting, anomaly detection, and executive-grade machine learning insights"
             actions={
                 results?.dataset_id ? (
                     <Button
@@ -184,17 +185,32 @@ export default function AnalyticsPage() {
                         disabled={!results.dataset_id}
                         className="shadow-[--shadow-glow]"
                     >
-                        🔮 Forecast Future Yield
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        Forecast Future Yield
                     </Button>
                 ) : null
             }
         >
             {isUploading ? (
                 <div className="page-stack">
+                    <div className="showcase-panel rounded-3xl p-5 sm:p-6 aurora-ring">
+                        <div className="flex flex-wrap items-center justify-between gap-4">
+                            <div>
+                                <p className="text-[10px] uppercase tracking-[0.24em] text-[--text-muted] font-black">ANALYTICS ORCHESTRATION</p>
+                                <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-[--text-primary] mt-2">Strategic Signal Engine</h2>
+                                <p className="text-sm text-[--text-muted] mt-2 max-w-3xl">
+                                    Enterprise-grade forecasting, anomaly detection, and ML inference in one intelligence layer.
+                                </p>
+                            </div>
+                            <Badge variant="pro">LIVE PIPELINE</Badge>
+                        </div>
+                    </div>
                     <div className="flex items-center gap-4 mb-10 p-5 sm:p-8 rounded-3xl bg-[--primary]/5 border border-[--primary]/10 animate-pulse">
-                        <div className="w-12 h-12 rounded-2xl bg-[--primary]/20 flex items-center justify-center text-2xl">⚡</div>
+                        <div className="w-12 h-12 rounded-2xl bg-[--primary]/20 flex items-center justify-center text-[--primary]">
+                            <Zap className="h-6 w-6" />
+                        </div>
                         <div>
-                            <h3 className="text-lg sm:text-xl font-black text-white">Neural Processing Active</h3>
+                            <h3 className="text-lg sm:text-xl font-black text-[--text-primary]">Neural Processing Active</h3>
                             <p className="text-sm font-medium text-[--text-muted]">Orchestrating multi-model pipeline and synthesizing strategic vectors...</p>
                         </div>
                     </div>
@@ -202,12 +218,12 @@ export default function AnalyticsPage() {
                 </div>
             ) : !results ? (
                 <div className="flex flex-col items-center justify-center min-h-[60vh] text-center gap-8">
-                    <div className="w-24 h-24 rounded-3xl bg-white/2 border border-white/5 flex items-center justify-center text-4xl shadow-inner relative">
-                        <div className="absolute inset-0 bg-[--primary]/5 blur-2xl rounded-full" />
-                        📈
+                    <div className="w-24 h-24 rounded-3xl bg-[--surface-2] border border-[--border-default] flex items-center justify-center text-[--primary] relative">
+                        <div className="absolute inset-0 bg-[--primary]/5 rounded-full" />
+                        <TrendingUp className="h-11 w-11" />
                     </div>
                     <div className="space-y-3">
-                        <p className="text-xl font-black text-white tracking-tight font-jakarta">No Synthetic Data Detected</p>
+                        <p className="text-xl font-black text-[--text-primary] tracking-tight font-jakarta">No Synthetic Data Detected</p>
                         <p className="text-sm font-medium text-[--text-muted] max-w-xs mx-auto leading-relaxed">
                             Upload enterprise datasets from the command terminal to initialize deep analytics.
                         </p>
@@ -215,6 +231,21 @@ export default function AnalyticsPage() {
                 </div>
             ) : (
                 <div className="page-rhythm">
+                    <div className="showcase-panel rounded-3xl p-5 sm:p-6 aurora-ring">
+                        <div className="flex flex-wrap items-center justify-between gap-4">
+                            <div>
+                                <p className="text-[10px] uppercase tracking-[0.24em] text-[--text-muted] font-black">ANALYTICS ORCHESTRATION</p>
+                                <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-[--text-primary] mt-2">Strategic Signal Engine</h2>
+                                <p className="text-sm text-[--text-muted] mt-2 max-w-3xl">
+                                    Convert raw operational streams into board-level insight with predictive models and explainable intelligence.
+                                </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Badge variant="pro">MODEL STACK ACTIVE</Badge>
+                                <Badge variant="outline">REAL-TIME ANALYTICS</Badge>
+                            </div>
+                        </div>
+                    </div>
                     <EnterpriseIntelligence />
                     {/* Confidence & Intelligence Section */}
                     {(results.confidence_score !== undefined || results.data_quality !== undefined) && (
@@ -300,8 +331,8 @@ export default function AnalyticsPage() {
                     </div>
 
                     {results.analyst_report && (
-                        <Card variant="bento" padding="lg" className="bg-black/40 border-white/5">
-                            <h3 className="section-kicker text-[--primary] mb-8 pb-5 border-b border-white/5">Autonomous Board Report</h3>
+                        <Card variant="bento" padding="lg" className="bg-[--surface-1] border-[--border-default]">
+                            <h3 className="section-kicker text-[--primary] mb-8 pb-5 border-b border-[--border-subtle]">Autonomous Board Report</h3>
                             <AnalystReportPanel report={results.analyst_report} />
                         </Card>
                     )}
@@ -310,3 +341,4 @@ export default function AnalyticsPage() {
         </DashboardLayout>
     )
 }
+

@@ -56,7 +56,7 @@ export default function DebugPanel({ results, datasetId }: DebugPanelProps) {
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            className="absolute bottom-16 right-0 bg-slate-900/95 backdrop-blur border border-white/10 rounded-lg p-4 w-80 text-sm shadow-xl"
+            className="absolute bottom-16 right-0 bg-slate-900/95 backdrop-blur border border-white/10 rounded-lg p-4 w-80 text-sm"
           >
             <h4 className="font-bold text-white mb-3">Data Availability</h4>
             <div className="space-y-2">

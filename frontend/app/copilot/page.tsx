@@ -20,7 +20,7 @@ export default function CopilotPage() {
                 </div>
             }
         >
-            <div className="h-[calc(100vh-250px)] min-h-[600px] rounded-3xl overflow-hidden border border-white/5 shadow-2xl">
+            <div className="h-[calc(100vh-250px)] min-h-[600px] rounded-3xl overflow-hidden border border-[--border-subtle]">
                 <UnifiedChatComponent />
             </div>
         </DashboardLayout>

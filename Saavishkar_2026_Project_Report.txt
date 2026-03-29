@@ -1,0 +1,36 @@
+# NeuralBI: Autonomous Enterprise Decision Intelligence
+
+## 1. Introduction
+Modern enterprises operate in highly complex environments where data is often trapped in fragmented silos such as separate CRM, ERP, HRMS, and accounting systems. This fragmentation prevents real-time visibility into the overall health of the organization and necessitates slow, manual processes for data reconciliation and financial reporting. NeuralBI introduces an autonomous "Enterprise Nexus", integrating Sales, HR, Inventory, and Financial Ledgers into a singular system powered by sophisticated Artificial Intelligence.
+
+## 2. Problem Statement
+The primary challenge addressed by NeuralBI is the "Time-to-Insight" latency in corporate decision-making. Specifically:
+* Disconnected Data: Operations, Finance, and Sales data do not communicate cleanly.
+* Manual Bookkeeping: Translating operational events (like an invoice creation) into compliant double-entry ledger records is error-prone.
+* Reactive Analytics: Standard dashboards only show historical data, failing to predict future trends or identify hidden anomalies in real-time.
+
+## 3. Proposed Solution
+NeuralBI provides a unified, multi-tenant workspace architecture that ingests operations data via a universal API mechanism. The core innovation is the Natural Language Business Intelligence (NLBI) engine. Users can interrogate their enterprise data using everyday language. 
+The system features "Zero-Touch Ledger Sync", where operational actions immediately generate corresponding Accounts Receivable, Revenue, GST, and COGS vouchers. 
+
+## 4. System Architecture
+The platform is built on a highly modular architecture:
+* Frontend Layer (Next.js 15): A premium, "Diamond-Grade" UI featuring glassmorphism and real-time state management.
+* API Gateway (FastAPI): Highly asynchronous REST and WebSocket architecture capable of handling live telemetry and KPI streaming.
+* Intelligence Engine: Utilizes Hybrid RAG (Retrieval-Augmented Generation) combining dense vector embeddings (FAISS) with BM25 algorithms, alongside deterministic ML models for anomaly detection (Isolation Forests) and forecasting.
+* Multi-Tenant Data Store: SQLite-based strict database-level isolation ensuring zero cross-tenant data leakage.
+
+## 5. Key Features Developed
+* Universal Data Ingestion: High-load bulk processing of CSV files spanning multiple domains at once.
+* Neural Intelligence Hub: Ask complex business questions and receive dynamic charts, statistical reasoning, and insights.
+* Corporate Treasury Matrix: Live monitoring of risk factors and business dynamics using sophisticated financial metrics.
+* Statutory AI: Push-button generation of GST reports and CA-ready financial statements.
+
+## 6. Results and Demonstration
+The platform successfully processes massive datasets and returns accurate natural language insights with sub-second latency. The automated ledger correctly balances the accounting equation for thousands of concurrent invoice creations. 
+
+**Deployed Solution Link:** [Insert your deployed link here, e.g., https://neuralbi.onrender.com]
+**GitHub Repository:** [Insert your Repository link if public]
+
+## 7. Future Scope
+Moving forward, NeuralBI aims to integrate directly with banking open APIs for live reconciliation, implement advanced Secret Management infrastructure, and introduce deeper automated AI-agent actions that can autonomously mitigate risks without human intervention.

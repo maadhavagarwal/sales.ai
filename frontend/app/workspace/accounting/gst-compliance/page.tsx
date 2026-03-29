@@ -3,9 +3,10 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Card, Button, Badge, ResponsiveTable } from '@/components/ui';
 import { Tabs, TabsList, TabsContent, TabsTrigger } from '@/components/ui/Tabs';
-import { Download, FileText, CheckCircle, AlertCircle } from 'lucide-react';
+import { Download, FileText, CheckCircle, AlertCircle, ShieldCheck } from 'lucide-react';
+import { getAuthToken } from '@/lib/session';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api/backend';
 
 interface GSTSummary {
   month_year: string;
@@ -60,7 +61,7 @@ export default function GSTCompliancePage() {
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const token = getAuthToken();
 
   // Fetch GST Summary
   const fetchGstSummary = useCallback(async () => {
@@ -99,7 +100,7 @@ export default function GSTCompliancePage() {
       if (!response.ok) throw new Error(data.detail || 'Failed to fetch GSTR-1');
 
       setGstr1Report(data.report);
-      setSuccessMessage('✓ GSTR-1 report generated');
+      setSuccessMessage('GSTR-1 report generated successfully.');
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Error generating GSTR-1');
@@ -123,7 +124,7 @@ export default function GSTCompliancePage() {
       if (!response.ok) throw new Error(data.detail || 'Failed to fetch GSTR-2');
 
       setGstr2Report(data.report);
-      setSuccessMessage('✓ GSTR-2 report generated');
+      setSuccessMessage('GSTR-2 report generated successfully.');
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Error generating GSTR-2');
@@ -147,7 +148,7 @@ export default function GSTCompliancePage() {
       if (!response.ok) throw new Error(data.detail || 'Failed to fetch GSTR-3B');
 
       setGstr3bReport(data.report);
-      setSuccessMessage('✓ GSTR-3B report generated');
+      setSuccessMessage('GSTR-3B report generated successfully.');
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Error generating GSTR-3B');
@@ -177,10 +178,38 @@ export default function GSTCompliancePage() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.detail || 'Filing failed');
 
-      setSuccessMessage(`✓ ${returnType} filed successfully`);
+      setSuccessMessage(`${returnType} filed successfully.`);
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Filing failed');
+    }
+  };
+
+  // Download ALL Books
+  const handleDownloadAllBooks = async () => {
+    if (!token) return;
+    try {
+      setLoading(true);
+      const url = `${API_URL}/api/v1/workspace/export/all-books`;
+      const response = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!response.ok) throw new Error('Download failed');
+      const blob = await response.blob();
+      const objUrl = window.URL.createObjectURL(blob);
+      const element = document.createElement('a');
+      element.href = objUrl;
+      element.download = 'CA_Ready_Books.zip';
+      document.body.appendChild(element);
+      element.click();
+      document.body.removeChild(element);
+      window.URL.revokeObjectURL(objUrl);
+      setSuccessMessage('CA-ready books downloaded successfully.');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (error) {
+       setErrorMessage('Failed to download accounting books');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -201,36 +230,59 @@ export default function GSTCompliancePage() {
   }, [fetchGstSummary]);
 
   const formatCurrency = (value: number | undefined) => {
-    return `₹${(value || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
+    return `INR ${(value || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
   };
 
   return (
-    <div className="space-y-6 p-6 bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
+    <div className="space-y-6 p-6 min-h-screen bg-[--surface-0] text-[--text-primary]">
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-4xl font-bold text-slate-900">GST Compliance & Filing</h1>
-          <p className="text-slate-600 mt-2">Manage GSTR-1, GSTR-2, GSTR-3B returns and tax reconciliation</p>
+          <h1 className="text-4xl font-bold text-[--text-primary]">GST Compliance & Filing</h1>
+          <p className="text-[--text-secondary] mt-2">Manage GSTR-1, GSTR-2, GSTR-3B returns and tax reconciliation</p>
         </div>
-        <input
-          type="month"
-          value={selectedMonth}
-          onChange={(e) => setSelectedMonth(e.target.value)}
-          className="px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-        />
+        <div className="flex items-center gap-4">
+          <input
+            type="month"
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value)}
+            className="px-3 py-2 border border-[--border-default] bg-[--surface-1] text-[--text-primary] rounded-lg focus:outline-none focus:ring-2 focus:ring-[--primary]/40"
+          />
+          <Button 
+            onClick={handleDownloadAllBooks} 
+            disabled={loading}
+            icon={<Download className="h-4 w-4" />}
+            className="whitespace-nowrap bg-[--primary] hover:opacity-90"
+          >
+            Download All Books (CA Version)
+          </Button>
+        </div>
+      </div>
+
+      <div className="showcase-panel rounded-3xl p-6 aurora-ring">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.24em] text-[--text-muted] font-black">STATUTORY INTELLIGENCE</p>
+            <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-[--text-primary] mt-2">GST Filing Control Center</h2>
+            <p className="text-sm text-[--text-muted] mt-2 max-w-3xl">
+              Generate GSTR reports, reconcile tax components, and execute filing-ready workflows from one place.
+            </p>
+          </div>
+          <Badge variant="pro"><ShieldCheck className="h-3.5 w-3.5 mr-1" /> COMPLIANCE TRACKED</Badge>
+        </div>
       </div>
 
       {/* Alerts */}
       {successMessage && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-2">
+        <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-4 flex items-center gap-2">
           <CheckCircle className="h-4 w-4 text-green-600" />
-          <p className="text-green-800">{successMessage}</p>
+          <p className="text-emerald-700 dark:text-emerald-300">{successMessage}</p>
         </div>
       )}
       {errorMessage && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-2">
+        <div className="bg-rose-500/10 border border-rose-500/30 rounded-lg p-4 flex items-center gap-2">
           <AlertCircle className="h-4 w-4 text-red-600" />
-          <p className="text-red-800">{errorMessage}</p>
+          <p className="text-rose-700 dark:text-rose-300">{errorMessage}</p>
         </div>
       )}
 
@@ -239,47 +291,47 @@ export default function GSTCompliancePage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card padding="md">
             <div className="pb-2">
-              <h3 className="text-sm font-medium text-slate-600">Output Tax</h3>
+              <h3 className="text-sm font-medium text-[--text-secondary]">Output Tax</h3>
             </div>
             <div>
               <div className="text-2xl font-bold">
                 {formatCurrency(gstSummary.outward_supply.total_output_tax)}
               </div>
-              <p className="text-xs text-slate-500 mt-1">Collected from customers</p>
+              <p className="text-xs text-[--text-dim] mt-1">Collected from customers</p>
             </div>
           </Card>
 
           <Card padding="md">
             <div className="pb-2">
-              <h3 className="text-sm font-medium text-slate-600">Input Tax</h3>
+              <h3 className="text-sm font-medium text-[--text-secondary]">Input Tax</h3>
             </div>
             <div>
               <div className="text-2xl font-bold">
                 {formatCurrency(gstSummary.inward_supply.total_input_tax)}
               </div>
-              <p className="text-xs text-slate-500 mt-1">Eligible for credit</p>
+              <p className="text-xs text-[--text-dim] mt-1">Eligible for credit</p>
             </div>
           </Card>
 
           <Card padding="md">
             <div className="pb-2">
-              <h3 className="text-sm font-medium text-slate-600">Net Payable</h3>
+              <h3 className="text-sm font-medium text-[--text-secondary]">Net Payable</h3>
             </div>
             <div>
               <div className="text-2xl font-bold text-red-600">
                 {formatCurrency(gstSummary.net_tax_payable.total)}
               </div>
-              <p className="text-xs text-slate-500 mt-1">Tax to be deposited</p>
+              <p className="text-xs text-[--text-dim] mt-1">Tax to be deposited</p>
             </div>
           </Card>
 
           <Card padding="md">
             <div className="pb-2">
-              <h3 className="text-sm font-medium text-slate-600">Filing Status</h3>
+              <h3 className="text-sm font-medium text-[--text-secondary]">Filing Status</h3>
             </div>
             <div>
               <Badge className="mt-2">Pending</Badge>
-              <p className="text-xs text-slate-500 mt-2">Not yet submitted</p>
+              <p className="text-xs text-[--text-dim] mt-2">Not yet submitted</p>
             </div>
           </Card>
         </div>
@@ -294,7 +346,7 @@ export default function GSTCompliancePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Output Tax */}
               <div className="space-y-4">
-                <h3 className="font-semibold text-blue-900">Output Tax (GSTR-1)</h3>
+                <h3 className="font-semibold text-[--primary]">Output Tax (GSTR-1)</h3>
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span>CGST 50%:</span>
@@ -317,7 +369,7 @@ export default function GSTCompliancePage() {
 
               {/* Input Tax */}
               <div className="space-y-4">
-                <h3 className="font-semibold text-green-900">Input Tax (GSTR-2)</h3>
+                <h3 className="font-semibold text-[--accent-emerald]">Input Tax (GSTR-2)</h3>
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span>CGST 50%:</span>
@@ -354,7 +406,7 @@ export default function GSTCompliancePage() {
             <div className="flex flex-row justify-between items-start mb-4">
               <div>
                 <h2 className="text-lg font-semibold">GSTR-1: Outward Supplies</h2>
-                <p className="text-sm text-slate-600">All sales and supplies made during the month</p>
+                <p className="text-sm text-[--text-secondary]">All sales and supplies made during the month</p>
               </div>
               <Button
                 variant="outline"
@@ -369,8 +421,8 @@ export default function GSTCompliancePage() {
             <div>
               {gstr1Report ? (
                 <div className="space-y-4">
-                  <div className="bg-blue-50 p-4 rounded-lg">
-                    <p className="text-sm text-blue-900">
+                  <div className="bg-[--surface-2] border border-[--border-subtle] p-4 rounded-lg">
+                    <p className="text-sm text-[--text-primary]">
                       <strong>Filing Deadline:</strong> {gstr1Report.filing_deadline}
                     </p>
                   </div>
@@ -450,7 +502,7 @@ export default function GSTCompliancePage() {
             <div className="flex flex-row justify-between items-start mb-4">
               <div>
                 <h2 className="text-lg font-semibold">GSTR-2: Inward Supplies</h2>
-                <p className="text-sm text-slate-600">All purchases and eligible Input Tax Credit</p>
+                <p className="text-sm text-[--text-secondary]">All purchases and eligible Input Tax Credit</p>
               </div>
               <Button
                 variant="outline"
@@ -465,8 +517,8 @@ export default function GSTCompliancePage() {
             <div>
               {gstr2Report ? (
                 <div className="space-y-4">
-                  <div className="bg-green-50 p-4 rounded-lg">
-                    <p className="text-sm text-green-900">
+                  <div className="bg-[--surface-2] border border-[--border-subtle] p-4 rounded-lg">
+                    <p className="text-sm text-[--text-primary]">
                       <strong>Filing Deadline:</strong> {gstr2Report.filing_deadline}
                     </p>
                   </div>
@@ -543,15 +595,15 @@ export default function GSTCompliancePage() {
             <div>
               {gstr3bReport ? (
                 <div className="space-y-4">
-                  <div className="bg-red-50 p-4 rounded-lg">
+                  <div className="bg-[--surface-2] border border-[--border-subtle] p-4 rounded-lg">
                     <p className="text-sm text-red-900">
                       <strong>Filing Deadline:</strong> {gstr3bReport.filing_deadline}
                     </p>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-blue-50 p-4 rounded-lg">
-                      <h4 className="font-semibold text-blue-900 mb-3">Output Tax</h4>
+                    <div className="bg-[--surface-2] border border-[--border-subtle] p-4 rounded-lg">
+                      <h4 className="font-semibold text-[--primary] mb-3">Output Tax</h4>
                       <div className="space-y-2 text-sm">
                         <div className="flex justify-between">
                           <span>CGST:</span>
@@ -572,8 +624,8 @@ export default function GSTCompliancePage() {
                       </div>
                     </div>
 
-                    <div className="bg-green-50 p-4 rounded-lg">
-                      <h4 className="font-semibold text-green-900 mb-3">Input Tax</h4>
+                    <div className="bg-[--surface-2] border border-[--border-subtle] p-4 rounded-lg">
+                      <h4 className="font-semibold text-[--accent-emerald] mb-3">Input Tax</h4>
                       <div className="space-y-2 text-sm">
                         <div className="flex justify-between">
                           <span>CGST:</span>
@@ -595,12 +647,12 @@ export default function GSTCompliancePage() {
                     </div>
                   </div>
 
-                  <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
-                    <h4 className="font-semibold text-yellow-900 mb-2">Net Tax Liability</h4>
-                    <div className="text-3xl font-bold text-yellow-700">
+                  <div className="bg-[--surface-2] border border-[--border-subtle] p-4 rounded-lg">
+                    <h4 className="font-semibold text-[--accent-amber] mb-2">Net Tax Liability</h4>
+                    <div className="text-3xl font-bold text-[--text-primary]">
                       {formatCurrency(gstr3bReport.tax_liability?.total_payable)}
                     </div>
-                    <p className="text-xs text-yellow-700 mt-2">Amount to be deposited to Government</p>
+                    <p className="text-xs text-[--text-secondary] mt-2">Amount to be deposited to Government</p>
                   </div>
 
                   <div className="flex gap-2 pt-4">
@@ -630,11 +682,11 @@ export default function GSTCompliancePage() {
       </Tabs>
 
       {/* Compliance Checklist */}
-      <Card padding="md" className="border-blue-200 bg-blue-50">
+      <Card padding="md" className="border-[--border-default] bg-[--surface-2]">
         <div className="pb-2">
-          <h3 className="text-blue-900 font-semibold">GST Compliance Checklist</h3>
+          <h3 className="text-[--text-primary] font-semibold">GST Compliance Checklist</h3>
         </div>
-        <div className="space-y-2 text-sm text-blue-900">
+        <div className="space-y-2 text-sm text-[--text-secondary]">
             <div className="flex items-center gap-2">
               <input type="checkbox" defaultChecked id="doc" className="w-4 h-4" />
               <label htmlFor="doc">Collect seller's invoice and bills for purchases</label>

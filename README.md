@@ -89,6 +89,7 @@ npm run dev
 - **Frontend**: http://localhost:3000
 - **API Documentation**: http://localhost:8000/docs
 - **Health Check**: http://localhost:8000/health
+- **Readiness Check**: http://localhost:8000/ready
 
 ### Production Deployment
 
@@ -112,6 +113,13 @@ Expected behavior in this profile:
 ```bash
 docker-compose -f docker-compose.prod.yml up -d
 ```
+
+**Launch Verification**
+```bash
+powershell -ExecutionPolicy Bypass -File _scripts/launch_preflight.ps1 -ApiBaseUrl http://127.0.0.1:8000
+```
+
+Detailed checklist: `docs/PRODUCTION_LAUNCH_CHECKLIST.md`
 
 **Environment Configuration**
 ```bash

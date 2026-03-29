@@ -56,7 +56,7 @@ export default function AnalystReportPanel({ report }: { report: AnalystReport }
                         <div
                             style={{
                                 padding: "0.75rem 1rem",
-                                background: "rgba(255,255,255,0.02)",
+                                background: "var(--surface-2)",
                                 borderRadius: "var(--radius-md)",
                                 border: "1px solid var(--border-subtle)",
                             }}
@@ -67,7 +67,7 @@ export default function AnalystReportPanel({ report }: { report: AnalystReport }
                         <div
                             style={{
                                 padding: "0.75rem 1rem",
-                                background: "rgba(255,255,255,0.02)",
+                                background: "var(--surface-2)",
                                 borderRadius: "var(--radius-md)",
                                 border: "1px solid var(--border-subtle)",
                             }}
@@ -78,7 +78,7 @@ export default function AnalystReportPanel({ report }: { report: AnalystReport }
                         <div
                             style={{
                                 padding: "0.75rem 1rem",
-                                background: "rgba(255,255,255,0.02)",
+                                background: "var(--surface-2)",
                                 borderRadius: "var(--radius-md)",
                                 border: "1px solid var(--border-subtle)",
                             }}

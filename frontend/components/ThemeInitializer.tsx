@@ -10,7 +10,7 @@ export default function ThemeInitializer() {
         if (typeof window === 'undefined') return
 
         const savedTheme = localStorage.getItem('nb-enterprise-theme') as 'dark' | 'light' | null
-        const initialTheme = savedTheme || 'dark'
+        const initialTheme = savedTheme || 'light'
 
         if (theme !== initialTheme) {
             setTheme(initialTheme)

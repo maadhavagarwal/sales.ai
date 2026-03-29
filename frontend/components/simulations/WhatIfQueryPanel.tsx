@@ -48,7 +48,7 @@ export default function WhatIfQueryPanel() {
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder="Describe a scenario..."
                     className="form-input"
-                    style={{ flex: 1, padding: "1rem", borderRadius: "12px", background: "rgba(255,255,255,0.03)", border: "1px solid var(--border-subtle)" }}
+                    style={{ flex: 1, padding: "1rem", borderRadius: "12px", background: "var(--surface-2)", border: "1px solid var(--border-subtle)" }}
                 />
                 <button 
                     type="submit" 
@@ -114,9 +114,10 @@ export default function WhatIfQueryPanel() {
 
 function Metric({ label, value, emphasize = false }: { label: string; value: string; emphasize?: boolean }) {
     return (
-        <div style={{ background: "rgba(255,255,255,0.02)", padding: "0.75rem 1rem", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.05)" }}>
+        <div style={{ background: "var(--surface-2)", padding: "0.75rem 1rem", borderRadius: "8px", border: "1px solid var(--border-subtle)" }}>
             <p style={{ fontSize: "0.65rem", color: "var(--text-muted)", textTransform: "uppercase" }}>{label}</p>
             <p style={{ fontSize: "0.9rem", fontWeight: 700, color: emphasize ? "var(--accent-emerald)" : "white" }}>{value}</p>
         </div>
     )
 }
+

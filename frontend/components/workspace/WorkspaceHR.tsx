@@ -22,7 +22,13 @@ export default function WorkspaceHR() {
         setLoading(true)
         try {
             const [eData, sData] = await Promise.all([getEmployees(), getHRStats()])
-            setEmployees(eData)
+            const normalizedEmployees = (Array.isArray(eData) ? eData : []).map((emp: any) => ({
+                ...emp,
+                name: emp?.name || emp?.email || "Unknown",
+                dept: emp?.dept || emp?.department || "Unassigned",
+                status: emp?.status || "Active",
+            }))
+            setEmployees(normalizedEmployees)
             setStats(sData)
         } catch (e) {
             console.error(e)
@@ -33,7 +39,10 @@ export default function WorkspaceHR() {
 
     const handleAdd = async () => {
         try {
-            await addEmployee(newEmp)
+            const result = await addEmployee(newEmp)
+            if (result?.success === false) {
+                throw new Error(result?.error || "Failed to onboard employee")
+            }
             setShowAdd(false)
             fetchData()
         } catch (e) {
@@ -43,14 +52,19 @@ export default function WorkspaceHR() {
 
     if (loading) return <div className="p-12 text-center animate-pulse">Loading Workforce Data...</div>
 
+    const activeCount = Number(stats?.active_count ?? stats?.active ?? 0)
+    const deptCount = stats?.dept_distribution
+        ? Object.keys(stats.dept_distribution || {}).length
+        : new Set(employees.map((emp) => emp.dept).filter(Boolean)).size
+
     return (
         <div className="space-y-8 animate-fade-in">
             {/* HR Header Stats */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <StatCard icon={<Users className="w-5 h-5 text-blue-400" />} label="Total Workforce" value={stats?.total_employees || 0} />
-                <StatCard icon={<Activity className="w-5 h-5 text-emerald-400" />} label="Active Status" value={stats?.active_count || 0} />
+                <StatCard icon={<Activity className="w-5 h-5 text-emerald-400" />} label="Active Status" value={activeCount} />
                 <StatCard icon={<DollarSign className="w-5 h-5 text-amber-400" />} label="Avg. Payroll" value={`₹${(stats?.avg_salary || 0).toLocaleString()}`} />
-                <StatCard icon={<Briefcase className="w-5 h-5 text-purple-400" />} label="Departments" value={Object.keys(stats?.dept_distribution || {}).length} />
+                <StatCard icon={<Briefcase className="w-5 h-5 text-purple-400" />} label="Departments" value={deptCount} />
             </div>
 
             <div className="flex justify-between items-center">
@@ -64,7 +78,7 @@ export default function WorkspaceHR() {
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
                         <thead>
-                            <tr className="bg-white/[0.02] text-[10px] font-black uppercase tracking-[0.2em] text-white/40 border-b border-white/5">
+                            <tr className="bg-white/2 text-[10px] font-black uppercase tracking-[0.2em] text-white/40 border-b border-white/5">
                                 <th className="px-6 py-4">Employee ID</th>
                                 <th className="px-6 py-4">Full Name</th>
                                 <th className="px-6 py-4">Designation</th>
@@ -75,21 +89,21 @@ export default function WorkspaceHR() {
                         </thead>
                         <tbody className="divide-y divide-white/5">
                             {employees.map((emp) => (
-                                <tr key={emp.id} className="hover:bg-white/[0.02] transition-colors group">
+                                <tr key={emp.id} className="hover:bg-white/2 transition-colors group">
                                     <td className="px-6 py-4 text-xs font-bold text-white/60">{emp.id}</td>
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-white/10 flex items-center justify-center text-[10px] font-black">
-                                                {emp.name.split(' ').map((n: string) => n[0]).join('')}
+                                            <div className="w-8 h-8 rounded-full bg-[--surface-2] border border-white/10 flex items-center justify-center text-[10px] font-black">
+                                                {String(emp.name || "U").split(' ').map((n: string) => n[0]).join('')}
                                             </div>
-                                            <span className="text-sm font-bold text-white">{emp.name}</span>
+                                            <span className="text-sm font-bold text-white">{emp.name || "Unknown"}</span>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 text-sm text-white/80">{emp.role}</td>
-                                    <td className="px-6 py-4 text-xs font-black uppercase tracking-widest text-[#6366f1]">{emp.dept}</td>
+                                    <td className="px-6 py-4 text-xs font-black uppercase tracking-widest text-[#6366f1]">{emp.dept || "Unassigned"}</td>
                                     <td className="px-6 py-4">
                                         <Badge variant={emp.status === 'Active' ? 'success' : 'warning'} className="text-[10px] tracking-widest">
-                                            {emp.status}
+                                            {emp.status || 'Active'}
                                         </Badge>
                                     </td>
                                     <td className="px-6 py-4 text-right text-sm font-geist text-white">₹{(emp.salary || 0).toLocaleString()}</td>
@@ -101,8 +115,8 @@ export default function WorkspaceHR() {
             </Card>
 
             {showAdd && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-                    <Card variant="bento" className="w-full max-w-md p-8 border-white/10 shadow-2xl">
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-100 flex items-center justify-center p-4">
+                    <Card variant="bento" className="w-full max-w-md p-8 border-white/10">
                         <h3 className="text-xl font-black text-white mb-6">Onboard New Employee</h3>
                         <div className="space-y-4">
                             <Input placeholder="Full Name" value={newEmp.name} onChange={e => setNewEmp({...newEmp, name: e.target.value})} />
@@ -123,7 +137,7 @@ export default function WorkspaceHR() {
 
 function StatCard({ icon, label, value }: { icon: any, label: string, value: any }) {
     return (
-        <Card variant="bento" className="p-6 border-white/5 bg-white/[0.02]">
+        <Card variant="bento" className="p-6 border-white/5 bg-white/2">
             <div className="flex items-center gap-4">
                 <div className="p-3 rounded-xl bg-white/5 border border-white/10">
                     {icon}

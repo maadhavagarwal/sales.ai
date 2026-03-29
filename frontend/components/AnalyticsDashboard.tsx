@@ -53,9 +53,9 @@ export default function AnalyticsDashboard({ results }: AnalyticsDashboardProps)
                 gap: "0.5rem",
                 padding: "0.75rem 1.25rem",
                 borderRadius: "12px",
-                background: activeTab === tab.id ? "rgba(255,255,255,0.08)" : "transparent",
-                border: activeTab === tab.id ? "1px solid var(--border-subtle)" : "1px solid transparent",
-                color: activeTab === tab.id ? "#fff" : "var(--text-muted)",
+                background: activeTab === tab.id ? "var(--surface-2)" : "transparent",
+                border: activeTab === tab.id ? "1px solid var(--border-default)" : "1px solid transparent",
+                color: activeTab === tab.id ? "var(--text-primary)" : "var(--text-muted)",
                 fontWeight: 600,
                 cursor: "pointer",
                 transition: "all 0.2s"
@@ -116,3 +116,4 @@ export default function AnalyticsDashboard({ results }: AnalyticsDashboardProps)
     </div>
   )
 }
+

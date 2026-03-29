@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState } from "react"
 import { motion } from "framer-motion"
@@ -6,10 +6,11 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Building2, Upload, FileSpreadsheet, CheckCircle2, ArrowRight, Mail, Phone, MapPin, Users } from "lucide-react"
 import { useStore } from "@/store/useStore"
+import { ORG_ID_KEY, setAuthToken } from "@/lib/session"
 
 export default function Register() {
     const router = useRouter()
-    const { setUser, setOnboardingComplete } = useStore()
+    const { setUser, setOnboardingComplete, setResults, setDatasetId, setFileName, setEntitlements } = useStore()
     const [step, setStep] = useState(1)
     const [formData, setFormData] = useState({
         email: "",
@@ -63,7 +64,7 @@ export default function Register() {
         try {
             // Step 1: Register user
             const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api/backend"
-            const registerRes = await fetch(`${API_URL}/register-enterprise`, {
+            const registerRes = await fetch(`${API_URL}/api/v1/auth/register-enterprise`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -89,10 +90,17 @@ export default function Register() {
             }
 
             const registerData = await registerRes.json()
-            const token = registerData.token
+            const token = registerData?.token || registerData?.access_token
+            if (!token) {
+                setError("Registration succeeded but no session token was returned")
+                return
+            }
 
             // Persist session
-            localStorage.setItem('token', token)
+            setAuthToken(token)
+            if (registerData.company_id) {
+                localStorage.setItem(ORG_ID_KEY, String(registerData.company_id))
+            }
             localStorage.setItem('user', JSON.stringify({
                 name: formData.contactPerson || formData.companyName || formData.email.split('@')[0] || 'User',
                 email: formData.email,
@@ -100,13 +108,11 @@ export default function Register() {
                 company: formData.companyName,
             }))
             setUser(formData.email, registerData.role || "ADMIN")
-            setOnboardingComplete(true)
-
             // Step 2: Upload business data
             const formDataUpload = new FormData()
             files.forEach(file => formDataUpload.append('files', file))
 
-            const uploadRes = await fetch(`${API_URL}/workspace/universal-upload`, {
+            const uploadRes = await fetch(`${API_URL}/api/v1/workspace/universal-upload`, {
                 method: 'POST',
                 body: formDataUpload,
                 headers: {
@@ -118,15 +124,37 @@ export default function Register() {
                 setError("Registration successful but data upload failed. Please contact support.")
                 return
             }
+            await uploadRes.json().catch(() => null)
+
+            // Step 2.1: Hydrate dashboard state so first login does not ask for re-upload
+            try {
+                const syncRes = await fetch(`${API_URL}/api/v1/workspace/sync-to-dashboard`, {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${token}`
+                    }
+                })
+                if (syncRes.ok) {
+                    const syncData = await syncRes.json()
+                    if (syncData && typeof syncData === "object") {
+                        setResults(syncData)
+                        if (syncData.dataset_id) setDatasetId(syncData.dataset_id)
+                        setFileName(files[0]?.name || "Enterprise Dataset")
+                    }
+                }
+            } catch {
+                // Non-blocking: dashboard can still retry sync.
+            }
 
             // Step 3: Complete company profile
-            await fetch(`${API_URL}/workspace/company-profile`, {
+            await fetch(`${API_URL}/api/company/profile/manage`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
+                    action: "SAVE",
                     name: formData.companyName,
                     gstin: formData.gstin,
                     industry: formData.industry,
@@ -137,6 +165,18 @@ export default function Register() {
                     business_type: formData.businessType
                 })
             })
+
+            // Enterprise register flow should map to enterprise entitlements in UI state.
+            setEntitlements({
+                plan: "ENTERPRISE",
+                status: "ACTIVE",
+                features: [
+                    "workspace_basic",
+                    "ops_sync_center",
+                    "enterprise_control",
+                ],
+            })
+            setOnboardingComplete(true)
 
             setSuccess(true)
             setTimeout(() => {
@@ -197,8 +237,8 @@ export default function Register() {
                     padding: "3rem 2.5rem",
                     position: "relative",
                     zIndex: 10,
-                    boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
-                    border: "1px solid rgba(255,255,255,0.1)"
+                    boxShadow: "var(--shadow-lg)",
+                    border: "1px solid var(--border-default)"
                 }}
             >
                 <div style={{ textAlign: "center", marginBottom: "2.5rem" }}>
@@ -212,6 +252,7 @@ export default function Register() {
                         justifyContent: "center",
                         fontWeight: 800,
                         fontSize: "1.2rem",
+                        color: "#fff",
                         margin: "0 auto 1.5rem",
                         boxShadow: "var(--shadow-glow)"
                     }}>
@@ -229,7 +270,7 @@ export default function Register() {
                                 width: "32px",
                                 height: "32px",
                                 borderRadius: "50%",
-                                background: step >= i ? "var(--primary)" : "rgba(255,255,255,0.1)",
+                                background: step >= i ? "var(--primary)" : "var(--surface-2)",
                                 color: step >= i ? "white" : "var(--text-secondary)",
                                 display: "flex",
                                 alignItems: "center",
@@ -242,7 +283,7 @@ export default function Register() {
                             {i < 3 && <div style={{
                                 width: "40px",
                                 height: "2px",
-                                background: step > i ? "var(--primary)" : "rgba(255,255,255,0.1)",
+                                background: step > i ? "var(--primary)" : "var(--surface-2)",
                                 margin: "0 8px"
                             }} />}
                         </div>
@@ -256,7 +297,7 @@ export default function Register() {
                         style={{
                             background: "rgba(239, 68, 68, 0.15)",
                             border: "1px solid #ef4444",
-                            color: "#fca5a5",
+                            color: "#b91c1c",
                             padding: "0.75rem",
                             borderRadius: "8px",
                             fontSize: "0.85rem",
@@ -274,7 +315,7 @@ export default function Register() {
                         style={{
                             background: "rgba(16, 185, 129, 0.15)",
                             border: "1px solid #10b981",
-                            color: "#a7f3d0",
+                            color: "#065f46",
                             padding: "0.75rem",
                             borderRadius: "8px",
                             fontSize: "0.85rem",
@@ -308,10 +349,10 @@ export default function Register() {
                                 style={{
                                     width: "100%",
                                     padding: "0.875rem 1rem",
-                                    background: "rgba(0,0,0,0.2)",
+                                    background: "var(--surface-2)",
                                     border: "1px solid var(--border-subtle)",
                                     borderRadius: "var(--radius-md)",
-                                    color: "white",
+                                    color: "var(--text-primary)",
                                     fontSize: "0.95rem",
                                     outline: "none"
                                 }}
@@ -330,10 +371,10 @@ export default function Register() {
                                 style={{
                                     width: "100%",
                                     padding: "0.875rem 1rem",
-                                    background: "rgba(0,0,0,0.2)",
+                                    background: "var(--surface-2)",
                                     border: "1px solid var(--border-subtle)",
                                     borderRadius: "var(--radius-md)",
-                                    color: "white",
+                                    color: "var(--text-primary)",
                                     fontSize: "0.95rem",
                                     outline: "none"
                                 }}
@@ -352,10 +393,10 @@ export default function Register() {
                                 style={{
                                     width: "100%",
                                     padding: "0.875rem 1rem",
-                                    background: "rgba(0,0,0,0.2)",
+                                    background: "var(--surface-2)",
                                     border: "1px solid var(--border-subtle)",
                                     borderRadius: "var(--radius-md)",
-                                    color: "white",
+                                    color: "var(--text-primary)",
                                     fontSize: "0.95rem",
                                     outline: "none"
                                 }}
@@ -371,7 +412,7 @@ export default function Register() {
                                 background: "var(--gradient-primary)",
                                 border: "none",
                                 borderRadius: "var(--radius-md)",
-                                color: "white",
+                                color: "#fff",
                                 fontSize: "0.95rem",
                                 fontWeight: 600,
                                 cursor: "pointer",
@@ -409,10 +450,10 @@ export default function Register() {
                                     style={{
                                         width: "100%",
                                         padding: "0.875rem 1rem",
-                                        background: "rgba(0,0,0,0.2)",
+                                        background: "var(--surface-2)",
                                         border: "1px solid var(--border-subtle)",
                                         borderRadius: "var(--radius-md)",
-                                        color: "white",
+                                        color: "var(--text-primary)",
                                         fontSize: "0.95rem",
                                         outline: "none"
                                     }}
@@ -430,10 +471,10 @@ export default function Register() {
                                     style={{
                                         width: "100%",
                                         padding: "0.875rem 1rem",
-                                        background: "rgba(0,0,0,0.2)",
+                                        background: "var(--surface-2)",
                                         border: "1px solid var(--border-subtle)",
                                         borderRadius: "var(--radius-md)",
-                                        color: "white",
+                                        color: "var(--text-primary)",
                                         fontSize: "0.95rem",
                                         outline: "none"
                                     }}
@@ -451,10 +492,10 @@ export default function Register() {
                                     style={{
                                         width: "100%",
                                         padding: "0.875rem 1rem",
-                                        background: "rgba(0,0,0,0.2)",
+                                        background: "var(--surface-2)",
                                         border: "1px solid var(--border-subtle)",
                                         borderRadius: "var(--radius-md)",
-                                        color: "white",
+                                        color: "var(--text-primary)",
                                         fontSize: "0.95rem",
                                         outline: "none"
                                     }}
@@ -482,10 +523,10 @@ export default function Register() {
                                     style={{
                                         width: "100%",
                                         padding: "0.875rem 1rem",
-                                        background: "rgba(0,0,0,0.2)",
+                                        background: "var(--surface-2)",
                                         border: "1px solid var(--border-subtle)",
                                         borderRadius: "var(--radius-md)",
-                                        color: "white",
+                                        color: "var(--text-primary)",
                                         fontSize: "0.95rem",
                                         outline: "none"
                                     }}
@@ -514,10 +555,10 @@ export default function Register() {
                                     style={{
                                         width: "100%",
                                         padding: "0.875rem 1rem",
-                                        background: "rgba(0,0,0,0.2)",
+                                        background: "var(--surface-2)",
                                         border: "1px solid var(--border-subtle)",
                                         borderRadius: "var(--radius-md)",
-                                        color: "white",
+                                        color: "var(--text-primary)",
                                         fontSize: "0.95rem",
                                         outline: "none"
                                     }}
@@ -533,10 +574,10 @@ export default function Register() {
                                     style={{
                                         width: "100%",
                                         padding: "0.875rem 1rem",
-                                        background: "rgba(0,0,0,0.2)",
+                                        background: "var(--surface-2)",
                                         border: "1px solid var(--border-subtle)",
                                         borderRadius: "var(--radius-md)",
-                                        color: "white",
+                                        color: "var(--text-primary)",
                                         fontSize: "0.95rem",
                                         outline: "none"
                                     }}
@@ -564,10 +605,10 @@ export default function Register() {
                                     style={{
                                         width: "100%",
                                         padding: "0.875rem 1rem",
-                                        background: "rgba(0,0,0,0.2)",
+                                        background: "var(--surface-2)",
                                         border: "1px solid var(--border-subtle)",
                                         borderRadius: "var(--radius-md)",
-                                        color: "white",
+                                        color: "var(--text-primary)",
                                         fontSize: "0.95rem",
                                         outline: "none"
                                     }}
@@ -588,10 +629,10 @@ export default function Register() {
                                     style={{
                                         width: "100%",
                                         padding: "0.875rem 1rem",
-                                        background: "rgba(0,0,0,0.2)",
+                                        background: "var(--surface-2)",
                                         border: "1px solid var(--border-subtle)",
                                         borderRadius: "var(--radius-md)",
-                                        color: "white",
+                                        color: "var(--text-primary)",
                                         fontSize: "0.95rem",
                                         outline: "none"
                                     }}
@@ -606,10 +647,10 @@ export default function Register() {
                                 style={{
                                     flex: 1,
                                     padding: "0.875rem",
-                                    background: "rgba(255,255,255,0.1)",
+                                    background: "var(--surface-2)",
                                     border: "1px solid var(--border-subtle)",
                                     borderRadius: "var(--radius-md)",
-                                    color: "white",
+                                    color: "var(--text-primary)",
                                     fontSize: "0.95rem",
                                     fontWeight: 600,
                                     cursor: "pointer"
@@ -626,7 +667,7 @@ export default function Register() {
                                     background: "var(--gradient-primary)",
                                     border: "none",
                                     borderRadius: "var(--radius-md)",
-                                    color: "white",
+                                    color: "#fff",
                                     fontSize: "0.95rem",
                                     fontWeight: 600,
                                     cursor: "pointer",
@@ -664,7 +705,7 @@ export default function Register() {
                                 borderRadius: "var(--radius-md)",
                                 padding: "2rem",
                                 textAlign: "center",
-                                background: "rgba(0,0,0,0.1)",
+                                background: "rgba(243, 234, 217, 0.65)",
                                 cursor: "pointer",
                                 transition: "all 0.2s"
                             }}
@@ -692,7 +733,7 @@ export default function Register() {
                                         alignItems: "center",
                                         justifyContent: "space-between",
                                         padding: "0.5rem",
-                                        background: "rgba(0,0,0,0.2)",
+                                        background: "var(--surface-2)",
                                         borderRadius: "var(--radius-sm)",
                                         marginBottom: "0.5rem"
                                     }}>
@@ -722,10 +763,10 @@ export default function Register() {
                                 style={{
                                     flex: 1,
                                     padding: "0.875rem",
-                                    background: "rgba(255,255,255,0.1)",
+                                    background: "var(--surface-2)",
                                     border: "1px solid var(--border-subtle)",
                                     borderRadius: "var(--radius-md)",
-                                    color: "white",
+                                    color: "var(--text-primary)",
                                     fontSize: "0.95rem",
                                     fontWeight: 600,
                                     cursor: "pointer"
@@ -740,10 +781,10 @@ export default function Register() {
                                 style={{
                                     flex: 1,
                                     padding: "0.875rem",
-                                    background: loading ? "rgba(255,255,255,0.2)" : "var(--gradient-primary)",
+                                    background: loading ? "var(--surface-3)" : "var(--gradient-primary)",
                                     border: "none",
                                     borderRadius: "var(--radius-md)",
-                                    color: "white",
+                                    color: "#fff",
                                     fontSize: "0.95rem",
                                     fontWeight: 600,
                                     cursor: loading ? "not-allowed" : "pointer",
@@ -769,3 +810,6 @@ export default function Register() {
         </div>
     )
 }
+
+
+

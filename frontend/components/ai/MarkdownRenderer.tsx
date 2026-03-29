@@ -19,7 +19,7 @@ export default function MarkdownRenderer({ text }: { text: string }) {
                                 marginTop: "1.5rem",
                                 marginBottom: "0.5rem",
                                 color: "var(--primary-400)",
-                                borderBottom: "1px solid rgba(255,255,255,0.05)",
+                                borderBottom: "1px solid var(--border-subtle)",
                                 paddingBottom: "0.5rem"
                             }}
                         >

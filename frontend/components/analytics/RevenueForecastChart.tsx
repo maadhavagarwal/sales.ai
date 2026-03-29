@@ -45,10 +45,10 @@ export default function RevenueForecastChart({ data, reasoning, confidence }: Re
             backgroundColor: "transparent",
             tooltip: {
                 trigger: "axis",
-                backgroundColor: "rgba(10,15,30,0.95)",
-                borderColor: "rgba(99,102,241,0.3)",
+                backgroundColor: "var(--surface-1)",
+                borderColor: "var(--border-default)",
                 borderWidth: 1,
-                textStyle: { color: "#f9fafb", fontSize: 13, fontFamily: "Inter" },
+                textStyle: { color: "var(--text-primary)", fontSize: 13, fontFamily: "Inter" },
                 formatter: (params: any) => {
                     const p = params[0]
                     return `
@@ -61,7 +61,7 @@ export default function RevenueForecastChart({ data, reasoning, confidence }: Re
             xAxis: {
                 type: "category",
                 data: data.map(d => d.date),
-                axisLine: { lineStyle: { color: "rgba(255,255,255,0.06)" } },
+                axisLine: { lineStyle: { color: "var(--border-subtle)" } },
                 axisLabel: { color: "#9ca3af", fontSize: 10, fontFamily: "Inter", rotate: 30 },
                 axisTick: { show: false }
             },
@@ -69,7 +69,7 @@ export default function RevenueForecastChart({ data, reasoning, confidence }: Re
                 type: "value",
                 name: "Revenue ($)",
                 nameTextStyle: { color: "#6b7280", fontSize: 11, padding: [0, 0, 0, 40] },
-                splitLine: { lineStyle: { color: "rgba(255,255,255,0.04)" } },
+                splitLine: { lineStyle: { color: "var(--border-subtle)" } },
                 axisLabel: { color: "#6b7280", fontSize: 11, fontFamily: "Inter" }
             },
             series,

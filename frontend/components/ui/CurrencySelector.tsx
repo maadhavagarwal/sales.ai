@@ -37,7 +37,7 @@ export default function CurrencySelector() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 8, scale: 0.95 }}
                         transition={{ duration: 0.15 }}
-                        className="absolute top-[calc(100%+0.5rem)] right-0 w-52.5 p-2 rounded-[--radius-md] border border-[--border-default] bg-[--surface-1]/95 backdrop-blur-xl shadow-[--shadow-lg] z-100"
+                        className="absolute top-[calc(100%+0.5rem)] right-0 w-52.5 p-2 rounded-[--radius-md] border border-[--border-default] bg-[--surface-1]/95 backdrop-blur-xl z-100"
                     >
                         <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[--text-muted] mb-1">
                             Select Currency

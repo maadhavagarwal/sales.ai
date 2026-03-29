@@ -37,7 +37,9 @@ export default function GreeksPanel() {
             }))
         } catch (e: any) {
             const errorMsg = e?.response?.data?.detail || e?.message || "Failed to load derivatives data"
-            console.error("Derivatives analytics failed:", errorMsg)
+            if (e?.response?.status !== 404) {
+                console.warn("Derivatives analytics:", errorMsg)
+            }
             setError(errorMsg)
             setData(null)
         } finally {
@@ -63,9 +65,9 @@ export default function GreeksPanel() {
                 shape: "circle",
                 splitNumber: 4,
                 axisName: { color: "#94a3b8", fontSize: 9, fontWeight: "bold" },
-                splitLine: { lineStyle: { color: "rgba(255,255,255,0.06)" } },
+                splitLine: { lineStyle: { color: "var(--border-subtle)" } },
                 splitArea: { show: false },
-                axisLine: { lineStyle: { color: "rgba(255,255,255,0.05)" } },
+                axisLine: { lineStyle: { color: "var(--border-subtle)" } },
             },
             series: [{
                 type: "radar",
@@ -88,12 +90,12 @@ export default function GreeksPanel() {
                 type: "category",
                 data: data.price_series.map((point: any) => point.date),
                 axisLabel: { color: "#64748b", showMaxLabel: false, showMinLabel: false },
-                axisLine: { lineStyle: { color: "rgba(255,255,255,0.08)" } },
+                axisLine: { lineStyle: { color: "var(--surface-3)" } },
             },
             yAxis: {
                 type: "value",
                 axisLabel: { color: "#64748b" },
-                splitLine: { lineStyle: { color: "rgba(255,255,255,0.05)" } },
+                splitLine: { lineStyle: { color: "var(--border-subtle)" } },
             },
             series: [{
                 data: data.price_series.map((point: any) => point.close),
@@ -342,3 +344,4 @@ export default function GreeksPanel() {
         </div>
     )
 }
+

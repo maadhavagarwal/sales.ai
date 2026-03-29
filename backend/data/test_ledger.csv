@@ -1,0 +1,12 @@
+voucher_no,date,account_name,type,amount,description,voucher_type
+VCH-1001,2026-03-01,Sales Revenue - Domestic,INCOME,150000.00,Sales Invoice Ref: INV-2026-001,Sales
+VCH-1001,2026-03-01,GST Output Collected,LIABILITY,27000.00,GST Liability Ref: INV-2026-001,Sales
+VCH-1002,2026-03-02,Office Rent,EXPENSE,85000.00,March 2026 Rent Payment,Payment
+VCH-1003,2026-03-05,Sales Revenue - Domestic,INCOME,75000.00,Sales Invoice Ref: INV-2026-002,Sales
+VCH-1003,2026-03-05,GST Output Collected,LIABILITY,13500.00,GST Liability Ref: INV-2026-002,Sales
+VCH-1004,2026-03-10,Software Licenses,EXPENSE,45000.00,AWS Cloud Hosting,Payment
+VCH-1005,2026-03-12,Sales Revenue - Domestic,INCOME,225000.00,Sales Invoice Ref: INV-2026-003,Sales
+VCH-1005,2026-03-12,GST Output Collected,LIABILITY,40500.00,GST Liability Ref: INV-2026-003,Sales
+VCH-1006,2026-03-15,Marketing Expense,EXPENSE,120000.00,Q1 Digital Campaign,Payment
+VCH-1007,2026-03-25,Bank Operations Account,ASSET,-250000.00,Payroll March 2026,Payment
+VCH-1008,2026-03-28,Internet & Comm,EXPENSE,12500.00,Corporate ISP Bill,Payment

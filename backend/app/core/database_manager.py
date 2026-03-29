@@ -84,6 +84,7 @@ def init_workspace_db():
                 role TEXT DEFAULT 'ADMIN',
                 allowed_ips TEXT,
                 idle_timeout INTEGER DEFAULT 3600,
+                mfa_enabled INTEGER DEFAULT 0,
                 onboarding_complete INTEGER DEFAULT 0,
                 company_id TEXT,
                 workspace_state TEXT,
@@ -96,6 +97,10 @@ def init_workspace_db():
             conn.execute("ALTER TABLE users ADD COLUMN workspace_state TEXT")
         except Exception:
             pass  # Already exists
+        try:
+            conn.execute("ALTER TABLE users ADD COLUMN mfa_enabled INTEGER DEFAULT 0")
+        except Exception:
+            pass
 
         # 2. Enterprise Company Profile
         conn.execute("""
@@ -173,6 +178,7 @@ def init_workspace_db():
         conn.execute("""
             CREATE TABLE IF NOT EXISTS deals (
                 id TEXT PRIMARY KEY,
+                company_id TEXT,
                 customer_id TEXT,
                 deal_name TEXT,
                 value REAL,
@@ -534,6 +540,38 @@ def init_workspace_db():
             )
         """)
 
+        # Document Generation (Reports, Invoices, Contracts)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS documents (
+                id TEXT PRIMARY KEY,
+                company_id TEXT,
+                title TEXT,
+                doc_type TEXT,
+                template_id TEXT,
+                content_json TEXT,
+                format TEXT DEFAULT 'pdf',
+                status TEXT DEFAULT 'draft',
+                file_size INTEGER,
+                created_by INTEGER,
+                generated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                segment_id TEXT,
+                recipient_email TEXT
+            )
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS document_versions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                document_id TEXT,
+                version INTEGER,
+                content_json TEXT,
+                change_summary TEXT,
+                created_by INTEGER,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (document_id) REFERENCES documents(id)
+            )
+        """)
+
         # Migration logic (Ensure columns exist in existing DB)
         cols_to_add = [
             ("users", "role", "TEXT DEFAULT 'ADMIN'"),
@@ -646,7 +684,7 @@ def get_user_record(email):
         conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row
         user = conn.execute(
-            "SELECT id, email, password_hash, role, allowed_ips, idle_timeout, company_id FROM users WHERE email = ?",
+            "SELECT id, email, password_hash, role, allowed_ips, idle_timeout, mfa_enabled, company_id FROM users WHERE email = ?",
             (email,),
         ).fetchone()
         conn.close()

@@ -8,13 +8,60 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, Body
 from fastapi.responses import JSONResponse
+from typing import Any
+from sqlalchemy.orm import Session
 
 from app.core.database_manager import get_user_record, log_activity
 from app.middleware.security import verify_token, get_user_from_token
 from app.services.expense_service import ExpenseService
 from app.services.gst_service import GSTService
 
+from app.core.database import get_db
+from app.models.tenant import Organization
+from app.api.v1.deps import PLAN_FEATURES
+from app.services.billing_service import BillingService
+
 router = APIRouter(prefix="/api/v1", tags=["Financial & Tax Compliance"])
+
+
+def legacy_require_org_roles(*allowed_roles: str):
+    normalized = {r.upper() for r in allowed_roles}
+
+    async def _dep(token: str = Depends(verify_token)):
+        # verify_token returns email in legacy flow
+        user_data = get_user_record(token)
+        if not user_data:
+            raise HTTPException(status_code=401, detail="Unauthorized")
+
+        _, email, role, company_id = get_user_from_token(user_data)
+        if str(role).upper() not in normalized:
+            raise HTTPException(status_code=403, detail=f"Organization role required: {', '.join(sorted(normalized))}")
+        if not company_id:
+            raise HTTPException(status_code=400, detail="Company not configured")
+        return {"email": email, "role": role, "company_id": company_id}
+
+    return _dep
+
+
+def legacy_require_features(*required_features: str):
+    normalized = {f for f in required_features}
+
+    async def _dep(
+        dep_info: dict = Depends(legacy_require_org_roles("ADMIN", "FINANCE", "OWNER")),
+        db: Session = Depends(get_db),
+    ):
+        company_id = dep_info.get("company_id")
+        # Resolve org and plan
+        org = db.query(Organization).filter(Organization.uuid == company_id).first()
+        plan = (org.subscription_plan if org else "FREE") or "FREE"
+        plan = str(plan).upper()
+        enabled = set(PLAN_FEATURES.get(plan, PLAN_FEATURES.get("FREE", [])))
+        missing = sorted(f for f in normalized if f not in enabled)
+        if missing:
+            raise HTTPException(status_code=403, detail=f"Subscription feature required: {', '.join(missing)}")
+        return {"plan": plan, "company_id": company_id, "features": list(enabled)}
+
+    return _dep
 
 
 # ============ EXPENSE MANAGEMENT ENDPOINTS ============
@@ -23,6 +70,8 @@ router = APIRouter(prefix="/api/v1", tags=["Financial & Tax Compliance"])
 async def upload_expenses(
     file: UploadFile = File(...),
     token: str = Depends(verify_token),
+    _auth: Any = Depends(legacy_require_org_roles("ADMIN", "FINANCE", "OWNER")),
+    _ent: Any = Depends(legacy_require_features("workspace_basic")),
 ):
     """Upload expense sheet (CSV/Excel) for integration"""
     try:
@@ -77,6 +126,8 @@ async def get_expenses(
     category: Optional[str] = Query(None),
     only_itc_eligible: Optional[bool] = Query(False),
     token: str = Depends(verify_token),
+    _auth: Any = Depends(legacy_require_org_roles("ADMIN", "FINANCE", "OWNER")),
+    _ent: Any = Depends(legacy_require_features("workspace_basic")),
 ):
     """Get expenses with optional filters"""
     try:
@@ -113,6 +164,8 @@ async def get_expenses(
 async def get_expense_summary(
     month_year: Optional[str] = Query(None),
     token: str = Depends(verify_token),
+    _auth: Any = Depends(legacy_require_org_roles("ADMIN", "FINANCE", "OWNER")),
+    _ent: Any = Depends(legacy_require_features("workspace_basic")),
 ):
     """Get expense summary for dashboard (GST metrics)"""
     try:
@@ -138,6 +191,8 @@ async def get_expense_summary(
 async def reconcile_expenses(
     month_year: str = Body(..., embed=True),
     token: str = Depends(verify_token),
+    _auth: Any = Depends(legacy_require_org_roles("ADMIN", "FINANCE", "OWNER")),
+    _ent: Any = Depends(legacy_require_features("workspace_basic")),
 ):
     """Mark expenses as reconciled for GST filing"""
     try:
@@ -170,6 +225,8 @@ async def reconcile_expenses(
 async def record_gst_transaction(
     data: dict = Body(...),
     token: str = Depends(verify_token),
+    _auth: Any = Depends(legacy_require_org_roles("ADMIN", "FINANCE")),
+    _ent: Any = Depends(legacy_require_features("workspace_basic")),
 ):
     """Record a GST transaction (sales or purchases)"""
     try:
@@ -210,6 +267,8 @@ async def record_gst_transaction(
 async def get_gst_summary(
     month_year: str = Query(...),
     token: str = Depends(verify_token),
+    _auth: Any = Depends(legacy_require_org_roles("ADMIN", "FINANCE")),
+    _ent: Any = Depends(legacy_require_features("enterprise_control")),
 ):
     """Get GST summary for a specific month"""
     try:
@@ -235,6 +294,8 @@ async def get_gst_summary(
 async def get_gstr1_report(
     month_year: str = Query(...),
     token: str = Depends(verify_token),
+    _auth: Any = Depends(legacy_require_org_roles("ADMIN", "FINANCE")),
+    _ent: Any = Depends(legacy_require_features("enterprise_control")),
 ):
     """Generate GSTR-1 (Outward Supply) report"""
     try:
@@ -268,6 +329,8 @@ async def get_gstr1_report(
 async def get_gstr2_report(
     month_year: str = Query(...),
     token: str = Depends(verify_token),
+    _auth: Any = Depends(legacy_require_org_roles("ADMIN", "FINANCE")),
+    _ent: Any = Depends(legacy_require_features("enterprise_control")),
 ):
     """Generate GSTR-2 (Inward Supply) report"""
     try:
@@ -301,6 +364,8 @@ async def get_gstr2_report(
 async def get_gstr3b_report(
     month_year: str = Query(...),
     token: str = Depends(verify_token),
+    _auth: Any = Depends(legacy_require_org_roles("ADMIN", "FINANCE")),
+    _ent: Any = Depends(legacy_require_features("enterprise_control")),
 ):
     """Generate GSTR-3B (Monthly Tax Return) report"""
     try:
@@ -337,6 +402,8 @@ async def get_gstr3b_report(
 async def get_gst_reconciliation(
     month_year: str = Query(...),
     token: str = Depends(verify_token),
+    _auth: Any = Depends(legacy_require_org_roles("ADMIN", "FINANCE")),
+    _ent: Any = Depends(legacy_require_features("enterprise_control")),
 ):
     """Get GST reconciliation details for a month"""
     try:
@@ -371,6 +438,8 @@ async def get_gst_reconciliation(
 async def file_gst_return(
     return_data: dict = Body(...),
     token: str = Depends(verify_token),
+    _auth: Any = Depends(legacy_require_org_roles("ADMIN",)),
+    _ent: Any = Depends(legacy_require_features("enterprise_control")),
 ):
     """File/submit a GST return"""
     try:

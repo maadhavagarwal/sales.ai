@@ -45,7 +45,7 @@ export function TabsTrigger({ value, children, className }: any) {
       {isActive && (
         <motion.div
           layoutId="activeTab"
-          className="absolute inset-0 bg-[--primary]/80 rounded-lg -z-10 shadow-[--shadow-sm]"
+          className="absolute inset-0 bg-[--primary]/80 rounded-lg -z-10"
           transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
         />
       )}

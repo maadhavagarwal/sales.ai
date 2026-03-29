@@ -2,6 +2,7 @@
 
 import React from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import { X } from "lucide-react"
 
 interface ModalProps {
   isOpen: boolean
@@ -35,54 +36,47 @@ export default function Modal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/65 backdrop-blur-sm z-40"
+            className="fixed inset-0 bg-black/40 backdrop-blur-md z-[40]"
           />
 
           {/* Modal */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            initial={{ opacity: 0, scale: 0.95, y: 16 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            exit={{ opacity: 0, scale: 0.95, y: 16 }}
+            transition={{ type: "spring", stiffness: 400, damping: 30 }}
             className={`
               fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
               ${sizeClasses[size]} w-[90vw] sm:w-full
-              bg-[--surface-1] rounded-[--radius-md] border border-[--border-default]
-              shadow-[--shadow-lg] z-50
-              flex flex-col max-h-[90vh]
+              bg-[--surface-1] rounded-[--radius-xl] border border-[--border-default] z-[50]
+              flex flex-col max-h-[85vh]
               overflow-hidden
+              shadow-[var(--shadow-xl)]
             `}
           >
+            {/* Top accent line */}
+            <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[--primary]/40 to-transparent" />
+
             {/* Header */}
             {title && (
-              <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-[--border-subtle]">
-                <h2 className="text-lg sm:text-xl font-semibold tracking-tight text-[--text-primary]">
+              <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-[--border-subtle]">
+                <h2 className="text-lg sm:text-xl font-bold tracking-tight text-[--text-primary]">
                   {title}
                 </h2>
                 <button
                   onClick={onClose}
-                  className="p-1.5 hover:bg-white/8 rounded-lg transition-colors text-[--text-secondary] hover:text-[--text-primary]"
+                  className="w-8 h-8 rounded-xl bg-[--surface-2] border border-[--border-subtle] flex items-center justify-center hover:bg-[--surface-3] transition-all text-[--text-muted] hover:text-[--text-primary]"
                   aria-label="Close modal"
                 >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
+                  <X size={16} />
                 </button>
               </div>
             )}
 
             {/* Body */}
-            <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6">
+            <div className="flex-1 overflow-y-auto px-5 sm:px-6 py-5 sm:py-6 scrollbar-pro">
               {children}
             </div>
           </motion.div>

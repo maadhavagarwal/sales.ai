@@ -1,0 +1,31 @@
+# Saavishkar 2026: Video Demonstration Script & Checklist
+
+**Goal:** A 2-to-5 minute clear, 1080p, well-narrated video showing a fully functional system. No static screenshots. No sensitive data.
+
+### Pre-Flight Checklist
+- [ ] Screen resolution set to 1080p.
+- [ ] Microphone tested and audio is clear.
+- [ ] Backend running (`uvicorn app.main:app`) and Frontend running (`npm run dev`) or using the deployed live URL.
+- [ ] Have test data CSVs ready in a folder (Invoices, HR, Inventory, Ledger) to show the upload process.
+
+### Video Script / Flow
+
+**0:00 - 0:20 | Introduction**
+* **Visual:** Start on the new Login Page or Landing Page.
+* **Narration:** "Hello, this is my submission for Saavishkar 2026. This is NeuralBI, an Autonomous Enterprise Decision Intelligence platform. Our platform solves the problem of fragmented corporate data by unifying operations, HR, and finance under one AI-driven command center."
+
+**0:20 - 1:00 | Multi-Tenant Onboarding & Ingestion**
+* **Visual:** Log in, navigate to the unified Workspace / CSV Uploader. Upload the CSVs I generated for you.
+* **Narration:** "Here, an enterprise can ingest all its fragmented data at once. Watch as NeuralBI processes raw CSVs for Sales, HR, and Inventory simultaneously. Not only does it ingest the data, but our Zero-Touch engine automatically generates the dual-entry accounting ledgers in the background, completely balancing the books."
+
+**1:00 - 2:00 | The Neural Intelligence Hub**
+* **Visual:** Go to the AI Copilot / Analytics Chat section. Type a complex query like "Show me a bar chart of our top selling products" or "What is our revenue growth?". 
+* **Narration:** "Instead of static dashboards, NeuralBI features Natural Language Business Intelligence. I can simply ask the system about our financial health. The AI reasoning engine converts my English into SQL, fetches the data, and dynamically renders the exact chart I need, along with statistical reasoning."
+
+**2:00 - 2:40 | Dashboard and Risk Management**
+* **Visual:** Go to the Overview page. Hover over the KPI cards to show the polished UI animations. Then navigate to the Treasury/Risk or Leads section.
+* **Narration:** "The entire platform is built with a premium 'Diamond-Grade' UI using Next.js and Framer Motion for a fluid experience. Beyond basic reporting, our AI engines proactively run anomaly detection and churn risk analysis, highlighting issues before they occur."
+
+**2:40 - 3:00 | Closing Summary**
+* **Visual:** Show the System Status/Readiness API or the Auto-generated Financial ledgers/books.
+* **Narration:** "By automating double-entry bookkeeping and democratizing data through an AI Copilot, NeuralBI reduces 'Time-to-Insight' from weeks to seconds. Thank you for evaluating NeuralBI."

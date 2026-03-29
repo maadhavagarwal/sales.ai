@@ -40,11 +40,11 @@ export default function DataTable({ data, columns }: DataTableProps) {
     }
 
     return (
-        <Card variant="glass" padding="none" className="overflow-hidden border-[--border-subtle] shadow-2xl flex flex-col">
+        <Card variant="glass" padding="none" className="overflow-hidden border-[--border-subtle] flex flex-col">
             <div className="px-8 py-8 border-b border-[--border-subtle] bg-[--surface-0]/40 flex items-center justify-between">
                 <div>
                     <h3 className="text-xl font-black text-[--text-primary] tracking-tight">Intelligence Ledger</h3>
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[--text-muted] mt-1 italic tracking-widest">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-[--text-muted] mt-1 italic">
                         Raw Sales Data Stream • {data.length.toLocaleString()} Total Records
                     </p>
                 </div>
@@ -55,7 +55,7 @@ export default function DataTable({ data, columns }: DataTableProps) {
             </div>
 
             <div className="overflow-x-auto scrollbar-pro flex-1">
-                <table className="w-full text-left border-collapse min-w-[800px]">
+                <table className="w-full text-left border-collapse min-w-200">
                     <thead>
                         <tr className="bg-[--surface-1]/50">
                             {columns.slice(0, 15).map((col) => (
@@ -83,7 +83,7 @@ export default function DataTable({ data, columns }: DataTableProps) {
                                 className="hover:bg-[--surface-2]/30 transition-colors group"
                             >
                                 {columns.slice(0, 15).map((col) => (
-                                    <td key={col} className="px-6 py-5 text-xs font-bold text-[--text-secondary] group-hover:text-[--text-primary] transition-colors truncate max-w-[200px]">
+                                    <td key={col} className="px-6 py-5 text-xs font-bold text-[--text-secondary] group-hover:text-[--text-primary] transition-colors truncate max-w-50">
                                         {fmtVal(row[col])}
                                     </td>
                                 ))}
@@ -115,7 +115,7 @@ export default function DataTable({ data, columns }: DataTableProps) {
                                 <button
                                     key={i}
                                     onClick={() => setPage(p)}
-                                    className={`w-10 h-10 rounded-[--radius-xs] text-xs font-black transition-all ${page === p ? 'bg-[--primary] text-white shadow-lg shadow-[--primary]/30' : 'bg-[--surface-1] border border-[--border-strong] text-[--text-muted] hover:bg-[--surface-2]'}`}
+                                    className={`w-10 h-10 rounded-[--radius-xs] text-xs font-black transition-all ${page === p ? 'bg-[--primary] text-white' : 'bg-[--surface-1] border border-[--border-strong] text-[--text-muted] hover:bg-[--surface-2]'}`}
                                 >
                                     {p + 1}
                                 </button>

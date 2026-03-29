@@ -251,4 +251,5 @@ jobs:
       run: |
         sleep 60
         curl -f https://api.neuralbi.com/health || exit 1
+        curl -f https://api.neuralbi.com/ready || exit 1
         curl -f https://app.neuralbi.com || exit 1

@@ -39,21 +39,21 @@ export default function NLBIChartGenerator() {
         backgroundColor: "transparent",
         tooltip: {
             trigger: chartData.chart === "pie" ? "item" : "axis",
-            backgroundColor: "rgba(10,15,30,0.95)",
-            borderColor: "rgba(99,102,241,0.3)",
+            backgroundColor: "var(--surface-1)",
+            borderColor: "var(--border-default)",
             borderWidth: 1,
-            textStyle: { color: "#f9fafb", fontSize: 13, fontFamily: "Inter" },
+            textStyle: { color: "var(--text-primary)", fontSize: 13, fontFamily: "Inter" },
         },
         grid: { left: "3%", right: "4%", bottom: "10%", top: "15%", containLabel: true },
         xAxis: chartData.chart === "pie" ? undefined : {
             type: "category",
             data: chartData.data.map((d: any) => d[chartData.x]),
-            axisLine: { lineStyle: { color: "rgba(255,255,255,0.1)" } },
+            axisLine: { lineStyle: { color: "var(--border-subtle)" } },
             axisLabel: { color: "#9ca3af", fontSize: 10, rotate: 25 },
         },
         yAxis: chartData.chart === "pie" ? undefined : {
             type: "value",
-            splitLine: { lineStyle: { color: "rgba(255,255,255,0.04)" } },
+            splitLine: { lineStyle: { color: "var(--border-subtle)" } },
             axisLabel: { color: "#6b7280", fontSize: 11 },
         },
         series: [{
@@ -152,7 +152,7 @@ export default function NLBIChartGenerator() {
                         key="chart"
                         initial={{ opacity: 0, scale: 0.98 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        style={{ background: "rgba(0,0,0,0.15)", borderRadius: "var(--radius-lg)", padding: "1rem" }}
+                        style={{ background: "var(--surface-2)", borderRadius: "var(--radius-lg)", padding: "1rem" }}
                     >
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
                             <p style={{ fontSize: "0.8rem", fontWeight: 700, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>

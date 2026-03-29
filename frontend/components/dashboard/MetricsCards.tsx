@@ -43,15 +43,27 @@ export default function MetricsCards({ analytics }: { analytics: AnalyticsData &
     }
 
     if (analytics.total_profit != null) {
-        const margin = analytics.total_revenue
-            ? ((analytics.total_profit / analytics.total_revenue) * 100).toFixed(1)
-            : null
+        const tr = analytics.total_revenue ?? 0
+        const rawMargin =
+            analytics.average_margin != null && Number.isFinite(analytics.average_margin)
+                ? analytics.average_margin
+                : tr > 0
+                  ? (analytics.total_profit / tr) * 100
+                  : null
+        let trend: string | undefined
+        if (rawMargin != null && Number.isFinite(rawMargin)) {
+            if (Math.abs(rawMargin) <= 500) {
+                trend = `${rawMargin.toFixed(1)}% margin`
+            } else {
+                trend = "Verify profit vs revenue columns"
+            }
+        }
         metrics.push({
             label: "Net Profit",
             value: formatNumber(analytics.total_profit, currencySymbol),
             icon: "📈",
             color: "var(--accent-emerald)",
-            trend: margin ? `${margin}% margin` : undefined,
+            trend,
         })
     }
 
@@ -103,7 +115,7 @@ export default function MetricsCards({ analytics }: { analytics: AnalyticsData &
                                 )}
                             </div>
                             <div
-                                className="w-12 h-12 rounded-[--radius-sm] flex items-center justify-center text-xl shadow-inner group-hover:shadow-[--shadow-glow] transition-all duration-500"
+                                className="w-12 h-12 rounded-[--radius-sm] flex items-center justify-center text-xl group-hover:shadow-[--shadow-glow] transition-all duration-500"
                                 style={{
                                     background: `linear-gradient(135deg, ${metric.color}15, ${metric.color}05)`,
                                     border: `1px solid ${metric.color}30`

@@ -21,6 +21,7 @@ import { useStore } from "@/store/useStore"
 import { useRouter } from "next/navigation"
 import { useRoleAccess } from "@/hooks/useRoleAccess"
 import { getEmployees, addEmployee } from "@/services/api"
+import { getAuthToken } from "@/lib/session"
 
 interface Employee {
     id: number
@@ -81,7 +82,7 @@ export default function HRPage() {
     const fetchEmployees = async () => {
         setLoading(true)
         try {
-            const token = localStorage.getItem("auth_token")
+            const token = getAuthToken()
             const response = await fetch(
                 `${process.env.NEXT_PUBLIC_API_URL || "/api/backend"}/v1/hr/employees/list`,
                 {
@@ -182,7 +183,7 @@ export default function HRPage() {
     const submitUpdateRole = async () => {
         setLoading(true)
         try {
-            const token = localStorage.getItem("auth_token")
+            const token = getAuthToken()
             const response = await fetch(
                 `${process.env.NEXT_PUBLIC_API_URL || "/api/backend"}/v1/hr/employees/update-role`,
                 {
@@ -225,7 +226,7 @@ export default function HRPage() {
 
         setLoading(true)
         try {
-            const token = localStorage.getItem("auth_token")
+            const token = getAuthToken()
             const response = await fetch(
                 `${process.env.NEXT_PUBLIC_API_URL || "/api/backend"}/v1/hr/employees/delete/${employeeId}`,
                 {
@@ -275,7 +276,7 @@ export default function HRPage() {
 
         setLoading(true)
         try {
-            const token = localStorage.getItem("auth_token")
+            const token = getAuthToken()
             const response = await fetch(
                 `${process.env.NEXT_PUBLIC_API_URL || "/api/backend"}/v1/hr/emails/send-credential`,
                 {
@@ -335,7 +336,7 @@ export default function HRPage() {
 
         setLoading(true)
         try {
-            const token = localStorage.getItem("auth_token")
+            const token = getAuthToken()
             const response = await fetch(
                 `${process.env.NEXT_PUBLIC_API_URL || "/api/backend"}/v1/hr/emails/send-hr-notification`,
                 {
@@ -459,7 +460,7 @@ export default function HRPage() {
                             className={`px-4 py-2 rounded-lg font-semibold transition-all whitespace-nowrap ${
                                 tab === t.id
                                     ? "bg-[--primary] text-white"
-                                    : "text-[--text-secondary] hover:text-white hover:bg-white/5"
+                                    : "text-[--text-secondary] hover:text-[--text-primary] hover:bg-[--surface-2]"
                             }`}
                         >
                             {t.label}
@@ -543,7 +544,7 @@ export default function HRPage() {
                                                                 onClick={() =>
                                                                     handleUpdateRole(emp)
                                                                 }
-                                                                className="text-blue-400 hover:text-blue-300"
+                                                                className="text-[--primary] hover:text-[--primary]/80"
                                                                 title="Update role"
                                                             >
                                                                 <Edit size={16} />
@@ -554,7 +555,7 @@ export default function HRPage() {
                                                                         emp.id
                                                                     )
                                                                 }
-                                                                className="text-red-400 hover:text-red-300"
+                                                                className="text-[--accent-rose] hover:text-[--accent-rose]/80"
                                                                 title="Remove employee"
                                                             >
                                                                 <Trash2 size={16} />
@@ -672,7 +673,7 @@ export default function HRPage() {
                                                 })
                                             }
                                             placeholder="Add a custom welcome message for the employee..."
-                                            className="w-full px-3 py-2 bg-white/10 border border-[--border-default] rounded-lg text-white placeholder-[--text-muted] focus:outline-none focus:border-[--primary] h-24 resize-none"
+                                            className="w-full px-3 py-2 bg-[--surface-2] border border-[--border-default] rounded-lg text-[--text-primary] placeholder-[--text-muted] focus:outline-none focus:border-[--primary] h-24 resize-none"
                                         />
                                     </div>
 
@@ -699,7 +700,7 @@ export default function HRPage() {
                                     <button
                                         onClick={handleCreateEmployee}
                                         disabled={loading}
-                                        className="w-full py-3 bg-gradient-to-r from-[--primary] to-purple-600 rounded-lg font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+                                        className="w-full py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2 bg-[--primary] text-white"
                                     >
                                         {loading ? (
                                             <>
@@ -721,20 +722,20 @@ export default function HRPage() {
                                 <motion.div
                                     initial={{ opacity: 0, scale: 0.95 }}
                                     animate={{ opacity: 1, scale: 1 }}
-                                    className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/30 rounded-xl p-6"
+                                    className="bg-[--surface-1] border border-[--accent-emerald]/30 rounded-xl p-6"
                                 >
                                     <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                                        <CheckCircle size={20} className="text-green-400" />
+                                        <CheckCircle size={20} className="text-[--accent-emerald]" />
                                         Temporary Credentials Generated
                                     </h3>
 
                                     <div className="space-y-4 mb-6">
-                                        <div className="bg-[--surface-0]/50 p-4 rounded-lg border border-green-500/20">
-                                            <div className="text-xs text-[--text-muted] mb-1">
+                                        <div className="bg-[--surface-2] p-4 rounded-lg border border-[--accent-emerald]/20">
+                                            <div className="text-xs text-[--text-dim] mb-1">
                                                 TEMPORARY PASSWORD
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                <code className="flex-1 text-sm font-mono text-green-300">
+                                                <code className="flex-1 text-sm font-mono text-[--accent-emerald]">
                                                     {showPassword === "temp"
                                                         ? generatedPassword
                                                         : "••••••••••••"}
@@ -767,7 +768,7 @@ export default function HRPage() {
                                                     {copiedPassword === "password" ? (
                                                         <CheckCircle
                                                             size={16}
-                                                            className="text-green-400"
+                                                            className="text-[--accent-emerald]"
                                                         />
                                                     ) : (
                                                         <Copy size={16} />
@@ -776,8 +777,8 @@ export default function HRPage() {
                                             </div>
                                         </div>
 
-                                        <p className="text-sm text-yellow-200 flex items-start gap-2">
-                                            <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
+                                        <p className="text-sm text-[--accent-amber] flex items-start gap-2">
+                                            <AlertCircle size={16} className="mt-0.5 shrink-0" />
                                             <span>
                                                 Employee will be required to change password on
                                                 first login
@@ -793,7 +794,7 @@ export default function HRPage() {
                                                     createForm.email,
                                             })
                                         }
-                                        className="w-full py-2 bg-green-500/20 hover:bg-green-500/30 border border-green-500/50 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
+                                        className="w-full py-2 bg-[--accent-emerald]/20 hover:bg-[--accent-emerald]/30 border border-[--accent-emerald]/50 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
                                     >
                                         <Mail size={16} />
                                         Send Credentials Email
@@ -810,12 +811,12 @@ export default function HRPage() {
                             animate={{ opacity: 1 }}
                             className="bg-[--surface-1] border border-[--border-default] rounded-xl p-6"
                         >
-                            <h2 className="text-xl font-bold mb-6">Send HR Email</h2>
+                            <h2 className="text-xl font-bold mb-6 text-[--text-primary]">Send HR Email</h2>
 
                             <div className="grid md:grid-cols-2 gap-6">
                                 <div className="space-y-4">
                                     <div>
-                                        <label className="block text-sm font-semibold mb-2">
+                                        <label className="block text-sm font-semibold mb-2 text-[--text-primary]">
                                             Recipient Email
                                         </label>
                                         <input
@@ -829,12 +830,12 @@ export default function HRPage() {
                                                 })
                                             }
                                             placeholder="employee@company.com"
-                                            className="w-full px-3 py-2 bg-white/10 border border-[--border-default] rounded-lg text-white placeholder-[--text-muted] focus:outline-none focus:border-[--primary]"
+                                            className="w-full px-3 py-2 bg-[--surface-2] border border-[--border-default] rounded-lg text-[--text-primary] placeholder-[--text-muted] focus:outline-none focus:border-[--primary]"
                                         />
                                     </div>
 
                                     <div>
-                                        <label className="block text-sm font-semibold mb-2">
+                                        <label className="block text-sm font-semibold mb-2 text-[--text-primary]">
                                             Email Type
                                         </label>
                                         <select
@@ -845,7 +846,7 @@ export default function HRPage() {
                                                     action_type: e.target.value,
                                                 })
                                             }
-                                            className="w-full px-3 py-2 bg-white/10 border border-[--border-default] rounded-lg text-white focus:outline-none focus:border-[--primary]"
+                                            className="w-full px-3 py-2 bg-[--surface-2] border border-[--border-default] rounded-lg text-[--text-primary] focus:outline-none focus:border-[--primary]"
                                         >
                                             <option value="notification">
                                                 HR Notification
@@ -862,7 +863,7 @@ export default function HRPage() {
 
                                 <div className="space-y-4">
                                     <div>
-                                        <label className="block text-sm font-semibold mb-2">
+                                        <label className="block text-sm font-semibold mb-2 text-[--text-primary]">
                                             Subject *
                                         </label>
                                         <input
@@ -875,13 +876,13 @@ export default function HRPage() {
                                                 })
                                             }
                                             placeholder="Email subject"
-                                            className="w-full px-3 py-2 bg-white/10 border border-[--border-default] rounded-lg text-white placeholder-[--text-muted] focus:outline-none focus:border-[--primary]"
+                                            className="w-full px-3 py-2 bg-[--surface-2] border border-[--border-default] rounded-lg text-[--text-primary] placeholder-[--text-muted] focus:outline-none focus:border-[--primary]"
                                         />
                                     </div>
                                 </div>
 
                                 <div className="md:col-span-2">
-                                    <label className="block text-sm font-semibold mb-2">
+                                    <label className="block text-sm font-semibold mb-2 text-[--text-primary]">
                                         Message *
                                     </label>
                                     <textarea
@@ -893,7 +894,7 @@ export default function HRPage() {
                                             })
                                         }
                                         placeholder="Type your message here..."
-                                        className="w-full px-3 py-2 bg-white/10 border border-[--border-default] rounded-lg text-white placeholder-[--text-muted] focus:outline-none focus:border-[--primary] h-32 resize-none"
+                                        className="w-full px-3 py-2 bg-[--surface-2] border border-[--border-default] rounded-lg text-[--text-primary] placeholder-[--text-muted] focus:outline-none focus:border-[--primary] h-32 resize-none"
                                     />
                                 </div>
 
@@ -901,7 +902,7 @@ export default function HRPage() {
                                     <button
                                         onClick={handleSendNotification}
                                         disabled={loading}
-                                        className="w-full py-3 bg-gradient-to-r from-[--primary] to-blue-600 rounded-lg font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+                                        className="w-full py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
                                     >
                                         {loading ? (
                                             <>

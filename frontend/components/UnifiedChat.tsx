@@ -176,7 +176,7 @@ export default function UnifiedChatComponent() {
             display: "flex",
             flexDirection: "column",
             height: "100%",
-            backgroundColor: "rgba(10, 10, 15, 0.8)",
+            backgroundColor: "var(--surface-1)",
             borderRadius: "var(--radius-lg)",
             border: "1px solid var(--border-default)",
             overflow: "hidden"
@@ -224,7 +224,7 @@ export default function UnifiedChatComponent() {
                                                 padding: "0.4rem 0.8rem",
                                                 borderRadius: "9999px",
                                                 border: "1px solid var(--border-default)",
-                                                background: "rgba(255,255,255,0.03)",
+                                                background: "var(--surface-2)",
                                                 color: "var(--text-muted)",
                                                 cursor: "pointer",
                                                 transition: "all 150ms"
@@ -266,7 +266,7 @@ export default function UnifiedChatComponent() {
                                 }}>
                                     {msg.type === "chart" && msg.chart ? (
                                         <div style={{
-                                            background: "rgba(0,0,0,0.3)",
+                                            background: "var(--surface-2)",
                                             borderRadius: "var(--radius-md)",
                                             padding: "1rem",
                                             marginBottom: "0.5rem",
@@ -283,7 +283,7 @@ export default function UnifiedChatComponent() {
                                             borderRadius: "var(--radius-md)",
                                             background: msg.role === "user"
                                                 ? "var(--primary-600)"
-                                                : "rgba(255,255,255,0.08)",
+                                                : "var(--surface-2)",
                                             color: msg.role === "user" ? "#fff" : "var(--text-primary)",
                                             wordBreak: "break-word",
                                             lineHeight: 1.5,
@@ -329,7 +329,7 @@ export default function UnifiedChatComponent() {
                                             {msg.confidence && msg.role === "ai" && (
                                                 <span style={{
                                                     background: msg.confidence > 0.9 ? "rgba(34,197,94,0.15)" : "rgba(249,115,22,0.15)",
-                                                    color: msg.confidence > 0.9 ? "#4ade80" : "#fb923c",
+                                                    color: msg.confidence > 0.9 ? "#166534" : "#b45309",
                                                     padding: "2px 6px",
                                                     borderRadius: "4px",
                                                     fontSize: "0.65rem",
@@ -352,8 +352,8 @@ export default function UnifiedChatComponent() {
                                                     <span key={idx} style={{
                                                         fontSize: "0.6rem",
                                                         padding: "2px 8px",
-                                                        background: "rgba(255,255,255,0.05)",
-                                                        border: "1px solid rgba(255,255,255,0.1)",
+                                                        background: "var(--surface-2)",
+                                                        border: "1px solid var(--border-subtle)",
                                                         borderRadius: "4px",
                                                         color: "var(--text-secondary)"
                                                     }}>
@@ -397,7 +397,7 @@ export default function UnifiedChatComponent() {
             <div style={{
                 borderTop: "1px solid var(--border-default)",
                 padding: "1rem",
-                background: "rgba(10,10,15,0.9)"
+                background: "var(--surface-0)"
             }}>
                 <div style={{ display: "flex", gap: "0.75rem", marginBottom: "0.75rem" }}>
                     <input
@@ -411,7 +411,7 @@ export default function UnifiedChatComponent() {
                         style={{
                             flex: 1,
                             padding: "0.75rem 1rem",
-                            background: "rgba(0,0,0,0.3)",
+                            background: "var(--surface-2)",
                             border: "1px solid var(--border-default)",
                             borderRadius: "var(--radius-md)",
                             color: "var(--text-primary)",

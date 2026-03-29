@@ -13,11 +13,11 @@ export const Skeleton: React.FC<SkeletonProps> = ({
   width,
   height,
 }) => {
-  const baseStyles = "animate-pulse bg-white/6 relative overflow-hidden"
+  const baseStyles = "animate-pulse bg-[--surface-2] relative overflow-hidden"
   const variantStyles = {
-    rect: "rounded-md",
+    rect: "rounded-xl",
     circle: "rounded-full",
-    text: "rounded h-4 w-full mb-2",
+    text: "rounded-lg h-4 w-full mb-2",
   }
 
   return (
@@ -28,14 +28,17 @@ export const Skeleton: React.FC<SkeletonProps> = ({
         height: height,
       }}
     >
-      <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/12 to-transparent" />
+      <div 
+        className="absolute inset-0 bg-gradient-to-r from-transparent via-[--surface-3]/50 to-transparent"
+        style={{ animation: 'shimmer 2s ease-in-out infinite' }}
+      />
     </div>
   )
 }
 
 export const SkeletonCard: React.FC<{ rows?: number }> = ({ rows = 3 }) => {
   return (
-    <div className="p-6 rounded-2xl border border-[--border-default] bg-[--surface-1] space-y-4">
+    <div className="p-6 rounded-2xl border border-[--border-subtle] bg-[--surface-1] space-y-4 shadow-[var(--shadow-xs)]">
       <div className="flex items-center gap-4">
         <Skeleton variant="circle" width={40} height={40} />
         <div className="space-y-2 flex-1">
@@ -54,13 +57,13 @@ export const SkeletonCard: React.FC<{ rows?: number }> = ({ rows = 3 }) => {
 
 export const SkeletonChart: React.FC = () => {
     return (
-        <div className="p-6 rounded-2xl border border-[--border-default] bg-[--surface-1] space-y-6">
-            <div className="flex justify-between items-end h-48 gap-2">
+        <div className="p-6 rounded-2xl border border-[--border-subtle] bg-[--surface-1] space-y-6 shadow-[var(--shadow-xs)]">
+            <div className="flex justify-between items-end h-48 gap-3">
                 {[40, 70, 45, 90, 65, 30, 85, 50].map((h, i) => (
                     <Skeleton 
                         key={i} 
                         height={`${h}%`} 
-                        className="flex-1 min-w-[10px]" 
+                        className="flex-1 min-w-[10px] rounded-t-lg" 
                     />
                 ))}
             </div>
